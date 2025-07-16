@@ -10,6 +10,15 @@ import { BUSINESS_RULES } from "@/constants/business-rules";
 import { OCRItem } from "@/types/ocr";
 import { handleAsyncError, logError } from "@/utils/error-handler";
 
+interface WeeklyInsights {
+  weeklyDelta: number;
+  averageSpend: number;
+  topSplurge: {
+    item: string;
+    emoji: string;
+  };
+}
+
 interface ReceiptsState {
   receipts: Receipt[];
   loading: boolean;
@@ -285,6 +294,60 @@ export const useReceipts = (userId: string) => {
     return categoryBreakdown;
   };
 
+  const weeklyInsights = useMemo((): WeeklyInsights => {
+    if (state.receipts.length === 0) {
+      return {
+        weeklyDelta: 0,
+        averageSpend: 0,
+        topSplurge: { item: "Nothing yet!", emoji: "🤔" },
+      };
+    }
+
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+    const thisWeekReceipts = state.receipts.filter(
+      (r) => new Date(r.ts) >= oneWeekAgo
+    );
+    const lastWeekReceipts = state.receipts.filter(
+      (r) => new Date(r.ts) >= twoWeeksAgo && new Date(r.ts) < oneWeekAgo
+    );
+
+    const thisWeekSpend = thisWeekReceipts.reduce((sum, r) => sum + r.total, 0);
+    const lastWeekSpend = lastWeekReceipts.reduce((sum, r) => sum + r.total, 0);
+
+    const weeklyDelta =
+      lastWeekSpend > 0
+        ? ((thisWeekSpend - lastWeekSpend) / lastWeekSpend) * 100
+        : thisWeekSpend > 0
+        ? 100
+        : 0;
+
+    const totalDaysWithReceipts = new Set(
+      state.receipts.map((r) => new Date(r.ts).toDateString())
+    ).size;
+    const totalSpend = state.receipts.reduce((sum, r) => sum + r.total, 0);
+    const averageSpend =
+      totalDaysWithReceipts > 0 ? totalSpend / totalDaysWithReceipts : 0;
+
+    const topSplurgeReceipt = thisWeekReceipts.sort(
+      (a, b) => b.total - a.total
+    )[0];
+    const topSplurgeItemName = topSplurgeReceipt?.store?.name || "Groceries";
+
+    const topSplurge = {
+      item: topSplurgeItemName,
+      emoji: "🛒", // Placeholder emoji
+    };
+
+    return {
+      weeklyDelta,
+      averageSpend,
+      topSplurge,
+    };
+  }, [state.receipts]);
+
   return {
     ...state,
     createReceipt,
@@ -300,5 +363,6 @@ export const useReceipts = (userId: string) => {
     getSpendingAnalytics,
     getWeeklySpending,
     getSpendingByCategory,
+    weeklyInsights,
   };
 };

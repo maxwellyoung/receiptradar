@@ -16,7 +16,7 @@ import { WeeklyInsights } from "@/components/WeeklyInsights";
 import { debounce } from "lodash";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRadarMood } from "@/hooks/useRadarMood";
-import { RadarMood, RadarWorm } from "@/components/RadarWorm";
+import { RadarWorm } from "@/components/RadarWorm";
 
 const WORM_GREETINGS = [
   "Your grocery footprint, day by day.",
@@ -78,6 +78,7 @@ export default function DashboardScreen() {
           >
             Every Receipt Tells a Story
           </Text>
+          <RadarWorm mood={mood} size="small" visible={true} />
         </View>
         <Text
           variant="titleMedium"

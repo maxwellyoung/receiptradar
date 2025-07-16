@@ -1,25 +1,54 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, ActivityIndicator } from "react-native";
 import { Text, useTheme } from "react-native-paper";
 import { AppTheme } from "@/constants/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-
-// Mock data for insights - we'll replace this with real data later
-const mockInsights = {
-  weeklyDelta: -15.5, // -15.5% change from last week
-  averageSpend: 45.78,
-  topSplurge: {
-    item: "Avocados",
-    emoji: "🥑",
-  },
-};
+import { useAuthContext } from "@/contexts/AuthContext";
+import { useReceipts } from "@/hooks/useReceipts";
 
 export function WeeklyInsights() {
   const theme = useTheme<AppTheme>();
-  const isUpTrend = mockInsights.weeklyDelta >= 0;
+  const { user } = useAuthContext();
+  const { weeklyInsights, loading } = useReceipts(user?.id ?? "");
 
-  const trendColor = isUpTrend ? theme.colors.error : theme.colors.positive;
-  const trendIcon = isUpTrend ? "arrow-top-right" : "arrow-bottom-left";
+  if (loading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          styles.loadingContainer,
+          { backgroundColor: theme.colors.surfaceVariant },
+        ]}
+      >
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={{ marginTop: 10, color: theme.colors.onSurfaceVariant }}>
+          Calculating insights...
+        </Text>
+      </View>
+    );
+  }
+
+  const { weeklyDelta, averageSpend, topSplurge } = weeklyInsights;
+
+  const getTrend = () => {
+    if (weeklyDelta === 0) {
+      return {
+        color: theme.colors.onSurfaceVariant,
+        icon: "arrow-left-right",
+        text: "Flatline detected. Grocery zen?",
+      };
+    }
+    const isUp = weeklyDelta > 0;
+    return {
+      color: isUp ? theme.colors.error : theme.colors.positive,
+      icon: isUp ? "arrow-top-right" : "arrow-bottom-left",
+      text: `You spent ${Math.abs(weeklyDelta).toFixed(0)}% ${
+        isUp ? "more" : "less"
+      } than last week. ${isUp ? "Stay mindful." : "Nice work!"}`,
+    };
+  };
+
+  const trend = getTrend();
 
   return (
     <View
@@ -35,14 +64,14 @@ export function WeeklyInsights() {
         >
           Your weekly brief
         </Text>
-        <View style={[styles.pill, { backgroundColor: trendColor }]}>
+        <View style={[styles.pill, { backgroundColor: trend.color }]}>
           <MaterialCommunityIcons
-            name={trendIcon}
+            name={trend.icon}
             color={theme.colors.onPrimary}
             size={16}
           />
           <Text style={{ color: theme.colors.onPrimary, marginLeft: 4 }}>
-            {Math.abs(mockInsights.weeklyDelta)}%
+            {Math.abs(weeklyDelta).toFixed(0)}%
           </Text>
         </View>
       </View>
@@ -51,9 +80,7 @@ export function WeeklyInsights() {
         variant="headlineLarge"
         style={[styles.mainInsight, { color: theme.colors.onSurface }]}
       >
-        You spent {Math.abs(mockInsights.weeklyDelta)}%{" "}
-        {isUpTrend ? "more" : "less"} than last week.
-        {isUpTrend ? " Stay mindful!" : " Nice work!"}
+        {trend.text}
       </Text>
 
       <View style={styles.grid}>
@@ -62,7 +89,7 @@ export function WeeklyInsights() {
             Avg. Daily Spend
           </Text>
           <Text variant="headlineMedium" style={styles.boxValue}>
-            ${mockInsights.averageSpend.toFixed(2)}
+            ${averageSpend.toFixed(2)}
           </Text>
         </View>
         <View style={styles.insightBox}>
@@ -70,7 +97,7 @@ export function WeeklyInsights() {
             Top Indulgence
           </Text>
           <Text variant="headlineMedium" style={styles.boxValue}>
-            {mockInsights.topSplurge.emoji} {mockInsights.topSplurge.item}
+            {topSplurge.emoji} {topSplurge.item}
           </Text>
         </View>
       </View>
@@ -83,6 +110,11 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 16,
     marginBottom: 24,
+  },
+  loadingContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    height: 230,
   },
   header: {
     flexDirection: "row",

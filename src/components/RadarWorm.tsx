@@ -28,42 +28,45 @@ const moodConfig = {
   calm: {
     emoji: "🙂",
     color: "#34C759",
-    message: "Ah, a sensible shopper! My kind of receipt.",
+    message: "Frugal… suspiciously so. The worm nods.",
     eyeStyle: "normal",
     accessory: "monocle",
   },
   concerned: {
     emoji: "🤔",
     color: "#FF9500",
-    message: "My dear friend, those snack aisles are dangerous territory...",
+    message: "Those snack aisles... a siren's call to your wallet. Be strong.",
     eyeStyle: "narrow",
     accessory: "worried",
   },
   dramatic: {
     emoji: "😱",
     color: "#FF3B30",
-    message: "CAVIAR? In THIS economy? I'm having palpitations!",
+    message: "BY THE GHOST OF ESCOFFIER, WHAT IS THIS?! I must lie down.",
     eyeStyle: "wide",
     accessory: "fainting",
   },
   zen: {
     emoji: "🧘",
     color: "#AF52DE",
-    message: "You have achieved grocery enlightenment. I am in awe.",
+    message:
+      "The receipt is blank. The wallet is full. The worm has reached nirvana.",
     eyeStyle: "closed",
     accessory: "lotus",
   },
   suspicious: {
     emoji: "👀",
     color: "#FFCC00",
-    message: "Something's fishy here... and it's not the salmon.",
+    message:
+      "Three types of cheese? You're either building a cheese board or a cheese fort. The worm is watching.",
     eyeStyle: "squint",
     accessory: "magnifying",
   },
   insightful: {
     emoji: "✨",
     color: "#007AFF",
-    message: "You magnificent budget wizard! $9.60 saved! *bows deeply*",
+    message:
+      "A masterclass in couponing. You've saved enough for... another, smaller cucumber. Bravo.",
     eyeStyle: "sparkle",
     accessory: "crown",
   },
