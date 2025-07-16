@@ -13,6 +13,8 @@ import { useThemeContext } from "@/contexts/ThemeContext";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { AppTheme, borderRadius, spacing } from "@/constants/theme";
 import { AnimatePresence, MotiView } from "moti";
+import { useReceipts } from "@/hooks/useReceipts";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 const moodExamples = [
   {
@@ -69,10 +71,35 @@ const relationshipLevels = [
   "Soulmate",
 ];
 
+interface SpendingAnalytics {
+  totalSpent: number;
+  totalSavings: number;
+  totalCashback: number;
+  receiptCount: number;
+  averageReceiptValue: number;
+}
+
+const getWormTitle = (analytics: SpendingAnalytics) => {
+  if (analytics.totalSavings > 50) {
+    return { title: "Frugal Friend", icon: "hand-coin" as const };
+  }
+  if (analytics.averageReceiptValue > 100) {
+    return { title: "Splurger", icon: "cash-multiple" as const };
+  }
+  if (analytics.averageReceiptValue < 20) {
+    return { title: "Ascetic", icon: "leaf" as const };
+  }
+  return { title: "Novice Nibbler", icon: "food-apple-outline" as const };
+};
+
 export default function RadarDemoScreen() {
   const { theme } = useThemeContext();
+  const { user } = useAuthContext();
   const [selectedMood, setSelectedMood] = useState<RadarMood>("calm");
   const [interactionCount, setInteractionCount] = useState(0);
+  const { getSpendingAnalytics } = useReceipts(user?.id ?? "");
+  const analytics = getSpendingAnalytics();
+  const wormTitle = getWormTitle(analytics);
 
   const currentRelationshipLevel = Math.min(
     Math.floor(interactionCount / 2),
@@ -179,6 +206,31 @@ export default function RadarDemoScreen() {
               </TouchableOpacity>
             ))}
           </ScrollView>
+        </View>
+
+        {/* Worm Title */}
+        <View style={styles.moodSelectorContainer}>
+          <Text variant="titleLarge" style={styles.sectionTitle}>
+            Worm Title
+          </Text>
+          <MotiView
+            from={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: "spring" }}
+            style={[styles.mainCard, { backgroundColor: theme.colors.surface }]}
+          >
+            <MaterialCommunityIcons
+              name={wormTitle.icon}
+              size={48}
+              color={theme.colors.primary}
+            />
+            <Text
+              variant="titleLarge"
+              style={[styles.cardTitle, { marginTop: spacing.md }]}
+            >
+              {wormTitle.title}
+            </Text>
+          </MotiView>
         </View>
       </ScrollView>
     </SafeAreaView>

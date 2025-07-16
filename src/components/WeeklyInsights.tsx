@@ -34,14 +34,16 @@ export function WeeklyInsights() {
     if (weeklyDelta === 0) {
       return {
         color: theme.colors.onSurfaceVariant,
-        icon: "arrow-left-right",
+        icon: "arrow-left-right" as const,
         text: "Flatline detected. Grocery zen?",
       };
     }
     const isUp = weeklyDelta > 0;
     return {
       color: isUp ? theme.colors.error : theme.colors.positive,
-      icon: isUp ? "arrow-top-right" : "arrow-bottom-left",
+      icon: isUp
+        ? ("arrow-top-right" as const)
+        : ("arrow-bottom-left" as const),
       text: `You spent ${Math.abs(weeklyDelta).toFixed(0)}% ${
         isUp ? "more" : "less"
       } than last week. ${isUp ? "Stay mindful." : "Nice work!"}`,
@@ -107,7 +109,7 @@ export function WeeklyInsights() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
+    padding: 24,
     borderRadius: 16,
     marginBottom: 24,
   },
@@ -131,6 +133,7 @@ const styles = StyleSheet.create({
   },
   mainInsight: {
     marginBottom: 20,
+    paddingHorizontal: 4,
     fontFamily: "Inter_600SemiBold",
     lineHeight: 36,
   },

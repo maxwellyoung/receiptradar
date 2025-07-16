@@ -44,9 +44,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size, focused }) => (
             <MaterialCommunityIcons
-              name="script-text-outline"
+              name={focused ? "script-text" : "script-text-outline"}
               size={size}
               color={color}
             />
@@ -68,9 +68,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="radar-demo"
         options={{
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size, focused }) => (
             <MaterialCommunityIcons
-              name="account-heart-outline"
+              name={focused ? "account-heart" : "account-heart-outline"}
               size={size}
               color={color}
             />
@@ -80,9 +80,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size, focused }) => (
             <MaterialCommunityIcons
-              name="tune-variant"
+              name={focused ? "tune" : "tune-variant"}
               size={size}
               color={color}
             />

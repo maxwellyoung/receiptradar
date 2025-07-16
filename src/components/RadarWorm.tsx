@@ -473,6 +473,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 16,
+    paddingHorizontal: 32,
   },
   speechBubble: {
     backgroundColor: "white",
@@ -480,7 +481,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 18,
     marginBottom: 16,
-    maxWidth: 260,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,

@@ -1,5 +1,6 @@
 import React from "react";
 import { View, ScrollView, StyleSheet } from "react-native";
+import { Defs, Stop, LinearGradient } from "react-native-svg";
 import { Text, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthContext } from "@/contexts/AuthContext";
@@ -11,6 +12,9 @@ import {
   VictoryLine,
   VictoryScatter,
   VictoryAxis,
+  VictoryArea,
+  VictoryBar,
+  VictoryLabel,
 } from "victory-native";
 import { MotiView } from "moti";
 
@@ -62,6 +66,40 @@ const StatCard = ({
   );
 };
 
+const CategorySpendingBar = ({
+  category,
+  amount,
+  total,
+  color,
+  backgroundColor,
+}: {
+  category: string;
+  amount: number;
+  total: number;
+  color: string;
+  backgroundColor: string;
+}) => {
+  const percentage = total > 0 ? (amount / total) * 100 : 0;
+  return (
+    <View style={styles.categoryBarContainer}>
+      <View style={styles.categoryBarText}>
+        <Text variant="bodyLarge">{category}</Text>
+        <Text variant="bodyLarge" style={{ color }}>
+          ${amount.toFixed(2)}
+        </Text>
+      </View>
+      <View style={[styles.progressBar, { backgroundColor }]}>
+        <MotiView
+          from={{ width: "0%" }}
+          animate={{ width: `${percentage}%` }}
+          transition={{ type: "timing", duration: 1000 }}
+          style={[styles.progressBarFill, { backgroundColor: color }]}
+        />
+      </View>
+    </View>
+  );
+};
+
 export default function TrendsScreen() {
   const theme = useTheme<AppTheme>();
   const { user } = useAuthContext();
@@ -70,15 +108,22 @@ export default function TrendsScreen() {
 
   const weeklySpending = getWeeklySpending(4);
   const categories = Object.entries(getSpendingByCategory()).map(
-    ([name, amount]) => ({ name, amount })
+    ([name, amount]) => ({ name, amount: amount as number })
   );
   const analytics = getSpendingAnalytics();
+
+  const totalCategorySpending = categories.reduce(
+    (sum, cat) => sum + cat.amount,
+    0
+  );
 
   const averagePerWeek =
     weeklySpending.length > 0
       ? weeklySpending.reduce((sum, week) => sum + week.total, 0) /
         weeklySpending.length
       : 0;
+
+  const maxSpend = Math.max(...weeklySpending.map((week) => week.total));
 
   const chartData = weeklySpending.map((week, index) => ({
     x: week.week,
@@ -133,21 +178,29 @@ export default function TrendsScreen() {
         </Section>
 
         <Section title="Weekly Spending">
-          <VictoryChart height={250}>
-            <VictoryLine
+          <VictoryChart
+            height={250}
+            padding={{ top: 40, bottom: 40, left: 20, right: 20 }}
+            domainPadding={{ x: 20 }}
+          >
+            <VictoryBar
               data={chartData}
               style={{
-                data: { stroke: theme.colors.primary, strokeWidth: 3 },
+                data: {
+                  fill: ({ datum }) =>
+                    datum.y > averagePerWeek * 1.2
+                      ? theme.colors.error
+                      : theme.colors.primary,
+                  width: 25,
+                  borderRadius: 6,
+                },
               }}
               animate={{
                 duration: 1000,
                 onLoad: { duration: 500 },
               }}
-            />
-            <VictoryScatter
-              data={chartData}
-              size={5}
-              style={{ data: { fill: theme.colors.primary } }}
+              labels={({ datum }) => (datum.y === maxSpend ? "🔥" : null)}
+              labelComponent={<VictoryLabel dy={-20} />}
             />
             <VictoryAxis
               style={{
@@ -168,23 +221,40 @@ export default function TrendsScreen() {
           </VictoryChart>
         </Section>
 
-        <Section title="Category Breakdown">
-          {(categories ?? []).map((category, index) => (
-            <MotiView
-              from={{ opacity: 0, translateY: 10 }}
-              animate={{ opacity: 1, translateY: 0 }}
-              transition={{ type: "timing", duration: 500, delay: index * 100 }}
-              key={category.name}
+        {analytics.totalSavings > 0 && (
+          <Section title="Savings Spotlight">
+            <View
               style={[
-                styles.categoryItem,
-                { backgroundColor: theme.colors.surface },
+                styles.statCard,
+                { backgroundColor: theme.colors.surface, alignItems: "center" },
               ]}
             >
-              <Text variant="bodyLarge">{category.name}</Text>
-              <Text variant="bodyLarge" style={{ color: theme.colors.primary }}>
-                ${(category.amount ?? 0).toFixed(2)}
+              <Text
+                variant="headlineSmall"
+                style={{ color: theme.colors.positive }}
+              >
+                You saved ${analytics.totalSavings.toFixed(2)}!
               </Text>
-            </MotiView>
+              <Text
+                variant="bodyLarge"
+                style={{ color: theme.colors.onSurfaceVariant, marginTop: 8 }}
+              >
+                That's enough for a fancy tub of hummus. The worm approves.
+              </Text>
+            </View>
+          </Section>
+        )}
+
+        <Section title="Category Breakdown">
+          {categories.map((category, index) => (
+            <CategorySpendingBar
+              key={category.name}
+              category={category.name}
+              amount={category.amount}
+              total={totalCategorySpending}
+              color={theme.colors.primary}
+              backgroundColor={theme.colors.surfaceVariant}
+            />
           ))}
         </Section>
       </ScrollView>
@@ -222,12 +292,22 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     alignItems: "center",
   },
-  categoryItem: {
+  categoryBarContainer: {
+    marginBottom: spacing.md,
+  },
+  categoryBarText: {
     flexDirection: "row",
     justifyContent: "space-between",
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  progressBar: {
+    height: 8,
+    borderRadius: borderRadius.sm,
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    borderRadius: borderRadius.sm,
   },
   emptyContainer: {
     flex: 1,

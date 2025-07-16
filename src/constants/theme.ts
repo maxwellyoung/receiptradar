@@ -138,30 +138,32 @@ const fontConfig = {
 
 // 2. Colour Palette (Light Mode)
 const lightColors = {
-  background: "#FAFAFA", // Off White
+  background: "#F9F9FB", // Even lighter off-white
   primary: "#FF3B30", // Tomato Red (for the worm, highlights)
-  secondary: "#4A4A4A", // Slate Gray (text/icons)
+  secondary: "#3A3A3C", // Near Black for text
   surface: "#FFFFFF", // For cards
-  accent: "#FF3B30", // Alias for primary
-  onSurface: "#000000",
-  text: "#4A4A4A",
+  surfaceVariant: "#EEF2F5", // Notion-esque lavender grey-blue
+  onSurface: "#1C1C1E",
+  onSurfaceVariant: "#6b7280", // Muted grey for secondary text
+  text: "#1C1C1E",
+  accent: "#5E5CE6", // Vibrant Blue/Purple
   positive: "#30D158", // Emerald
-  negative: "#FF9500", // Orange
   error: "#FF3B30",
   notification: "#FF9500",
 };
 
 // 3. Colour Palette (Dark Mode)
 const darkColors = {
-  background: "#1C1C1E", // Dark background
-  primary: "#FF3B30", // Tomato Red (brighter for contrast)
+  background: "#161618", // Deeper dark background
+  primary: "#FF453A", // Brighter Tomato Red
   secondary: "#E5E5EA", // Lighter gray for text/icons
-  surface: "#2C2C2E", // For cards
-  accent: "#FF3B30", // Alias for primary
+  surface: "#232326", // Slightly lighter card background
+  surfaceVariant: "#33373E", // Darker lavender grey-blue
   onSurface: "#FFFFFF",
-  text: "#E5E5EA",
+  onSurfaceVariant: "#9ca3af", // Lighter muted grey
+  text: "#FFFFFF",
+  accent: "#6466F1", // Brighter Blue/Purple
   positive: "#32D74B", // Brighter Emerald
-  negative: "#FF9F0A", // Brighter Orange
   error: "#FF453A",
   notification: "#FF9F0A",
 };
