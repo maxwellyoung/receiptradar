@@ -1,0 +1,103 @@
+# Testing Standards
+
+## Mobile App Testing
+
+### Unit Testing
+
+- Use Jest as testing framework (configured in [package.json](mdc:package.json))
+- Test business logic in hooks and utilities
+- Mock external dependencies (APIs, storage)
+- Test component rendering and interactions
+- Use React Native Testing Library for component tests
+
+### Integration Testing
+
+- Test API integration with mocked responses
+- Test navigation flows with Expo Router
+- Test state management with Zustand
+- Test authentication flows
+- Test camera and image processing features
+
+### E2E Testing
+
+- Use Detox for end-to-end testing
+- Test complete user journeys
+- Test on both iOS and Android
+- Test offline functionality
+- Test performance under load
+
+## Backend Testing
+
+### Unit Testing
+
+- Use pytest for Python services
+- Test business logic in isolation
+- Mock external dependencies (OCR, database)
+- Test API endpoint handlers
+- Test data validation and parsing
+
+### Integration Testing
+
+- Test database operations
+- Test API endpoint integration
+- Test OCR processing pipeline
+- Test price intelligence calculations
+- Test authentication and authorization
+
+### API Testing
+
+- Test all endpoints with various inputs
+- Test error handling and edge cases
+- Test rate limiting and security
+- Test response formats and status codes
+- Use tools like Postman or pytest-httpx
+
+## Test Structure
+
+```
+tests/
+├── unit/           # Unit tests
+├── integration/    # Integration tests
+├── e2e/           # End-to-end tests
+├── fixtures/      # Test data and mocks
+└── utils/         # Testing utilities
+```
+
+## Testing Best Practices
+
+- Write tests before or alongside code (TDD)
+- Use descriptive test names
+- Keep tests independent and isolated
+- Use proper test data and fixtures
+- Mock external dependencies consistently
+- Test both success and failure scenarios
+- Maintain good test coverage (>80%)
+
+## Test Data Management
+
+- Use factories for test data creation
+- Clean up test data after tests
+- Use separate test databases
+- Mock sensitive data appropriately
+- Use realistic test scenarios
+
+## Performance Testing
+
+- Test API response times
+- Test mobile app performance
+- Test memory usage and leaks
+- Test under various network conditions
+- Test with large datasets
+
+## Continuous Integration
+
+- Run tests on every commit
+- Enforce test coverage requirements
+- Run different test types in parallel
+- Generate test reports and coverage
+- Block merges on test failures
+  description:
+  globs:
+  alwaysApply: false
+
+---

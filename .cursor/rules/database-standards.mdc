@@ -1,0 +1,71 @@
+# Database Standards
+
+## Database Architecture
+
+- **Primary**: PostgreSQL for analytics and B2B data
+- **Auth/Storage**: Supabase for user authentication and file storage
+- **Schema**: Defined in [database/schema.sql](mdc:database/schema.sql)
+- **Migrations**: Version-controlled schema changes
+
+## Schema Design Principles
+
+- Normalize data to reduce redundancy
+- Use appropriate data types for each column
+- Implement proper indexing for query performance
+- Use foreign keys for referential integrity
+- Include audit fields (created_at, updated_at)
+
+## Key Tables
+
+- **Users**: User profiles and authentication data
+- **Receipts**: Receipt metadata and parsed data
+- **Items**: Individual products from receipts
+- **Stores**: Store information and locations
+- **Prices**: Historical price data for products
+- **Categories**: Product categorization
+- **Savings**: Calculated savings opportunities
+
+## Data Relationships
+
+- Users have many Receipts
+- Receipts have many Items
+- Items belong to Categories
+- Prices are tracked per Item and Store
+- Savings are calculated per Receipt
+
+## Query Optimization
+
+- Use appropriate indexes for frequent queries
+- Implement query caching where beneficial
+- Use pagination for large result sets
+- Optimize joins for complex queries
+- Monitor query performance regularly
+
+## Data Integrity
+
+- Use constraints to enforce data rules
+- Implement proper validation at application level
+- Use transactions for multi-step operations
+- Backup data regularly
+- Implement data archiving for old records
+
+## Security
+
+- Encrypt sensitive data at rest
+- Use parameterized queries to prevent SQL injection
+- Implement row-level security where appropriate
+- Audit database access and changes
+- Use connection pooling for performance
+
+## Migration Strategy
+
+- Version all schema changes
+- Test migrations on staging environment
+- Implement rollback procedures
+- Document breaking changes
+- Coordinate migrations across services
+  description:
+  globs:
+  alwaysApply: false
+
+---

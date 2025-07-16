@@ -1,0 +1,61 @@
+# React Native Development Standards
+
+## File Structure & Organization
+
+- Use Expo Router file-based routing in [app/](mdc:app/) directory
+- Components go in [src/components/](mdc:src/components/)
+- Hooks go in [src/hooks/](mdc:src/hooks/)
+- Services go in [src/services/](mdc:src/services/)
+- Types go in [src/types/](mdc:src/types/)
+- Constants go in [src/constants/](mdc:src/constants/)
+
+## Import Paths
+
+Use TypeScript path aliases defined in [tsconfig.json](mdc:tsconfig.json):
+
+```typescript
+import { Component } from "@/components/Component";
+import { useHook } from "@/hooks/useHook";
+import { service } from "@/services/service";
+```
+
+## Component Standards
+
+- Use functional components with TypeScript
+- Prefer React Native Paper components for UI consistency
+- Use Moti for animations and micro-interactions
+- Implement proper error boundaries and loading states
+- Use React Native Gesture Handler for touch interactions
+
+## State Management
+
+- Use Zustand for global state management
+- Use React Context for theme and auth state
+- Prefer local state for component-specific data
+- Use AsyncStorage for persistent data
+
+## Styling
+
+- Use React Native StyleSheet for performance
+- Follow the design system in [src/constants/theme.ts](mdc:src/constants/theme.ts)
+- Use responsive design patterns for different screen sizes
+- Implement dark/light theme support
+
+## Performance
+
+- Use React.memo for expensive components
+- Implement proper list virtualization for large datasets
+- Use expo-image for optimized image loading
+- Minimize re-renders with proper dependency arrays
+
+## Testing
+
+- Write unit tests for business logic
+- Use React Native Testing Library for component tests
+- Test navigation flows with Expo Router
+- Mock external dependencies appropriately
+  description:
+  globs:
+  alwaysApply: false
+
+---

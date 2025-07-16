@@ -1,0 +1,63 @@
+# API Integration Standards
+
+## Mobile App API Integration
+
+- **OCR Service**: Receipt parsing and price analysis via [src/services/ocr.ts](mdc:src/services/ocr.ts)
+- **Supabase**: Authentication and data storage via [src/services/supabase.ts](mdc:src/services/supabase.ts)
+- **Error Handling**: Implement proper error boundaries and retry logic
+- **Caching**: Use AsyncStorage for offline data persistence
+
+## Backend API Endpoints
+
+### OCR Service ([ocr/main.py](mdc:ocr/main.py))
+
+```python
+POST /parse              # Parse receipt image
+POST /analyze-savings    # Analyze potential savings
+GET /price-history/{item} # Get price history for item
+GET /store-comparison/{item} # Compare prices across stores
+```
+
+### B2B API ([ocr/b2b_api.py](mdc:ocr/b2b_api.py))
+
+```python
+GET /basket-intelligence/summary    # Basket analytics
+GET /demand-pulse/category         # Demand trends
+GET /price-intelligence/competition # Price competition data
+```
+
+## API Design Principles
+
+- Use consistent JSON response formats
+- Implement proper HTTP status codes
+- Include error messages and validation details
+- Use pagination for large datasets
+- Implement rate limiting and authentication
+
+## Data Models
+
+- Use TypeScript interfaces in [src/types/](mdc:src/types/)
+- Use Pydantic models in Python services
+- Maintain consistency between frontend and backend types
+- Version API endpoints for backward compatibility
+
+## Error Handling
+
+- Implement proper error boundaries in React Native
+- Use try-catch blocks for API calls
+- Provide user-friendly error messages
+- Log errors for debugging
+- Implement retry logic for transient failures
+
+## Performance
+
+- Use request caching where appropriate
+- Implement request debouncing for search
+- Optimize image uploads with compression
+- Use background sync for offline data
+- Monitor API response times
+  description:
+  globs:
+  alwaysApply: false
+
+---

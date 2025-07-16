@@ -1,0 +1,129 @@
+{
+  "countdown": {
+    "store_id": "countdown_001",
+    "store_name": "Countdown",
+    "base_url": "https://shop.countdown.co.nz",
+    "selectors": {
+      "product_container": "[data-testid=\"product-tile\"]",
+      "price": "[data-testid=\"price\"]",
+      "product_name": "[data-testid=\"product-name\"]"
+    },
+    "items": [
+      "milk",
+      "bread",
+      "eggs",
+      "bananas",
+      "apples",
+      "chicken breast",
+      "ground beef",
+      "rice",
+      "pasta",
+      "tomatoes",
+      "onions",
+      "potatoes",
+      "cheese",
+      "butter",
+      "yoghurt",
+      "cereal",
+      "coffee",
+      "tea",
+      "orange juice",
+      "cola",
+      "laundry detergent",
+      "dish soap",
+      "toilet paper"
+    ]
+  },
+  "new_world": {
+    "store_id": "new_world_001",
+    "store_name": "New World",
+    "base_url": "https://shop.newworld.co.nz",
+    "selectors": {
+      "product_container": ".product-tile",
+      "price": ".price",
+      "product_name": ".product-name"
+    },
+    "items": [
+      "milk",
+      "bread",
+      "eggs",
+      "bananas",
+      "apples",
+      "chicken breast",
+      "ground beef",
+      "rice",
+      "pasta",
+      "tomatoes",
+      "onions",
+      "potatoes",
+      "cheese",
+      "butter",
+      "yoghurt",
+      "cereal",
+      "coffee",
+      "tea",
+      "orange juice",
+      "cola",
+      "laundry detergent",
+      "dish soap",
+      "toilet paper"
+    ]
+  },
+  "paknsave": {
+    "store_id": "paknsave_001",
+    "store_name": "Pak'nSave",
+    "base_url": "https://shop.paknsave.co.nz",
+    "selectors": {
+      "product_container": ".product-item",
+      "price": ".price-value",
+      "product_name": ".product-title"
+    },
+    "items": [
+      "milk",
+      "bread",
+      "eggs",
+      "bananas",
+      "apples",
+      "chicken breast",
+      "ground beef",
+      "rice",
+      "pasta",
+      "tomatoes",
+      "onions",
+      "potatoes",
+      "cheese",
+      "butter",
+      "yoghurt",
+      "cereal",
+      "coffee",
+      "tea",
+      "orange juice",
+      "cola",
+      "laundry detergent",
+      "dish soap",
+      "toilet paper"
+    ]
+  },
+  "fresh_choice": {
+    "store_id": "fresh_choice_001",
+    "store_name": "Fresh Choice",
+    "base_url": "https://nelsoncity.store.freshchoice.co.nz",
+    "selectors": {
+      "product_container": ".shopping-list.search_results",
+      "price": ".talker__controls__layout span",
+      "product_name": ".talker__name.talker__section"
+    },
+    "items": ["milk", "bread", "eggs", "bananas", "apples", "chicken breast"]
+  },
+  "super_value": {
+    "store_id": "super_value_001",
+    "store_name": "Super Value",
+    "base_url": "https://stanmore.store.supervalue.co.nz",
+    "selectors": {
+      "product_container": ".shopping-list.search_results",
+      "price": ".talker__controls__layout span",
+      "product_name": ".talker__name.talker__section"
+    },
+    "items": ["milk", "bread", "eggs", "bananas", "apples", "chicken breast"]
+  }
+}

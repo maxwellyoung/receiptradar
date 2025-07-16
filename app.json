@@ -1,0 +1,85 @@
+{
+  "expo": {
+    "name": "Receipt Worm",
+    "slug": "receipt-worm",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.receiptradar.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "ReceiptRadar needs camera access to scan grocery receipts and track your spending.",
+        "NSPhotoLibraryUsageDescription": "ReceiptRadar needs photo library access to select receipt images for scanning.",
+        "NSLocationWhenInUseUsageDescription": "ReceiptRadar uses location to suggest nearby stores and calculate savings."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.receiptradar.app",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.POST_NOTIFICATIONS"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "ReceiptRadar needs camera access to scan grocery receipts."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#ffffff"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "ReceiptRadar needs photo library access to select receipt images."
+        }
+      ],
+      [
+        "expo-apple-authentication",
+        {
+          "appleTeamId": "AWN2WCN26Y"
+        }
+      ],
+      "expo-font"
+    ],
+    "scheme": "receiptradar",
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      }
+    }
+  }
+}

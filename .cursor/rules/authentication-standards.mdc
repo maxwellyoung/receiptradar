@@ -1,0 +1,50 @@
+# Authentication & Security Standards
+
+## Authentication Flow
+
+- **Primary**: Apple Sign-In for iOS users (configured in [app.json](mdc:app.json))
+- **Secondary**: Supabase Auth for cross-platform support
+- **Backend**: API key authentication for B2B endpoints
+
+## Apple Sign-In Implementation
+
+- Configuration in [app.json](mdc:app.json) with team ID
+- Implementation in [src/services/appleAuth.ts](mdc:src/services/appleAuth.ts)
+- Test component in [src/components/AppleAuthTest.tsx](mdc:src/components/AppleAuthTest.tsx)
+- Setup documentation in [APPLE_AUTH_SETUP.md](mdc:APPLE_AUTH_SETUP.md)
+
+## Supabase Integration
+
+- Client configuration in [src/constants/supabase.ts](mdc:src/constants/supabase.ts)
+- Auth context in [src/contexts/AuthContext.tsx](mdc:src/contexts/AuthContext.tsx)
+- Service layer in [src/services/supabase.ts](mdc:src/services/supabase.ts)
+- Setup guide in [SUPABASE_SETUP.md](mdc:SUPABASE_SETUP.md)
+
+## Security Best Practices
+
+- Store sensitive data in Expo SecureStore
+- Use environment variables for API keys
+- Implement proper token refresh logic
+- Validate all user inputs
+- Use HTTPS for all API communications
+- Implement rate limiting on backend APIs
+
+## Permission Handling
+
+- Camera permissions for receipt scanning
+- Photo library access for image selection
+- Location permissions for store recommendations
+- Notification permissions for price alerts
+
+## Data Protection
+
+- Encrypt sensitive user data
+- Implement proper data retention policies
+- Use anonymized data for B2B analytics
+- Follow GDPR/privacy regulations
+- Secure API key management for B2B clients
+  description:
+  globs:
+  alwaysApply: false
+
+---

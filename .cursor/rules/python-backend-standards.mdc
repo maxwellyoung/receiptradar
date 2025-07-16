@@ -1,0 +1,62 @@
+# Python Backend Development Standards
+
+## Service Architecture
+
+- **OCR Service**: [ocr/main.py](mdc:ocr/main.py) - Main FastAPI application for receipt processing
+- **B2B API**: [ocr/b2b_api.py](mdc:ocr/b2b_api.py) - Business intelligence endpoints
+- **Price Intelligence**: [ocr/price_intelligence.py](mdc:ocr/price_intelligence.py) - Price analysis logic
+- **Price Scraper**: [ocr/price_scraper.py](mdc:ocr/price_scraper.py) - Web scraping service
+- **Receipt Parser**: [ocr/receipt_parser.py](mdc:ocr/receipt_parser.py) - OCR processing logic
+
+## Code Standards
+
+- Use FastAPI for all web services
+- Follow PEP 8 style guidelines
+- Use type hints for all function parameters and return values
+- Implement proper error handling with custom exceptions
+- Use async/await for I/O operations
+- Use Pydantic models for request/response validation
+
+## API Design
+
+- RESTful endpoints with proper HTTP status codes
+- Use OpenAPI/Swagger documentation
+- Implement rate limiting and authentication
+- Use proper CORS configuration
+- Return consistent JSON response formats
+
+## Database
+
+- Use async SQLAlchemy for database operations
+- Implement proper connection pooling
+- Use migrations for schema changes
+- Follow the schema in [database/schema.sql](mdc:database/schema.sql)
+- Use environment variables for database configuration
+
+## Testing
+
+- Write unit tests for all business logic
+- Use pytest for testing framework
+- Mock external dependencies (OCR, web scraping)
+- Test API endpoints with proper fixtures
+- Maintain test coverage above 80%
+
+## Dependencies
+
+- Core dependencies in [ocr/requirements.txt](mdc:ocr/requirements.txt)
+- Use virtual environments for development
+- Pin dependency versions for production stability
+- Regular security updates for dependencies
+
+## Deployment
+
+- Use Docker containers for deployment
+- Configuration in [ocr/Dockerfile](mdc:ocr/Dockerfile)
+- Docker Compose for local development
+- Environment-specific configuration files
+- Proper logging and monitoring setup
+  description:
+  globs:
+  alwaysApply: false
+
+---

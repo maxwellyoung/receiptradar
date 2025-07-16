@@ -1,0 +1,41 @@
+# ReceiptRadar Project Overview
+
+ReceiptRadar is a comprehensive grocery intelligence platform combining consumer savings with B2B data insights. The project follows a multi-service architecture with React Native mobile app, Python OCR service, and Supabase backend.
+
+## Architecture Overview
+
+### Core Services
+
+- **React Native Mobile App** ([app/](mdc:app/)) - Main consumer interface with Expo Router
+- **OCR Service** ([ocr/main.py](mdc:ocr/main.py)) - FastAPI service for receipt parsing and price intelligence
+- **B2B API** ([ocr/b2b_api.py](mdc:ocr/b2b_api.py)) - Business intelligence and analytics API
+- **Price Intelligence** ([ocr/price_intelligence.py](mdc:ocr/price_intelligence.py)) - Price tracking and comparison logic
+- **Price Scraper** ([ocr/price_scraper.py](mdc:ocr/price_scraper.py)) - Web scraping for price data
+- **Supabase** - Authentication, storage, and real-time features
+
+### Key Technologies
+
+- **Frontend**: React Native with Expo, TypeScript, Zustand for state management
+- **Backend**: Python FastAPI, PaddleOCR, Playwright
+- **Database**: PostgreSQL with Supabase
+- **Authentication**: Apple Sign-In, Supabase Auth
+- **Deployment**: Docker, Fly.io
+
+## Development Phases
+
+1. **Phase 1**: Consumer Loop (receipt scanning, price comparison, savings)
+2. **Phase 2**: Data Engine (price scraping, basket intelligence)
+3. **Phase 3**: B2B Platform (demand analytics, POS integration)
+
+## Key Files
+
+- [package.json](mdc:package.json) - Mobile app dependencies and scripts
+- [app.json](mdc:app.json) - Expo configuration
+- [tsconfig.json](mdc:tsconfig.json) - TypeScript configuration with path aliases
+- [ocr/requirements.txt](mdc:ocr/requirements.txt) - Python dependencies
+- [database/schema.sql](mdc:database/schema.sql) - Database schema
+  description:
+  globs:
+  alwaysApply: false
+
+---

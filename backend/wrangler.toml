@@ -1,0 +1,48 @@
+# wrangler.toml for ReceiptRadar backend
+#
+# For local development, you can use a .env file with the same variable names.
+# Cloudflare Workers use this file for environment variables in dev and deploy.
+
+name = "receiptradar-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[env.production]
+name = "receiptradar-api"
+
+[env.production.vars]
+ENVIRONMENT = "production"
+SUPABASE_URL = "https://cihuylmusthumxpuexrl.supabase.co"
+SUPABASE_ANON_KEY = "<your_supabase_anon_key>"
+SUPABASE_SERVICE_ROLE_KEY = "<your_supabase_service_role_key>"
+OCR_SERVICE_URL = "https://receiptradar-ocr.fly.dev" # or your local OCR URL
+STRIPE_SECRET_KEY = "<your_stripe_secret_key>"
+STRIPE_WEBHOOK_SECRET = "<your_stripe_webhook_secret>"
+
+[env.staging]
+name = "receiptradar-api-staging"
+
+[env.staging.vars]
+ENVIRONMENT = "staging"
+SUPABASE_URL = "https://cihuylmusthumxpuexrl.supabase.co"
+SUPABASE_ANON_KEY = "<your_supabase_anon_key>"
+SUPABASE_SERVICE_ROLE_KEY = "<your_supabase_service_role_key>"
+OCR_SERVICE_URL = "https://receiptradar-ocr-staging.fly.dev" # or your local OCR URL
+STRIPE_SECRET_KEY = "<your_staging_stripe_secret_key>"
+STRIPE_WEBHOOK_SECRET = "<your_staging_webhook_secret>"
+
+[[env.production.r2_buckets]]
+binding = "RECEIPT_IMAGES"
+bucket_name = "receiptradar-images"
+
+[[env.staging.r2_buckets]]
+binding = "RECEIPT_IMAGES"
+bucket_name = "receiptradar-images-staging"
+
+[[env.production.kv_namespaces]]
+binding = "RATE_LIMITS"
+id = "your-kv-namespace-id"
+
+[[env.staging.kv_namespaces]]
+binding = "RATE_LIMITS"
+id = "your-staging-kv-namespace-id" 

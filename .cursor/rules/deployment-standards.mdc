@@ -1,0 +1,129 @@
+# Deployment & Infrastructure Standards
+
+## Mobile App Deployment
+
+### Development
+
+- Use Expo development builds for testing
+- Test on both iOS and Android simulators
+- Use Expo Go for quick prototyping
+- Implement proper environment configuration
+
+### Production
+
+- Use EAS Build for app store builds
+- Configure builds in [app.json](mdc:app.json)
+- Implement proper code signing
+- Use staged rollouts for new versions
+- Monitor crash reports and analytics
+
+### App Store Process
+
+- Follow Apple App Store guidelines
+- Implement proper app store metadata
+- Use TestFlight for beta testing
+- Coordinate releases with backend changes
+- Monitor app store reviews and ratings
+
+## Backend Deployment
+
+### Docker Configuration
+
+- Use [ocr/Dockerfile](mdc:ocr/Dockerfile) for containerization
+- Configure [ocr/docker-compose.yml](mdc:ocr/docker-compose.yml) for local development
+- Use multi-stage builds for optimization
+- Implement proper health checks
+- Use environment-specific configurations
+
+### Cloud Deployment
+
+- Deploy to Fly.io using [ocr/fly.toml](mdc:ocr/fly.toml)
+- Use proper environment variables
+- Implement auto-scaling policies
+- Monitor application performance
+- Set up proper logging and monitoring
+
+### Database Deployment
+
+- Use Supabase for production database
+- Implement proper backup strategies
+- Use read replicas for performance
+- Monitor database performance
+- Implement proper connection pooling
+
+## Environment Management
+
+### Configuration
+
+- Use environment variables for configuration
+- Separate development, staging, and production configs
+- Use secrets management for sensitive data
+- Implement proper configuration validation
+- Document all configuration options
+
+### Environment Variables
+
+- Database connection strings
+- API keys and secrets
+- Feature flags and toggles
+- Logging levels and configurations
+- External service endpoints
+
+## Monitoring & Observability
+
+### Application Monitoring
+
+- Implement proper logging throughout the application
+- Use structured logging for better analysis
+- Monitor API response times and error rates
+- Track user engagement and feature usage
+- Set up alerts for critical issues
+
+### Infrastructure Monitoring
+
+- Monitor server resources (CPU, memory, disk)
+- Track database performance and connections
+- Monitor network latency and bandwidth
+- Set up automated scaling based on metrics
+- Implement proper alerting and escalation
+
+## Security
+
+### Application Security
+
+- Use HTTPS for all communications
+- Implement proper authentication and authorization
+- Validate all user inputs
+- Use secure coding practices
+- Regular security audits and updates
+
+### Infrastructure Security
+
+- Use secure network configurations
+- Implement proper access controls
+- Regular security updates and patches
+- Monitor for security threats
+- Implement proper backup and disaster recovery
+
+## CI/CD Pipeline
+
+### Automated Testing
+
+- Run tests on every commit
+- Use different test environments
+- Implement proper test reporting
+- Block deployments on test failures
+- Use parallel testing for faster feedback
+
+### Deployment Automation
+
+- Automated builds and deployments
+- Use blue-green deployments for zero downtime
+- Implement proper rollback procedures
+- Monitor deployment success rates
+- Use feature flags for gradual rollouts
+  description:
+  globs:
+  alwaysApply: false
+
+---

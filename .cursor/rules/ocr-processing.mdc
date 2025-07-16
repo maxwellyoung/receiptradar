@@ -1,0 +1,62 @@
+# OCR Processing Standards
+
+## Core OCR Components
+
+- **Main Service**: [ocr/main.py](mdc:ocr/main.py) - FastAPI application with OCR endpoints
+- **Receipt Parser**: [ocr/receipt_parser.py](mdc:ocr/receipt_parser.py) - Core parsing logic
+- **Price Intelligence**: [ocr/price_intelligence.py](mdc:ocr/price_intelligence.py) - Price analysis
+- **Debug Tools**: [ocr/debug_ocr.py](mdc:ocr/debug_ocr.py) - Development debugging
+
+## OCR Processing Pipeline
+
+1. **Image Preprocessing**: Enhance image quality for better OCR accuracy
+2. **Text Extraction**: Use PaddleOCR for text recognition
+3. **Data Parsing**: Extract items, prices, dates, store information
+4. **Validation**: Verify extracted data against expected patterns
+5. **Price Analysis**: Compare with historical data and other stores
+6. **Savings Calculation**: Identify potential savings opportunities
+
+## Accuracy Standards
+
+- Target 95% accuracy for receipt parsing
+- Implement confidence scoring for extracted data
+- Use multiple OCR engines for validation
+- Provide manual correction options for users
+- Track accuracy metrics over time
+
+## Image Handling
+
+- Support multiple image formats (JPEG, PNG, HEIC)
+- Implement image compression for uploads
+- Use proper image preprocessing techniques
+- Handle different receipt layouts and formats
+- Support both camera and gallery uploads
+
+## Data Extraction
+
+- **Items**: Product names, quantities, unit prices, total prices
+- **Store Information**: Store name, location, receipt number
+- **Date/Time**: Transaction date and time
+- **Totals**: Subtotal, tax, discounts, final total
+- **Payment Method**: Credit card, cash, etc.
+
+## Error Handling
+
+- Graceful handling of poor quality images
+- Partial data extraction when full parsing fails
+- User feedback for failed parsing attempts
+- Retry mechanisms for transient failures
+- Fallback to manual entry when needed
+
+## Performance Optimization
+
+- Async processing for multiple receipts
+- Caching of parsed results
+- Batch processing for bulk uploads
+- Optimized image preprocessing
+- Efficient database queries for price lookups
+  description:
+  globs:
+  alwaysApply: false
+
+---

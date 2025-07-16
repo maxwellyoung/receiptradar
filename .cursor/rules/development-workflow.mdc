@@ -1,0 +1,78 @@
+# Development Workflow & Setup
+
+## Environment Setup
+
+1. **Mobile App**: Node.js 18+, Expo CLI, iOS Simulator/Android Emulator
+2. **OCR Service**: Python 3.11+, Docker, PostgreSQL
+3. **Database**: Docker Compose for local development
+
+## Development Commands
+
+### Mobile App
+
+```bash
+npm install                    # Install dependencies
+npx expo start                 # Start development server
+npx expo start --ios          # iOS simulator
+npx expo start --android      # Android emulator
+npm run lint                   # Run ESLint
+npm run type-check            # TypeScript check
+```
+
+### OCR Service
+
+```bash
+cd ocr
+pip install -r requirements.txt
+python main.py                # Start OCR service
+python -m uvicorn b2b_api:app --host 0.0.0.0 --port 8001  # B2B API
+```
+
+### Database
+
+```bash
+docker-compose up postgres -d  # Start PostgreSQL
+npm run setup-database        # Run database setup script
+```
+
+## File Structure Conventions
+
+- **Mobile**: Expo Router file-based routing in [app/](mdc:app/)
+- **Components**: Reusable UI components in [src/components/](mdc:src/components/)
+- **Services**: API calls and business logic in [src/services/](mdc:src/services/)
+- **Backend**: Python services in [ocr/](mdc:ocr/) directory
+- **Database**: Schema and migrations in [database/](mdc:database/)
+
+## Git Workflow
+
+- Use feature branches for new development
+- Commit messages should be descriptive
+- Include tests with new features
+- Update documentation for API changes
+- Use conventional commit format
+
+## Testing Strategy
+
+- **Unit Tests**: Jest for mobile app, pytest for Python services
+- **Integration Tests**: API endpoint testing
+- **E2E Tests**: Detox for mobile app flows
+- **Manual Testing**: Device testing for camera and OCR features
+
+## Deployment
+
+- **Mobile**: EAS Build for app store deployment
+- **Backend**: Docker containers on Fly.io
+- **Database**: Supabase for production
+- **CI/CD**: GitHub Actions for automated testing and deployment
+
+## Documentation
+
+- Keep README files updated
+- Document API changes
+- Maintain setup guides for new developers
+- Update troubleshooting guides as issues arise
+  description:
+  globs:
+  alwaysApply: false
+
+---

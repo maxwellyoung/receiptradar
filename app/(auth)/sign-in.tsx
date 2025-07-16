@@ -1,0 +1,379 @@
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Dimensions,
+} from "react-native";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { AnimatePresence, MotiView } from "moti";
+import * as Haptics from "expo-haptics";
+import { AppleSignInButton } from "@/components/AppleSignInButton";
+import {
+  lightTheme as theme,
+  spacing,
+  borderRadius,
+  shadows,
+} from "@/constants/theme";
+
+const { width: screenWidth } = Dimensions.get("window");
+
+export default function SignInScreen() {
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [localLoading, setLocalLoading] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [focusedInput, setFocusedInput] = useState<string | null>(null);
+
+  const { signIn, signUp } = useAuthContext();
+
+  const handleSubmit = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+
+    if (isSignUp && password !== confirmPassword) {
+      Alert.alert("Error", "Passwords do not match");
+      return;
+    }
+
+    if (isSignUp && password.length < 6) {
+      Alert.alert("Error", "Password must be at least 6 characters");
+      return;
+    }
+
+    setLocalError(null);
+    setLocalLoading(true);
+
+    try {
+      if (isSignUp) {
+        await signUp(email, password, email.split("@")[0] || "User");
+      } else {
+        await signIn(email, password);
+      }
+    } catch (err: any) {
+      const errorMessage = err?.message || "An unexpected error occurred";
+      setLocalError(errorMessage);
+      Alert.alert("Error", errorMessage);
+    } finally {
+      setLocalLoading(false);
+    }
+  };
+
+  const handleAppleSuccess = () => {
+    // onAuthSuccess is no longer needed, navigation is handled by AuthGuard
+  };
+
+  const handleAppleError = (error: any) => {
+    console.error("Apple Sign-In error:", error);
+  };
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <View style={styles.content}>
+        {/* Header Section */}
+        <MotiView
+          from={{ opacity: 0, translateY: 20 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: "timing", duration: 800, delay: 100 }}
+          style={styles.header}
+        >
+          <Text style={styles.title}>
+            {isSignUp ? "Create Account" : "Welcome"}
+          </Text>
+          <Text style={styles.subtitle}>
+            {isSignUp
+              ? "Begin your journey with ReceiptRadar"
+              : "Sign in to continue"}
+          </Text>
+        </MotiView>
+
+        {/* Form Section */}
+        <MotiView
+          from={{ opacity: 0, translateY: 40 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: "timing", duration: 800, delay: 300 }}
+          style={styles.form}
+        >
+          {/* Email Input */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Email</Text>
+            <TextInput
+              style={[
+                styles.input,
+                focusedInput === "email" && styles.inputFocused,
+              ]}
+              placeholder="Enter your email"
+              placeholderTextColor={theme.colors.onSurfaceVariant}
+              value={email}
+              onChangeText={setEmail}
+              onFocus={() => setFocusedInput("email")}
+              onBlur={() => setFocusedInput(null)}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="email"
+            />
+          </View>
+
+          {/* Password Input */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Password</Text>
+            <TextInput
+              style={[
+                styles.input,
+                focusedInput === "password" && styles.inputFocused,
+              ]}
+              placeholder="Enter your password"
+              placeholderTextColor={theme.colors.onSurfaceVariant}
+              value={password}
+              onChangeText={setPassword}
+              onFocus={() => setFocusedInput("password")}
+              onBlur={() => setFocusedInput(null)}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="password"
+            />
+          </View>
+
+          {/* Confirm Password Input */}
+          <AnimatePresence>
+            {isSignUp && (
+              <MotiView
+                from={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ type: "timing", duration: 300 }}
+                style={styles.inputContainer}
+              >
+                <Text style={styles.inputLabel}>Confirm Password</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    focusedInput === "confirmPassword" && styles.inputFocused,
+                  ]}
+                  placeholder="Confirm your password"
+                  placeholderTextColor={theme.colors.onSurfaceVariant}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  onFocus={() => setFocusedInput("confirmPassword")}
+                  onBlur={() => setFocusedInput(null)}
+                  secureTextEntry
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="password"
+                />
+              </MotiView>
+            )}
+          </AnimatePresence>
+
+          {/* Error Message */}
+          <AnimatePresence>
+            {localError && (
+              <MotiView
+                from={{ opacity: 0, translateY: -10 }}
+                animate={{ opacity: 1, translateY: 0 }}
+                exit={{ opacity: 0, translateY: -10 }}
+                transition={{ type: "timing", duration: 200 }}
+                style={styles.errorContainer}
+              >
+                <Text style={styles.errorText}>{localError}</Text>
+              </MotiView>
+            )}
+          </AnimatePresence>
+
+          {/* Primary Action Button */}
+          <TouchableOpacity
+            style={[
+              styles.primaryButton,
+              localLoading && styles.buttonDisabled,
+            ]}
+            onPress={async () => {
+              await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              handleSubmit();
+            }}
+            disabled={localLoading}
+            activeOpacity={0.8}
+          >
+            <MotiView
+              from={{ scale: 1 }}
+              animate={{ scale: localLoading ? 0.98 : 1 }}
+              transition={{ type: "timing", duration: 100 }}
+              style={styles.buttonContent}
+            >
+              <Text style={styles.primaryButtonText}>
+                {localLoading
+                  ? "Please wait..."
+                  : isSignUp
+                  ? "Create Account"
+                  : "Sign In"}
+              </Text>
+            </MotiView>
+          </TouchableOpacity>
+
+          {/* Divider */}
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* Apple Sign-In Button */}
+          <AppleSignInButton
+            onSuccess={handleAppleSuccess}
+            onError={handleAppleError}
+            style={styles.appleButton}
+          />
+
+          {/* Switch Mode Button */}
+          <TouchableOpacity
+            style={styles.switchButton}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setIsSignUp(!isSignUp);
+              setLocalError(null);
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.switchButtonText}>
+              {isSignUp
+                ? "Already have an account? "
+                : "Don't have an account? "}
+              <Text style={styles.switchButtonTextHighlight}>
+                {isSignUp ? "Sign In" : "Sign Up"}
+              </Text>
+            </Text>
+          </TouchableOpacity>
+        </MotiView>
+      </View>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    justifyContent: "center",
+  },
+  content: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
+  },
+  header: {
+    alignItems: "center",
+    marginBottom: spacing.xxl,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: theme.colors.onBackground,
+    marginBottom: spacing.sm,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: theme.colors.onSurfaceVariant,
+  },
+  form: {
+    backgroundColor: theme.colors.surface,
+    padding: spacing.lg,
+    borderRadius: borderRadius.lg,
+    ...shadows.medium,
+  },
+  inputContainer: {
+    marginBottom: spacing.md,
+  },
+  inputLabel: {
+    color: theme.colors.onSurface,
+    marginBottom: spacing.sm,
+    fontWeight: "500",
+  },
+  input: {
+    backgroundColor: theme.colors.surfaceVariant,
+    color: theme.colors.onSurface,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: "transparent",
+    fontSize: 16,
+  },
+  inputFocused: {
+    borderColor: theme.colors.primary,
+    borderWidth: 2,
+    paddingHorizontal: spacing.md - 1,
+    paddingVertical: spacing.md - 1,
+  },
+  primaryButton: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: spacing.lg,
+    borderRadius: borderRadius.full,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: spacing.md,
+    ...shadows.sm,
+  },
+  buttonDisabled: {
+    backgroundColor: theme.colors.surfaceDisabled,
+  },
+  buttonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  primaryButtonText: {
+    color: theme.colors.onPrimary,
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  divider: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: spacing.xl,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: theme.colors.outline,
+  },
+  dividerText: {
+    marginHorizontal: spacing.md,
+    color: theme.colors.onSurfaceVariant,
+  },
+  appleButton: {
+    width: "100%",
+    height: 50,
+  },
+  switchButton: {
+    marginTop: spacing.xl,
+    alignItems: "center",
+  },
+  switchButtonText: {
+    color: theme.colors.onSurfaceVariant,
+  },
+  switchButtonTextHighlight: {
+    color: theme.colors.primary,
+    fontWeight: "bold",
+  },
+  errorContainer: {
+    backgroundColor: theme.colors.errorContainer,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.md,
+  },
+  errorText: {
+    color: theme.colors.onErrorContainer,
+    textAlign: "center",
+  },
+});
