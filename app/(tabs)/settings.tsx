@@ -136,7 +136,10 @@ export default function SettingsScreen() {
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <ScrollView contentContainerStyle={styles.scrollContentContainer}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContentContainer}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.header}>
           <Text variant="displaySmall" style={styles.headerTitle}>
             The Burrow
@@ -235,6 +238,7 @@ const styles = StyleSheet.create({
   },
   scrollContentContainer: {
     padding: spacing.lg,
+    paddingTop: 0,
   },
   header: {
     marginBottom: spacing.lg,
@@ -250,18 +254,19 @@ const styles = StyleSheet.create({
     color: "grey",
     letterSpacing: 1.2,
     marginBottom: spacing.sm,
-    paddingLeft: spacing.sm,
+    marginLeft: spacing.md,
   },
   sectionCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.05)", // Example for dark theme
+    backgroundColor: "rgba(128, 128, 128, 0.1)",
     borderRadius: borderRadius.lg,
     overflow: "hidden",
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     padding: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: 1,
   },
   rowTextContainer: {
     flex: 1,
@@ -271,9 +276,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   toggleThumb: {
-    alignItems: "center",
     justifyContent: "center",
-    elevation: 3,
+    alignItems: "center",
+    elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
