@@ -53,7 +53,7 @@ export const StoreAnalytics: React.FC = () => {
     const storeMap = new Map<string, StoreAnalytics>();
 
     receipts.forEach((receipt) => {
-      const storeName = receipt.store_name;
+      const storeName = receipt.store?.name || "Unknown Store";
       const existing = storeMap.get(storeName) || {
         storeName,
         totalSpent: 0,
@@ -65,11 +65,11 @@ export const StoreAnalytics: React.FC = () => {
         topCategories: [],
       };
 
-      existing.totalSpent += receipt.total_amount;
+      existing.totalSpent += receipt.total;
       existing.visitCount += 1;
-      existing.savingsIdentified += receipt.savings_identified || 0;
+      existing.savingsIdentified += 0; // TODO: Add savings tracking
       existing.lastVisit =
-        receipt.date > existing.lastVisit ? receipt.date : existing.lastVisit;
+        receipt.ts > existing.lastVisit ? receipt.ts : existing.lastVisit;
 
       storeMap.set(storeName, existing);
     });
@@ -118,7 +118,7 @@ export const StoreAnalytics: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <RadarWorm mood="curious" size="large" visible />
+        <RadarWorm mood="insightful" size="large" visible />
         <Text variant="bodyLarge" style={styles.loadingText}>
           Analyzing your shopping patterns...
         </Text>

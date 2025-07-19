@@ -2,7 +2,7 @@ import { logger } from "@/utils/logger";
 import { handleAsyncError } from "@/utils/error-handler";
 
 const OCR_SERVICE_URL =
-  process.env.EXPO_PUBLIC_OCR_URL || "https://receiptradar-ocr.fly.dev";
+  process.env.EXPO_PUBLIC_OCR_URL || "http://localhost:8000";
 
 export interface OCRItem {
   name: string;

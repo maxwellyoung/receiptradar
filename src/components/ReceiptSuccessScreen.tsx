@@ -13,6 +13,7 @@ import { MotiView } from "moti";
 import { useThemeContext } from "@/contexts/ThemeContext";
 import { spacing, borderRadius, shadows, typography } from "@/constants/theme";
 import { RadarWorm } from "./RadarWorm";
+import { useRouter } from "expo-router";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -36,6 +37,7 @@ export const ReceiptSuccessScreen: React.FC<ReceiptSuccessScreenProps> = ({
   onViewTrends,
 }) => {
   const { theme } = useThemeContext();
+  const router = useRouter();
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -63,6 +65,31 @@ export const ReceiptSuccessScreen: React.FC<ReceiptSuccessScreenProps> = ({
       }),
     ]).start();
   }, []);
+
+  const handleViewReceipt = () => {
+    if (receiptData?.id) {
+      router.push(`/receipt/${receiptData.id}`);
+    }
+  };
+
+  const handleScanAnother = () => {
+    router.push("/modals/camera");
+  };
+
+  const handleGoToTrends = () => {
+    router.push("/(tabs)/trends");
+  };
+
+  const handleBackToHome = () => {
+    router.push("/(tabs)");
+  };
+
+  // Demo function to show correction flow
+  const handleDemoCorrection = () => {
+    // This would normally be triggered after OCR processing
+    // For demo purposes, we'll simulate the flow
+    console.log("Demo: Show correction modal");
+  };
 
   return (
     <Animated.View
@@ -238,7 +265,7 @@ export const ReceiptSuccessScreen: React.FC<ReceiptSuccessScreenProps> = ({
             styles.primaryButton,
             { backgroundColor: theme.colors.primary },
           ]}
-          onPress={onViewReceipt}
+          onPress={handleViewReceipt}
           activeOpacity={0.8}
         >
           <MaterialIcons
@@ -264,7 +291,7 @@ export const ReceiptSuccessScreen: React.FC<ReceiptSuccessScreenProps> = ({
               styles.secondaryButton,
               { backgroundColor: theme.colors.surface },
             ]}
-            onPress={onScanAnother}
+            onPress={handleScanAnother}
             activeOpacity={0.8}
           >
             <MaterialIcons
@@ -288,7 +315,7 @@ export const ReceiptSuccessScreen: React.FC<ReceiptSuccessScreenProps> = ({
               styles.secondaryButton,
               { backgroundColor: theme.colors.surface },
             ]}
-            onPress={onViewTrends}
+            onPress={handleGoToTrends}
             activeOpacity={0.8}
           >
             <MaterialIcons
@@ -311,7 +338,7 @@ export const ReceiptSuccessScreen: React.FC<ReceiptSuccessScreenProps> = ({
         {/* Tertiary Action */}
         <TouchableOpacity
           style={styles.tertiaryButton}
-          onPress={onBackToHome}
+          onPress={handleBackToHome}
           activeOpacity={0.7}
         >
           <MaterialIcons

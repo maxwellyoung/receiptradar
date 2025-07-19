@@ -1,12 +1,14 @@
-import React from "react";
+import React, { useState } from "react";
 import { View, ScrollView, StyleSheet } from "react-native";
 import { Defs, Stop, LinearGradient } from "react-native-svg";
-import { Text, useTheme } from "react-native-paper";
+import { Text, useTheme, SegmentedButtons } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useReceipts } from "@/hooks/useReceipts";
 import { AppTheme, borderRadius, spacing } from "@/constants/theme";
 import { RadarWorm } from "@/components/RadarWorm";
+import { StoreAnalytics } from "@/components/StoreAnalytics";
+import { PriceAlertSystem } from "@/components/PriceAlertSystem";
 import {
   VictoryChart,
   VictoryLine,
@@ -105,6 +107,7 @@ export default function TrendsScreen() {
   const { user } = useAuthContext();
   const { getWeeklySpending, getSpendingByCategory, getSpendingAnalytics } =
     useReceipts(user?.id || "");
+  const [activeTab, setActiveTab] = useState("spending");
 
   const weeklySpending = getWeeklySpending(4);
   const categories = Object.entries(getSpendingByCategory()).map(
@@ -148,116 +151,153 @@ export default function TrendsScreen() {
     );
   }
 
-  return (
-    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Text variant="displaySmall" style={styles.headerTitle}>
-            Your Spending Story
-          </Text>
-          <Text
-            variant="titleMedium"
-            style={{ color: theme.colors.onSurfaceVariant }}
-          >
-            A look at your recent habits.
-          </Text>
-        </View>
-
-        <Section title="This Month's Snapshot">
-          <View style={styles.statsGrid}>
-            <StatCard
-              label="Avg. Weekly Spend"
-              value={`$${averagePerWeek.toFixed(2)}`}
-            />
-            <StatCard
-              label="Total Savings"
-              value={`$${(analytics.totalSavings ?? 0).toFixed(2)}`}
-              color={theme.colors.positive}
-            />
-          </View>
-        </Section>
-
-        <Section title="Weekly Spending">
-          <VictoryChart
-            height={250}
-            padding={{ top: 40, bottom: 40, left: 20, right: 20 }}
-            domainPadding={{ x: 20 }}
-          >
-            <VictoryBar
-              data={chartData}
-              style={{
-                data: {
-                  fill: ({ datum }) =>
-                    datum.y > averagePerWeek * 1.2
-                      ? theme.colors.error
-                      : theme.colors.primary,
-                  width: 25,
-                  borderRadius: 6,
-                },
-              }}
-              animate={{
-                duration: 1000,
-                onLoad: { duration: 500 },
-              }}
-              labels={({ datum }) => (datum.y === maxSpend ? "🔥" : null)}
-              labelComponent={<VictoryLabel dy={-20} />}
-            />
-            <VictoryAxis
-              style={{
-                axis: { stroke: "transparent" },
-                tickLabels: {
-                  fill: theme.colors.onSurfaceVariant,
-                  fontSize: 12,
-                },
-              }}
-            />
-            <VictoryAxis
-              dependentAxis
-              style={{
-                axis: { stroke: "transparent" },
-                tickLabels: { fill: "transparent" },
-              }}
-            />
-          </VictoryChart>
-        </Section>
-
-        {analytics.totalSavings > 0 && (
-          <Section title="Savings Spotlight">
-            <View
-              style={[
-                styles.statCard,
-                { backgroundColor: theme.colors.surface, alignItems: "center" },
-              ]}
-            >
-              <Text
-                variant="headlineSmall"
-                style={{ color: theme.colors.positive }}
-              >
-                You saved ${analytics.totalSavings.toFixed(2)}!
+  const renderContent = () => {
+    switch (activeTab) {
+      case "stores":
+        return <StoreAnalytics />;
+      case "alerts":
+        return <PriceAlertSystem />;
+      default:
+        return (
+          <>
+            <View style={styles.header}>
+              <Text variant="displaySmall" style={styles.headerTitle}>
+                Your Spending Story
               </Text>
               <Text
-                variant="bodyLarge"
-                style={{ color: theme.colors.onSurfaceVariant, marginTop: 8 }}
+                variant="titleMedium"
+                style={{ color: theme.colors.onSurfaceVariant }}
               >
-                That's enough for a fancy tub of hummus. The worm approves.
+                A look at your recent habits.
               </Text>
             </View>
-          </Section>
-        )}
 
-        <Section title="Category Breakdown">
-          {categories.map((category, index) => (
-            <CategorySpendingBar
-              key={category.name}
-              category={category.name}
-              amount={category.amount}
-              total={totalCategorySpending}
-              color={theme.colors.primary}
-              backgroundColor={theme.colors.surfaceVariant}
-            />
-          ))}
-        </Section>
-      </ScrollView>
+            <Section title="This Month's Snapshot">
+              <View style={styles.statsGrid}>
+                <StatCard
+                  label="Avg. Weekly Spend"
+                  value={`$${averagePerWeek.toFixed(2)}`}
+                />
+                <StatCard
+                  label="Total Savings"
+                  value={`$${(analytics.totalSavings ?? 0).toFixed(2)}`}
+                  color={theme.colors.positive}
+                />
+              </View>
+            </Section>
+
+            <Section title="Weekly Spending">
+              <VictoryChart
+                height={250}
+                padding={{ top: 40, bottom: 40, left: 20, right: 20 }}
+                domainPadding={{ x: 20 }}
+              >
+                <VictoryBar
+                  data={chartData}
+                  style={{
+                    data: {
+                      fill: ({ datum }) =>
+                        datum.y > averagePerWeek * 1.2
+                          ? theme.colors.error
+                          : theme.colors.primary,
+                      width: 25,
+                      borderRadius: 6,
+                    },
+                  }}
+                  animate={{
+                    duration: 1000,
+                    onLoad: { duration: 500 },
+                  }}
+                  labels={({ datum }) => (datum.y === maxSpend ? "🔥" : null)}
+                  labelComponent={<VictoryLabel dy={-20} />}
+                />
+                <VictoryAxis
+                  style={{
+                    axis: { stroke: "transparent" },
+                    tickLabels: {
+                      fill: theme.colors.onSurfaceVariant,
+                      fontSize: 12,
+                    },
+                  }}
+                />
+                <VictoryAxis
+                  dependentAxis
+                  style={{
+                    axis: { stroke: "transparent" },
+                    tickLabels: { fill: "transparent" },
+                  }}
+                />
+              </VictoryChart>
+            </Section>
+
+            {analytics.totalSavings > 0 && (
+              <Section title="Savings Spotlight">
+                <View
+                  style={[
+                    styles.statCard,
+                    {
+                      backgroundColor: theme.colors.surface,
+                      alignItems: "center",
+                    },
+                  ]}
+                >
+                  <Text
+                    variant="headlineSmall"
+                    style={{ color: theme.colors.positive }}
+                  >
+                    You saved ${analytics.totalSavings.toFixed(2)}!
+                  </Text>
+                  <Text
+                    variant="bodyLarge"
+                    style={{
+                      color: theme.colors.onSurfaceVariant,
+                      marginTop: 8,
+                    }}
+                  >
+                    That's enough for a fancy tub of hummus. The worm approves.
+                  </Text>
+                </View>
+              </Section>
+            )}
+
+            <Section title="Category Breakdown">
+              {categories.map((category, index) => (
+                <CategorySpendingBar
+                  key={category.name}
+                  category={category.name}
+                  amount={category.amount}
+                  total={totalCategorySpending}
+                  color={theme.colors.primary}
+                  backgroundColor={theme.colors.surfaceVariant}
+                />
+              ))}
+            </Section>
+          </>
+        );
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+      <View style={styles.tabContainer}>
+        <SegmentedButtons
+          value={activeTab}
+          onValueChange={setActiveTab}
+          buttons={[
+            { value: "spending", label: "Spending" },
+            { value: "stores", label: "Stores" },
+            { value: "alerts", label: "Alerts" },
+          ]}
+          style={styles.segmentedButtons}
+        />
+      </View>
+      {activeTab === "spending" ? (
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          {renderContent()}
+        </ScrollView>
+      ) : (
+        renderContent()
+      )}
     </SafeAreaView>
   );
 }
@@ -265,6 +305,13 @@ export default function TrendsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  tabContainer: {
+    padding: spacing.lg,
+    paddingBottom: spacing.md,
+  },
+  segmentedButtons: {
+    marginBottom: spacing.md,
   },
   scrollContent: {
     padding: spacing.lg,

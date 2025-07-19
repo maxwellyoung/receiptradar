@@ -18,6 +18,7 @@ type Env = {
   };
   Bindings: {
     R2_BUCKET: R2Bucket;
+    OCR_SERVICE_URL: string;
   };
 };
 
@@ -160,6 +161,71 @@ receipts.get("/upload-url", async (c) => {
     url: presignedUrl,
     key: key,
   });
+});
+
+// OCR endpoint for processing receipt images
+receipts.post("/ocr", async (c) => {
+  const user = c.get("user");
+  const ocrServiceUrl = c.env.OCR_SERVICE_URL;
+
+  try {
+    const formData = await c.req.formData();
+    const file = formData.get("file");
+
+    if (!file) {
+      return c.json({ error: "No file provided" }, 400);
+    }
+
+    // Forward the file to the OCR service
+    const ocrFormData = new FormData();
+    ocrFormData.append("file", file);
+
+    const ocrResponse = await fetch(`${ocrServiceUrl}/parse`, {
+      method: "POST",
+      body: ocrFormData,
+    });
+
+    if (!ocrResponse.ok) {
+      const errorText = await ocrResponse.text();
+      return c.json({ error: `OCR service error: ${errorText}` }, 500);
+    }
+
+    const ocrResult = await ocrResponse.json();
+
+    return c.json({
+      success: true,
+      data: ocrResult,
+      user_id: user.id,
+    });
+  } catch (error) {
+    console.error("OCR processing error:", error);
+    return c.json({ error: "Failed to process receipt" }, 500);
+  }
+});
+
+// Get OCR service health
+receipts.get("/ocr/health", async (c) => {
+  const ocrServiceUrl = c.env.OCR_SERVICE_URL;
+
+  try {
+    const response = await fetch(`${ocrServiceUrl}/health`);
+    const healthData = await response.json();
+
+    return c.json({
+      backend: "healthy",
+      ocr_service: healthData,
+    });
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    return c.json(
+      {
+        backend: "healthy",
+        ocr_service: { status: "unhealthy", error: errorMessage },
+      },
+      503
+    );
+  }
 });
 
 export { receipts };

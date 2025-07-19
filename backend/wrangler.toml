@@ -13,6 +13,15 @@ port = 8787
 local = true
 host = "0.0.0.0"
 
+[dev.vars]
+ENVIRONMENT = "development"
+SUPABASE_URL = "https://cihuylmusthumxpuexrl.supabase.co"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpaHV5bG11c3RodW14cHVleHJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1NjkxMTEsImV4cCI6MjA2ODE0NTExMX0.x8hRnjkgiqDtrninQ44hn76bkHwTRLjNsiQRh4x-fPU"
+SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpaHV5bG11c3RodW14cHVleHJsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjU2OTExMSwiZXhwIjoyMDY4MTQ1MTExfQ.2sdXqL8HuvZris4IRzP0uG-yLyUIlgVyWwrKv6MpLTQ"
+OCR_SERVICE_URL = "http://192.168.1.10:8000"
+STRIPE_SECRET_KEY = ""
+STRIPE_WEBHOOK_SECRET = ""
+
 [triggers]
 crons = []
 

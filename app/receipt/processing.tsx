@@ -22,6 +22,8 @@ import { ViralFeaturesManager } from "@/components/ViralFeaturesManager";
 import { RadarWorm } from "@/components/RadarWorm";
 import { NotReceiptScreen } from "@/components/NotReceiptScreen";
 import { ReceiptSuccessScreen } from "@/components/ReceiptSuccessScreen";
+import { CorrectionModal, ReceiptItem } from "@/components/CorrectionModal";
+import { WeeklyInsights, InsightData } from "@/components/WeeklyInsights";
 import { useRadarMood } from "@/hooks/useRadarMood";
 import { useThemeContext } from "@/contexts/ThemeContext";
 // @ts-ignore: No types for confetti cannon
@@ -88,6 +90,9 @@ export default function ReceiptProcessingScreen() {
   const [notAReceipt, setNotAReceipt] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showCorrectionModal, setShowCorrectionModal] = useState(false);
+  const [showInsights, setShowInsights] = useState(false);
+  const [correctedItems, setCorrectedItems] = useState<ReceiptItem[]>([]);
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -180,6 +185,17 @@ export default function ReceiptProcessingScreen() {
     setProgress(0);
     setCurrentStep(0);
 
+    // Overall timeout for the entire processing
+    const overallTimeout = setTimeout(() => {
+      if (isProcessing) {
+        setError("Processing took too long. Please try again.");
+        setProcessingComplete(true);
+        setIsProcessing(false);
+      }
+    }, 30000); // 30 second overall timeout
+
+    let progressInterval: NodeJS.Timeout | undefined;
+
     try {
       // Step 1: Analyzing Image
       setCurrentStep(0);
@@ -192,13 +208,65 @@ export default function ReceiptProcessingScreen() {
       setCurrentStep(1);
       setProgress(30);
 
-      // Check if OCR service is available
-      const isServiceHealthy = await ocrService.healthCheck();
+      // Show progress during OCR processing
+      const progressInterval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev < 50) return prev + 2;
+          return prev;
+        });
+      }, 500);
+
+      // Check if OCR service is available with timeout
+      let isServiceHealthy = false;
+      try {
+        isServiceHealthy = await Promise.race([
+          ocrService.healthCheck(),
+          new Promise<boolean>(
+            (resolve) => setTimeout(() => resolve(false), 5000) // 5 second timeout
+          ),
+        ]);
+      } catch (error) {
+        console.warn("OCR health check failed:", error);
+        isServiceHealthy = false;
+      }
+
       if (!isServiceHealthy) {
         console.warn("OCR service unavailable, using fallback");
       }
 
-      const parsed = await ocrService.parseReceipt(photoUri!);
+      // Parse receipt with timeout
+      let parsed: any;
+      try {
+        parsed = await Promise.race([
+          ocrService.parseReceipt(photoUri!),
+          new Promise(
+            (_, reject) =>
+              setTimeout(
+                () => reject(new Error("OCR processing timeout")),
+                15000
+              ) // 15 second timeout
+          ),
+        ]);
+      } catch (error) {
+        console.error("OCR processing failed:", error);
+        // Use fallback data if OCR fails
+        parsed = {
+          store_name: "Unknown Store",
+          total: 0,
+          date: new Date().toISOString().split("T")[0],
+          items: [],
+          validation: {
+            is_valid: true,
+            confidence_score: 0.5,
+            issues: ["OCR service unavailable"],
+          },
+          processing_time: 0,
+        };
+      }
+
+      // Clear progress interval and set progress to 60
+      clearInterval(progressInterval);
+      setProgress(60);
 
       // Step 3: Categorizing Items
       setCurrentStep(2);
@@ -275,16 +343,38 @@ export default function ReceiptProcessingScreen() {
       setProgress(100);
       setProcessingComplete(true);
 
-      // Show viral features after a delay
+      // Convert OCR items to ReceiptItem format for correction modal
+      const itemsForCorrection: ReceiptItem[] = parsed.items.map(
+        (item: any, index: number) => ({
+          id: `item_${index}`,
+          name: item.name || "",
+          price: item.price || 0,
+          quantity: item.quantity || 1,
+          category: item.category || "Other",
+          confidence: item.confidence || 0.5,
+        })
+      );
+
+      setCorrectedItems(itemsForCorrection);
+
+      // Show correction modal if we have items, otherwise go to success
       setTimeout(() => {
-        setShowViralFeatures(true);
-        setShowConfetti(true);
-      }, 1000);
+        if (itemsForCorrection.length > 0) {
+          setShowCorrectionModal(true);
+        } else {
+          setShowViralFeatures(true);
+          setShowConfetti(true);
+        }
+      }, 500);
     } catch (error) {
       console.error("Processing error:", error);
       setError("Failed to process receipt. Please try again.");
       setProcessingComplete(true);
     } finally {
+      clearTimeout(overallTimeout);
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
       setIsProcessing(false);
     }
   };
@@ -323,8 +413,76 @@ export default function ReceiptProcessingScreen() {
     setCurrentStep(0);
     setNotAReceipt(false);
     setShowViralFeatures(false);
+    setShowCorrectionModal(false);
+    setShowInsights(false);
     setError(null);
     processReceipt();
+  };
+
+  const handleCorrectionSave = (items: ReceiptItem[]) => {
+    console.log("Correction saved:", items);
+    setCorrectedItems(items);
+    setShowCorrectionModal(false);
+
+    // Only show insights if we have items
+    if (items && items.length > 0) {
+      setTimeout(() => {
+        console.log("Showing insights with items:", items.length);
+        setShowInsights(true);
+      }, 300);
+    } else {
+      // If no items, go straight to success
+      setTimeout(() => {
+        console.log("No items, going to success screen");
+        setShowViralFeatures(true);
+        setShowConfetti(true);
+      }, 300);
+    }
+  };
+
+  const handleInsightsDismiss = () => {
+    setShowInsights(false);
+
+    // Show viral features after insights
+    setTimeout(() => {
+      setShowViralFeatures(true);
+      setShowConfetti(true);
+    }, 300);
+  };
+
+  const getInsightData = (): InsightData => {
+    console.log("Getting insight data for items:", correctedItems?.length || 0);
+
+    // Ensure we have valid data
+    if (!correctedItems || correctedItems.length === 0) {
+      console.log("No corrected items, returning default data");
+      return {
+        totalSpent: 0,
+        itemCount: 0,
+        categories: {},
+        storeName: receiptData?.store_name || "Unknown Store",
+        date: receiptData?.date || new Date().toISOString().split("T")[0],
+        items: [],
+      };
+    }
+
+    const categories = correctedItems.reduce((acc, item) => {
+      const category = item.category || "Other";
+      acc[category] = (acc[category] || 0) + item.price * item.quantity;
+      return acc;
+    }, {} as { [key: string]: number });
+
+    return {
+      totalSpent: correctedItems.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0
+      ),
+      itemCount: correctedItems.length,
+      categories,
+      storeName: receiptData?.store_name || "Unknown Store",
+      date: receiptData?.date || new Date().toISOString().split("T")[0],
+      items: correctedItems,
+    };
   };
 
   if (!photoUri) {
@@ -639,6 +797,26 @@ export default function ReceiptProcessingScreen() {
           explosionSpeed={350}
           fallSpeed={2500}
           onAnimationEnd={() => setShowConfetti(false)}
+        />
+      )}
+
+      {/* Correction Modal */}
+      {correctedItems.length > 0 && (
+        <CorrectionModal
+          visible={showCorrectionModal}
+          onDismiss={() => setShowCorrectionModal(false)}
+          onSave={handleCorrectionSave}
+          items={correctedItems}
+          storeName={receiptData?.store_name}
+          total={receiptData?.total_amount}
+        />
+      )}
+
+      {/* Insights Modal */}
+      {showInsights && correctedItems.length > 0 && (
+        <WeeklyInsights
+          insightData={getInsightData()}
+          onDismiss={handleInsightsDismiss}
         />
       )}
     </SafeAreaView>
