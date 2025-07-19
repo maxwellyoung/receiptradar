@@ -14,6 +14,7 @@ import { useThemeContext } from "@/contexts/ThemeContext";
 import { spacing, borderRadius, shadows, typography } from "@/constants/theme";
 import { RadarWorm } from "./RadarWorm";
 import { useRouter } from "expo-router";
+import { useThreeJSEffects } from "@/hooks/useThreeJSEffects";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -38,6 +39,7 @@ export const ReceiptSuccessScreen: React.FC<ReceiptSuccessScreenProps> = ({
 }) => {
   const { theme } = useThemeContext();
   const router = useRouter();
+  const { triggerReceiptProcessed, triggerSuccess } = useThreeJSEffects();
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -64,7 +66,12 @@ export const ReceiptSuccessScreen: React.FC<ReceiptSuccessScreenProps> = ({
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+
+    // Trigger receipt processed effect
+    setTimeout(() => {
+      triggerReceiptProcessed();
+    }, 1000);
+  }, [triggerReceiptProcessed]);
 
   const handleViewReceipt = () => {
     if (receiptData?.id) {
