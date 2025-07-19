@@ -69,6 +69,7 @@
     "react-native-vector-icons": "^10.0.3",
     "react-native-view-shot": "^4.0.3",
     "react-native-web": "^0.20.0",
+    "react-native-webview": "^13.15.0",
     "text-encoding": "^0.7.0",
     "victory-native": "^36.9.0",
     "zod": "^4.0.5",
