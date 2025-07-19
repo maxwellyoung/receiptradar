@@ -15,14 +15,13 @@ import {
 import { Text, Button, Card, ProgressBar } from "react-native-paper";
 import { MaterialIcons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { spacing } from "@/constants/theme";
+import { spacing, typography, borderRadius, shadows } from "@/constants/theme";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useReceipts } from "@/hooks/useReceipts";
 import { ViralFeaturesManager } from "@/components/ViralFeaturesManager";
 import { RadarWorm } from "@/components/RadarWorm";
 import { NotReceiptScreen } from "@/components/NotReceiptScreen";
 import { ReceiptSuccessScreen } from "@/components/ReceiptSuccessScreen";
-import { ProcessingScreen } from "@/components/ProcessingScreen";
 import { useRadarMood } from "@/hooks/useRadarMood";
 import { useThemeContext } from "@/contexts/ThemeContext";
 // @ts-ignore: No types for confetti cannon
@@ -37,33 +36,39 @@ interface ProcessingStep {
   name: string;
   description: string;
   icon: string;
+  duration: number;
 }
 
 const processingSteps: ProcessingStep[] = [
   {
     name: "Analyzing Image",
-    description: "Detecting receipt boundaries",
+    description: "Detecting receipt boundaries and enhancing quality",
     icon: "crop-free",
+    duration: 800,
   },
   {
     name: "OCR Processing",
-    description: "Extracting text and numbers",
+    description: "Extracting text and numbers from your receipt",
     icon: "text-recognition",
+    duration: 1200,
   },
   {
     name: "Categorizing Items",
-    description: "Organizing by product type",
+    description: "Organizing products by category",
     icon: "category",
+    duration: 600,
   },
   {
     name: "Calculating Totals",
-    description: "Summing up your spend",
+    description: "Summing up your spending",
     icon: "calculate",
+    duration: 400,
   },
   {
     name: "Saving Data",
-    description: "Storing receipt information",
+    description: "Storing receipt information securely",
     icon: "save",
+    duration: 500,
   },
 ];
 
@@ -81,12 +86,15 @@ export default function ReceiptProcessingScreen() {
   const [showViralFeatures, setShowViralFeatures] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [notAReceipt, setNotAReceipt] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const stepAnim = useRef(new Animated.Value(0)).current;
 
   // Radar mood calculation
   const radarMood = useRadarMood({
@@ -100,7 +108,7 @@ export default function ReceiptProcessingScreen() {
     ),
     totalSpend: receiptData?.total_amount,
     isProcessing: !processingComplete,
-    isError: false,
+    isError: !!error,
     isDuplicate: false,
   });
 
@@ -120,7 +128,7 @@ export default function ReceiptProcessingScreen() {
     ]).start();
 
     // Start subtle pulse animation
-    Animated.loop(
+    const pulseLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
           toValue: 1.05,
@@ -133,7 +141,13 @@ export default function ReceiptProcessingScreen() {
           useNativeDriver: true,
         }),
       ])
-    ).start();
+    );
+    pulseLoop.start();
+
+    // Cleanup function
+    return () => {
+      pulseLoop.stop();
+    };
 
     if (photoUri) {
       processReceipt();
@@ -149,12 +163,30 @@ export default function ReceiptProcessingScreen() {
     }).start();
   }, [progress]);
 
+  // Animate current step
+  useEffect(() => {
+    Animated.timing(stepAnim, {
+      toValue: currentStep,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [currentStep]);
+
   const processReceipt = async () => {
+    if (isProcessing) return;
+
+    setIsProcessing(true);
+    setError(null);
+    setProgress(0);
+    setCurrentStep(0);
+
     try {
       // Step 1: Analyzing Image
       setCurrentStep(0);
       setProgress(10);
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) =>
+        setTimeout(resolve, processingSteps[0].duration)
+      );
 
       // Step 2: OCR Processing - This is where the real work happens
       setCurrentStep(1);
@@ -171,12 +203,16 @@ export default function ReceiptProcessingScreen() {
       // Step 3: Categorizing Items
       setCurrentStep(2);
       setProgress(60);
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      await new Promise((resolve) =>
+        setTimeout(resolve, processingSteps[2].duration)
+      );
 
       // Step 4: Calculating Totals
       setCurrentStep(3);
       setProgress(80);
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      await new Promise((resolve) =>
+        setTimeout(resolve, processingSteps[3].duration)
+      );
 
       // Check if the result is NOT a receipt
       if (parsed.validation && parsed.validation.is_valid === false) {
@@ -202,91 +238,63 @@ export default function ReceiptProcessingScreen() {
               user.id
             );
 
-          if (uploadData && !uploadError) {
-            imageUrl =
-              (await storageService.getReceiptImageUrl(uploadData.path)) ||
-              photoUri;
-            console.log("Image uploaded successfully:", imageUrl);
+          if (uploadError) {
+            console.warn("Failed to upload image:", uploadError);
           } else {
-            console.warn("Image upload failed, using local URI:", uploadError);
+            imageUrl = uploadData?.path || photoUri;
           }
-        } catch (error) {
-          console.warn("Image upload error, using local URI:", error);
+        } catch (uploadError) {
+          console.warn("Image upload failed:", uploadError);
         }
       }
 
-      // Map parsed data to expected format for createReceipt
-      const fallbackDate = new Date().toISOString().slice(0, 10);
-      const dateString =
-        typeof parsed.date === "string" && parsed.date
-          ? parsed.date
-          : fallbackDate;
-
-      const receiptToSave = {
+      // Create receipt in database
+      const receiptData = {
+        user_id: user?.id || "",
         store_name: parsed.store_name || "Unknown Store",
         total_amount: parsed.total || 0,
-        date: dateString,
+        date: parsed.date || new Date().toISOString().split("T")[0],
         image_url: imageUrl,
-        ocr_data: {
-          items: parsed.items || [],
-          subtotal: parsed.subtotal,
-          tax: parsed.tax,
-          receipt_number: parsed.receipt_number,
-          validation: parsed.validation || {
-            is_valid: true,
-            confidence_score: 0.8,
-            issues: [],
-          },
-          processing_time: parsed.processing_time,
-        },
+        ocr_data: parsed,
         savings_identified: 0,
         cashback_earned: 0,
       };
 
-      setReceiptData(receiptToSave);
+      const { data: savedReceipt, error: saveError } = await createReceipt(
+        receiptData
+      );
 
-      // Save receipt to local database
-      if (user?.id) {
-        const { error } = await createReceipt(receiptToSave);
-        if (error) {
-          console.error("Failed to save receipt locally:", error);
-        }
+      if (saveError) {
+        console.error("Failed to save receipt:", saveError);
+        setError("Failed to save receipt data");
+        setProcessingComplete(true);
+        return;
       }
 
-      // In the background, save to OCR service for price intelligence
-      ocrService.saveReceipt(receiptToSave).catch((error) => {
-        console.error("Failed to save receipt to OCR service:", error);
-      });
-
+      setReceiptData(savedReceipt);
       setProgress(100);
       setProcessingComplete(true);
 
-      // Show confetti after a short delay
-      setTimeout(() => {
-        setShowConfetti(true);
-      }, 500);
-
-      // Show viral features after confetti
+      // Show viral features after a delay
       setTimeout(() => {
         setShowViralFeatures(true);
-      }, 2000);
+        setShowConfetti(true);
+      }, 1000);
     } catch (error) {
-      console.error("Error processing receipt:", error);
-      Alert.alert(
-        "Processing Error",
-        "Failed to process receipt. Please try again.",
-        [{ text: "OK", onPress: handleRetry }]
-      );
+      console.error("Processing error:", error);
+      setError("Failed to process receipt. Please try again.");
+      setProcessingComplete(true);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   const handleContinue = () => {
     setShowViralFeatures(false);
-    processReceipt();
   };
 
   const handleViewReceipt = () => {
-    if (receiptData) {
+    if (receiptData?.id) {
       router.push(`/receipt/${receiptData.id}`);
     }
   };
@@ -304,24 +312,48 @@ export default function ReceiptProcessingScreen() {
   };
 
   const handleRetry = () => {
+    // Go back to camera instead of restarting processing
+    router.push("/modals/camera");
+  };
+
+  const handleTryAgain = () => {
+    // Reset and try processing again
     setProcessingComplete(false);
     setProgress(0);
     setCurrentStep(0);
     setNotAReceipt(false);
     setShowViralFeatures(false);
+    setError(null);
     processReceipt();
   };
 
   if (!photoUri) {
     return (
       <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-        <Text>No photo provided</Text>
+        <View style={styles.errorContainer}>
+          <MaterialIcons name="error" size={64} color={theme.colors.error} />
+          <Text style={[typography.headline2, styles.errorTitle]}>
+            No Photo
+          </Text>
+          <Text style={[typography.body1, styles.errorMessage]}>
+            No photo was provided for processing.
+          </Text>
+          <Button
+            mode="contained"
+            onPress={() => router.push("/modals/camera")}
+            style={styles.errorButton}
+          >
+            Take Photo
+          </Button>
+        </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
       <Animated.View
         style={[
           styles.content,
@@ -333,11 +365,179 @@ export default function ReceiptProcessingScreen() {
       >
         {/* Processing State */}
         {!processingComplete && (
-          <ProcessingScreen
-            currentStep={currentStep}
-            progress={progress}
-            processingSteps={processingSteps}
-          />
+          <View style={styles.processingContainer}>
+            {/* Header */}
+            <View style={styles.header}>
+              <Text style={[typography.headline1, styles.title]}>
+                Processing Receipt
+              </Text>
+              <Text style={[typography.body1, styles.subtitle]}>
+                We're analyzing your receipt to extract all the details
+              </Text>
+            </View>
+
+            {/* Progress Card */}
+            <Card
+              style={[
+                styles.progressCard,
+                { backgroundColor: theme.colors.surface },
+              ]}
+            >
+              <Card.Content>
+                {/* Current Step */}
+                <View style={styles.currentStepContainer}>
+                  <Animated.View
+                    style={[
+                      styles.stepIcon,
+                      {
+                        transform: [{ scale: pulseAnim }],
+                        backgroundColor: theme.colors.primaryContainer,
+                      },
+                    ]}
+                  >
+                    <MaterialIcons
+                      name={processingSteps[currentStep]?.icon as any}
+                      size={32}
+                      color={theme.colors.onPrimaryContainer}
+                    />
+                  </Animated.View>
+
+                  <View style={styles.stepInfo}>
+                    <Text style={[typography.title2, styles.stepName]}>
+                      {processingSteps[currentStep]?.name}
+                    </Text>
+                    <Text style={[typography.body2, styles.stepDescription]}>
+                      {processingSteps[currentStep]?.description}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Progress Bar */}
+                <View style={styles.progressContainer}>
+                  <View
+                    style={[
+                      styles.progressTrack,
+                      { backgroundColor: theme.colors.surfaceVariant },
+                    ]}
+                  >
+                    <Animated.View
+                      style={[
+                        styles.progressFill,
+                        {
+                          width: progressAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: ["0%", "100%"],
+                          }),
+                          backgroundColor: theme.colors.primary,
+                        },
+                      ]}
+                    />
+                  </View>
+                  <Text style={[typography.caption1, styles.progressText]}>
+                    {Math.round(progress)}% complete
+                  </Text>
+                </View>
+              </Card.Content>
+            </Card>
+
+            {/* Steps Overview */}
+            <Card
+              style={[
+                styles.stepsCard,
+                { backgroundColor: theme.colors.surface },
+              ]}
+            >
+              <Card.Content>
+                <Text style={[typography.title3, styles.stepsTitle]}>
+                  Processing Steps
+                </Text>
+                <View style={styles.stepsList}>
+                  {processingSteps.map((step, index) => (
+                    <View key={index} style={styles.stepItem}>
+                      <View
+                        style={[
+                          styles.stepIndicator,
+                          {
+                            backgroundColor:
+                              index < currentStep
+                                ? theme.colors.positive
+                                : index === currentStep
+                                ? theme.colors.primary
+                                : theme.colors.surfaceVariant,
+                          },
+                        ]}
+                      >
+                        {index < currentStep ? (
+                          <MaterialIcons
+                            name="check"
+                            size={16}
+                            color={theme.colors.onPrimary}
+                          />
+                        ) : (
+                          <Text
+                            style={[
+                              typography.caption1,
+                              { color: theme.colors.onPrimary },
+                            ]}
+                          >
+                            {index + 1}
+                          </Text>
+                        )}
+                      </View>
+                      <Text
+                        style={[
+                          typography.body2,
+                          styles.stepText,
+                          {
+                            color:
+                              index <= currentStep
+                                ? theme.colors.onSurface
+                                : theme.colors.onSurfaceVariant,
+                          },
+                        ]}
+                      >
+                        {step.name}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </Card.Content>
+            </Card>
+          </View>
+        )}
+
+        {/* Error State */}
+        {processingComplete && error && (
+          <View style={styles.errorContainer}>
+            <MaterialIcons
+              name="error-outline"
+              size={64}
+              color={theme.colors.error}
+            />
+            <Text style={[typography.headline2, styles.errorTitle]}>
+              Processing Failed
+            </Text>
+            <Text style={[typography.body1, styles.errorMessage]}>{error}</Text>
+
+            <View style={styles.errorButtons}>
+              <Button
+                mode="outlined"
+                onPress={handleRetry}
+                style={styles.errorButton}
+                icon="camera"
+              >
+                Try Again
+              </Button>
+              <Button
+                mode="contained"
+                onPress={handleTryAgain}
+                style={styles.errorButton}
+                icon="refresh"
+              >
+                Retry Processing
+              </Button>
+            </View>
+          </View>
         )}
 
         {/* Results State */}
@@ -448,35 +648,140 @@ export default function ReceiptProcessingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F2F2F7",
   },
   content: {
     flex: 1,
+    paddingHorizontal: spacing.lg,
+  },
+  processingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    gap: spacing.xl,
+  },
+  header: {
+    alignItems: "center",
+    marginBottom: spacing.lg,
+  },
+  title: {
+    textAlign: "center",
+    marginBottom: spacing.sm,
+  },
+  subtitle: {
+    textAlign: "center",
+    opacity: 0.7,
+  },
+  progressCard: {
+    marginBottom: spacing.lg,
+    ...shadows.md,
+  },
+  currentStepContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: spacing.lg,
+  },
+  stepIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 24,
+    marginRight: spacing.md,
+    ...shadows.sm,
+  },
+  stepInfo: {
+    flex: 1,
+  },
+  stepName: {
+    marginBottom: spacing.xs,
+  },
+  stepDescription: {
+    opacity: 0.7,
+  },
+  progressContainer: {
+    marginTop: spacing.md,
+  },
+  progressTrack: {
+    height: 8,
+    borderRadius: 4,
+    overflow: "hidden",
+    marginBottom: spacing.sm,
+  },
+  progressFill: {
+    height: "100%",
+    borderRadius: 4,
+  },
+  progressText: {
+    textAlign: "center",
+    opacity: 0.7,
+  },
+  stepsCard: {
+    ...shadows.md,
+  },
+  stepsTitle: {
+    marginBottom: spacing.md,
+  },
+  stepsList: {
+    gap: spacing.md,
+  },
+  stepItem: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  stepIndicator: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: spacing.md,
+  },
+  stepText: {
+    flex: 1,
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing.lg,
+  },
+  errorTitle: {
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+    textAlign: "center",
+  },
+  errorMessage: {
+    textAlign: "center",
+    marginBottom: spacing.xl,
+    opacity: 0.7,
+  },
+  errorButtons: {
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  errorButton: {
+    flex: 1,
   },
   actions: {
     marginTop: "auto",
-    paddingTop: 24,
-    paddingBottom: 24,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
   },
   actionButtonsContainer: {
-    gap: 16,
+    gap: spacing.md,
   },
   primaryButton: {
     backgroundColor: "#007AFF",
-    borderRadius: 12,
-    paddingHorizontal: 24,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.lg,
   },
   secondaryButton: {
     borderColor: "#D1D1D6",
-    borderRadius: 12,
-    paddingHorizontal: 20,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
     flex: 1,
   },
   textButton: {
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
   buttonLabel: {
     fontWeight: "600",
@@ -495,6 +800,6 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: spacing.md,
   },
 });

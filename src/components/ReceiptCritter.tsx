@@ -51,7 +51,7 @@ export const ReceiptCritter: React.FC<ReceiptCritterProps> = ({
       }).start();
 
       // Continuous bounce
-      Animated.loop(
+      const bounceLoop = Animated.loop(
         Animated.sequence([
           Animated.timing(bounceAnim, {
             toValue: 1,
@@ -64,11 +64,13 @@ export const ReceiptCritter: React.FC<ReceiptCritterProps> = ({
             useNativeDriver: true,
           }),
         ])
-      ).start();
+      );
+      bounceLoop.start();
 
       // Eye bulge animation if snacks are high
+      let eyeLoop: Animated.CompositeAnimation | null = null;
       if (hasBulgingEyes) {
-        Animated.loop(
+        eyeLoop = Animated.loop(
           Animated.sequence([
             Animated.timing(eyeScaleAnim, {
               toValue: 1.3,
@@ -81,8 +83,17 @@ export const ReceiptCritter: React.FC<ReceiptCritterProps> = ({
               useNativeDriver: true,
             }),
           ])
-        ).start();
+        );
+        eyeLoop.start();
       }
+
+      // Cleanup function
+      return () => {
+        bounceLoop.stop();
+        if (eyeLoop) {
+          eyeLoop.stop();
+        }
+      };
     } else {
       scaleAnim.setValue(0);
     }

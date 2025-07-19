@@ -3,483 +3,994 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ReceiptRadar — Grocery Intelligence Platform</title>
+    <title>ReceiptRadar</title>
     <style>
+      /* Reset and Base - Inspired by Ive's precision */
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
 
+      html {
+        font-size: 16px;
+        scroll-behavior: smooth;
+      }
+
       body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          Oxygen, Ubuntu, Cantarell, sans-serif;
-        line-height: 1.6;
-        color: #1a1a1a;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+          "Helvetica Neue", Arial, sans-serif;
+        line-height: 1.618;
+        color: #1d1d1f;
         background-color: #ffffff;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        font-weight: 400;
         overflow-x: hidden;
       }
 
-      .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 20px;
+      /* Typography System - Inspired by Bierut's bold storytelling */
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
+        font-weight: 700;
+        letter-spacing: -0.04em;
+        line-height: 1.1;
       }
 
-      /* Header */
-      header {
-        padding: 2rem 0;
-        border-bottom: 1px solid #e5e5e5;
-        background: #ffffff;
-        position: sticky;
+      h1 {
+        font-size: clamp(4rem, 15vw, 12rem);
+        font-weight: 900;
+        letter-spacing: -0.08em;
+        background: linear-gradient(
+          135deg,
+          #1d1d1f 0%,
+          #434344 25%,
+          #6e6e73 50%,
+          #434344 75%,
+          #1d1d1f 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        position: relative;
+      }
+
+      h1::before {
+        content: "";
+        position: absolute;
         top: 0;
-        z-index: 100;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(
+          135deg,
+          rgba(0, 122, 255, 0.1) 0%,
+          rgba(88, 86, 214, 0.1) 100%
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: shimmer 3s ease-in-out infinite;
       }
 
-      .header-content {
+      @keyframes shimmer {
+        0%,
+        100% {
+          opacity: 0;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+
+      h2 {
+        font-size: clamp(2.5rem, 8vw, 6rem);
+        font-weight: 800;
+        letter-spacing: -0.04em;
+      }
+
+      h3 {
+        font-size: 1.75rem;
+        font-weight: 700;
+      }
+
+      p {
+        font-size: 1.375rem;
+        line-height: 1.7;
+        color: #6e6e73;
+      }
+
+      /* Layout System - Inspired by Rams' systematic approach */
+      .container {
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 0 3rem;
+      }
+
+      .section {
+        padding: 12rem 0;
+        position: relative;
+      }
+
+      .section--hero {
+        padding: 20rem 0 15rem;
+        background: linear-gradient(
+          135deg,
+          #fbfbfd 0%,
+          #f5f5f7 50%,
+          #fbfbfd 100%
+        );
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        position: relative;
+      }
+
+      .section--hero::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(
+            circle at 20% 30%,
+            rgba(0, 122, 255, 0.05) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 80% 70%,
+            rgba(88, 86, 214, 0.05) 0%,
+            transparent 50%
+          );
+      }
+
+      .section--features {
+        background: #ffffff;
+      }
+
+      .section--process {
+        background: linear-gradient(
+          135deg,
+          #1d1d1f 0%,
+          #2d2d30 50%,
+          #1d1d1f 100%
+        );
+        color: #ffffff;
+        position: relative;
+      }
+
+      .section--process::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(
+            circle at 30% 20%,
+            rgba(0, 122, 255, 0.1) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 70% 80%,
+            rgba(88, 86, 214, 0.1) 0%,
+            transparent 50%
+          );
+      }
+
+      .section--stats {
+        background: linear-gradient(
+          135deg,
+          #000000 0%,
+          #1d1d1f 50%,
+          #000000 100%
+        );
+        color: #ffffff;
+        position: relative;
+      }
+
+      .section--stats::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(
+            circle at 25% 25%,
+            rgba(0, 122, 255, 0.15) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 75% 75%,
+            rgba(88, 86, 214, 0.15) 0%,
+            transparent 50%
+          );
+      }
+
+      /* Navigation - Inspired by Ive's attention to materials */
+      .nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(40px);
+        -webkit-backdrop-filter: blur(40px);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .nav__content {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        padding: 2rem 3rem;
       }
 
-      .logo {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: #1a1a1a;
+      .nav__logo {
+        font-size: 2rem;
+        font-weight: 900;
+        color: #1d1d1f;
         text-decoration: none;
+        letter-spacing: -0.03em;
+        position: relative;
       }
 
-      .nav-links {
+      .nav__logo::after {
+        content: "";
+        position: absolute;
+        bottom: -6px;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(90deg, #007aff, #5856d6, #ff2d55);
+        border-radius: 2px;
+        transform: scaleX(0);
+        transition: transform 0.3s ease;
+      }
+
+      .nav__logo:hover::after {
+        transform: scaleX(1);
+      }
+
+      .nav__links {
         display: flex;
-        gap: 2rem;
+        gap: 4rem;
         list-style: none;
       }
 
-      .nav-links a {
+      .nav__link {
         text-decoration: none;
-        color: #666;
-        font-weight: 500;
-        transition: color 0.2s ease;
+        color: #6e6e73;
+        font-weight: 600;
+        font-size: 1.125rem;
+        letter-spacing: 0.01em;
+        transition: all 0.3s ease;
+        position: relative;
+        padding: 0.75rem 1.5rem;
+        border-radius: 12px;
       }
 
-      .nav-links a:hover {
-        color: #1a1a1a;
+      .nav__link:hover {
+        color: #1d1d1f;
+        background: rgba(0, 122, 255, 0.08);
+        transform: translateY(-3px);
       }
 
-      /* Hero Section */
+      /* Hero Section - Inspired by Ive's focus on the essential */
       .hero {
-        padding: 6rem 0;
         text-align: center;
-        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        max-width: 1200px;
+        margin: 0 auto;
+        position: relative;
+        z-index: 2;
       }
 
-      .hero h1 {
-        font-size: 3.5rem;
-        font-weight: 700;
-        margin-bottom: 1.5rem;
-        line-height: 1.2;
-        color: #1a1a1a;
+      .hero__title {
+        margin-bottom: 3rem;
+        position: relative;
       }
 
-      .hero .tagline {
-        font-size: 1.25rem;
-        color: #666;
-        margin-bottom: 2rem;
-        max-width: 600px;
+      .hero__subtitle {
+        font-size: 1.75rem;
+        color: #6e6e73;
+        margin-bottom: 5rem;
+        max-width: 800px;
         margin-left: auto;
         margin-right: auto;
-      }
-
-      .cta-button {
-        display: inline-block;
-        background: #1a1a1a;
-        color: #ffffff;
-        padding: 1rem 2rem;
-        text-decoration: none;
-        border-radius: 8px;
-        font-weight: 600;
-        transition: all 0.2s ease;
-        border: 2px solid #1a1a1a;
-      }
-
-      .cta-button:hover {
-        background: #ffffff;
-        color: #1a1a1a;
-      }
-
-      /* Features Section */
-      .features {
-        padding: 6rem 0;
-        background: #ffffff;
-      }
-
-      .section-title {
-        text-align: center;
-        font-size: 2.5rem;
-        font-weight: 600;
-        margin-bottom: 4rem;
-        color: #1a1a1a;
-      }
-
-      .features-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 3rem;
-        margin-top: 4rem;
-      }
-
-      .feature-card {
-        padding: 2rem;
-        border: 1px solid #e5e5e5;
-        border-radius: 12px;
-        background: #ffffff;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-      }
-
-      .feature-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-      }
-
-      .feature-icon {
-        width: 60px;
-        height: 60px;
-        background: #f8f9fa;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 1.5rem;
-        font-size: 1.5rem;
-      }
-
-      .feature-card h3 {
-        font-size: 1.25rem;
-        font-weight: 600;
-        margin-bottom: 1rem;
-        color: #1a1a1a;
-      }
-
-      .feature-card p {
-        color: #666;
+        font-weight: 500;
+        position: relative;
         line-height: 1.6;
       }
 
-      /* How It Works */
-      .how-it-works {
-        padding: 6rem 0;
-        background: #f8f9fa;
+      .hero__subtitle::after {
+        content: "";
+        position: absolute;
+        bottom: -30px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 120px;
+        height: 6px;
+        background: linear-gradient(90deg, #007aff, #5856d6, #ff2d55);
+        border-radius: 3px;
       }
 
-      .steps {
+      .hero__cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 1.5rem;
+        background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
+        color: #ffffff;
+        padding: 2rem 4rem;
+        text-decoration: none;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 1.25rem;
+        letter-spacing: 0.01em;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none;
+        box-shadow: 0 12px 40px rgba(0, 122, 255, 0.3);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .hero__cta::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.3),
+          transparent
+        );
+        transition: left 0.6s ease;
+      }
+
+      .hero__cta:hover::before {
+        left: 100%;
+      }
+
+      .hero__cta:hover {
+        transform: translateY(-6px) scale(1.05);
+        box-shadow: 0 20px 60px rgba(0, 122, 255, 0.4);
+      }
+
+      /* Features Grid - Inspired by Rams' systematic approach */
+      .features {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 2rem;
-        margin-top: 4rem;
+        grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+        gap: 4rem;
+        margin-top: 6rem;
+      }
+
+      .feature {
+        padding: 4rem;
+        background: #ffffff;
+        border: 2px solid #e5e5e7;
+        border-radius: 32px;
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+      }
+
+      .feature::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+        background: linear-gradient(90deg, #007aff, #5856d6, #ff2d55, #34c759);
+        transform: scaleX(0);
+        transition: transform 0.4s ease;
+      }
+
+      .feature:hover::before {
+        transform: scaleX(1);
+      }
+
+      .feature:hover {
+        border-color: #007aff;
+        transform: translateY(-12px) scale(1.03);
+        box-shadow: 0 24px 80px rgba(0, 122, 255, 0.15);
+      }
+
+      .feature__icon {
+        width: 100px;
+        height: 100px;
+        background: linear-gradient(135deg, #f5f5f7 0%, #e5e5e7 100%);
+        border-radius: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 2.5rem;
+        font-size: 2.5rem;
+        transition: all 0.4s ease;
+        position: relative;
+      }
+
+      .feature__icon::after {
+        content: "";
+        position: absolute;
+        inset: -3px;
+        background: linear-gradient(135deg, #007aff, #5856d6);
+        border-radius: 27px;
+        opacity: 0;
+        transition: opacity 0.4s ease;
+        z-index: -1;
+      }
+
+      .feature:hover .feature__icon {
+        transform: rotate(15deg) scale(1.15);
+      }
+
+      .feature:hover .feature__icon::after {
+        opacity: 1;
+      }
+
+      .feature__title {
+        margin-bottom: 1.5rem;
+        color: #1d1d1f;
+        font-size: 1.75rem;
+      }
+
+      .feature__description {
+        color: #6e6e73;
+        line-height: 1.7;
+        font-size: 1.25rem;
+      }
+
+      /* Process Section - Inspired by Castilho's data visualization */
+      .process {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 5rem;
+        margin-top: 6rem;
       }
 
       .step {
         text-align: center;
-        padding: 2rem;
+        position: relative;
+        padding: 3rem;
       }
 
-      .step-number {
-        width: 60px;
-        height: 60px;
-        background: #1a1a1a;
+      .step:not(:last-child)::after {
+        content: "";
+        position: absolute;
+        top: 80px;
+        right: -2.5rem;
+        width: 4px;
+        height: 100px;
+        background: linear-gradient(180deg, #007aff, #5856d6, #ff2d55);
+        border-radius: 2px;
+      }
+
+      .step__number {
+        width: 120px;
+        height: 120px;
+        background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
         color: #ffffff;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin: 0 auto 1.5rem;
+        font-size: 2.5rem;
+        font-weight: 900;
+        margin: 0 auto 3rem;
+        position: relative;
+        z-index: 2;
+        box-shadow: 0 12px 40px rgba(0, 122, 255, 0.3);
       }
 
-      .step h3 {
-        font-size: 1.25rem;
-        font-weight: 600;
-        margin-bottom: 1rem;
-        color: #1a1a1a;
+      .step__number::before {
+        content: "";
+        position: absolute;
+        inset: -6px;
+        background: linear-gradient(135deg, #007aff, #5856d6, #ff2d55, #34c759);
+        border-radius: 50%;
+        opacity: 0.4;
+        z-index: -1;
+        animation: pulse 3s ease-in-out infinite;
       }
 
-      .step p {
-        color: #666;
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 0.4;
+        }
+        50% {
+          transform: scale(1.2);
+          opacity: 0.1;
+        }
       }
 
-      /* Stats Section */
-      .stats {
-        padding: 4rem 0;
-        background: #1a1a1a;
+      .step__title {
+        margin-bottom: 1.5rem;
         color: #ffffff;
+        font-size: 1.75rem;
       }
 
-      .stats-grid {
+      .step__description {
+        color: #a1a1a6;
+        max-width: 350px;
+        margin: 0 auto;
+        font-size: 1.25rem;
+        line-height: 1.6;
+      }
+
+      /* Stats Section - Inspired by Yuan's bold typography */
+      .stats {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 2rem;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 5rem;
         text-align: center;
       }
 
-      .stat-item h3 {
-        font-size: 2.5rem;
+      .stat {
+        padding: 4rem 3rem;
+        position: relative;
+      }
+
+      .stat::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 6px;
+        background: linear-gradient(90deg, #007aff, #5856d6, #ff2d55);
+        border-radius: 3px;
+      }
+
+      .stat__value {
+        font-size: 5rem;
+        font-weight: 900;
+        color: #ffffff;
+        margin-bottom: 1.5rem;
+        letter-spacing: -0.03em;
+        text-shadow: 0 6px 30px rgba(0, 122, 255, 0.4);
+      }
+
+      .stat__label {
+        color: #a1a1a6;
         font-weight: 700;
-        margin-bottom: 0.5rem;
+        font-size: 1.125rem;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
       }
 
-      .stat-item p {
-        color: #cccccc;
-        font-weight: 500;
+      /* Section Headers - Inspired by Bierut's typography */
+      .section__header {
+        text-align: center;
+        margin-bottom: 6rem;
       }
 
-      /* Footer */
-      footer {
-        padding: 3rem 0;
-        background: #f8f9fa;
-        border-top: 1px solid #e5e5e5;
+      .section__title {
+        margin-bottom: 2rem;
+        color: inherit;
+        position: relative;
       }
 
-      .footer-content {
+      .section__title::after {
+        content: "";
+        position: absolute;
+        bottom: -15px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 6px;
+        background: linear-gradient(90deg, #007aff, #5856d6, #ff2d55);
+        border-radius: 3px;
+      }
+
+      .section__subtitle {
+        font-size: 1.5rem;
+        color: inherit;
+        opacity: 0.8;
+        max-width: 700px;
+        margin: 0 auto;
+        line-height: 1.6;
+      }
+
+      /* Footer - Inspired by Freiberg's attention to detail */
+      .footer {
+        padding: 5rem 0;
+        background: linear-gradient(135deg, #f5f5f7 0%, #e5e5e7 100%);
+        border-top: 2px solid #e5e5e7;
+      }
+
+      .footer__content {
         display: flex;
         justify-content: space-between;
         align-items: center;
         flex-wrap: wrap;
-        gap: 2rem;
+        gap: 3rem;
       }
 
-      .footer-links {
+      .footer__text {
+        color: #6e6e73;
+        font-size: 1.125rem;
+        font-weight: 600;
+      }
+
+      .footer__links {
         display: flex;
-        gap: 2rem;
+        gap: 3rem;
         list-style: none;
       }
 
-      .footer-links a {
+      .footer__link {
         text-decoration: none;
-        color: #666;
-        font-weight: 500;
+        color: #6e6e73;
+        font-weight: 600;
+        font-size: 1.125rem;
+        transition: all 0.3s ease;
+        padding: 0.75rem 1.5rem;
+        border-radius: 12px;
       }
 
-      .footer-links a:hover {
-        color: #1a1a1a;
+      .footer__link:hover {
+        color: #1d1d1f;
+        background: rgba(0, 122, 255, 0.08);
+        transform: translateY(-3px);
       }
 
-      /* Responsive Design */
+      /* Animations - Inspired by Singer's micro-interactions */
+      .fade-in {
+        opacity: 0;
+        transform: translateY(60px);
+        transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .fade-in.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .slide-in-left {
+        opacity: 0;
+        transform: translateX(-80px);
+        transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .slide-in-left.visible {
+        opacity: 1;
+        transform: translateX(0);
+      }
+
+      .slide-in-right {
+        opacity: 0;
+        transform: translateX(80px);
+        transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .slide-in-right.visible {
+        opacity: 1;
+        transform: translateX(0);
+      }
+
+      /* Floating elements - Inspired by Kowalski's dynamic approach */
+      .floating-element {
+        position: absolute;
+        width: 120px;
+        height: 120px;
+        background: linear-gradient(
+          135deg,
+          rgba(0, 122, 255, 0.1),
+          rgba(88, 86, 214, 0.1)
+        );
+        border-radius: 50%;
+        animation: float 8s ease-in-out infinite;
+      }
+
+      .floating-element:nth-child(1) {
+        top: 15%;
+        left: 8%;
+        animation-delay: 0s;
+      }
+
+      .floating-element:nth-child(2) {
+        top: 55%;
+        right: 12%;
+        animation-delay: 2.5s;
+      }
+
+      .floating-element:nth-child(3) {
+        bottom: 15%;
+        left: 15%;
+        animation-delay: 5s;
+      }
+
+      .floating-element:nth-child(4) {
+        top: 35%;
+        right: 25%;
+        animation-delay: 1.5s;
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0px) rotate(0deg) scale(1);
+        }
+        25% {
+          transform: translateY(-30px) rotate(90deg) scale(1.1);
+        }
+        50% {
+          transform: translateY(-20px) rotate(180deg) scale(0.9);
+        }
+        75% {
+          transform: translateY(-40px) rotate(270deg) scale(1.05);
+        }
+      }
+
+      /* Responsive Design - Inspired by Taylor's mobile-first approach */
       @media (max-width: 768px) {
-        .hero h1 {
-          font-size: 2.5rem;
+        .container {
+          padding: 0 2rem;
         }
 
-        .nav-links {
+        .section {
+          padding: 8rem 0;
+        }
+
+        .section--hero {
+          padding: 15rem 0 8rem;
+        }
+
+        .nav__links {
           display: none;
         }
 
-        .features-grid {
+        .features {
           grid-template-columns: 1fr;
+          gap: 3rem;
         }
 
-        .steps {
+        .process {
           grid-template-columns: 1fr;
+          gap: 4rem;
         }
 
-        .footer-content {
+        .step:not(:last-child)::after {
+          display: none;
+        }
+
+        .stats {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 3rem;
+        }
+
+        .footer__content {
           flex-direction: column;
           text-align: center;
         }
-      }
 
-      /* Smooth scrolling */
-      html {
-        scroll-behavior: smooth;
+        .hero__cta {
+          padding: 1.5rem 3rem;
+          font-size: 1.125rem;
+        }
+
+        .floating-element {
+          display: none;
+        }
       }
 
       /* Focus states for accessibility */
-      .cta-button:focus,
-      .nav-links a:focus,
-      .footer-links a:focus {
-        outline: 2px solid #1a1a1a;
-        outline-offset: 2px;
+      .hero__cta:focus,
+      .nav__link:focus,
+      .footer__link:focus {
+        outline: 4px solid #007aff;
+        outline-offset: 3px;
+      }
+
+      /* Loading states */
+      .loading {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      .loaded {
+        opacity: 1;
+        transform: translateY(0);
+        transition: all 1.2s cubic-bezier(0.4, 0, 0.2, 1);
       }
     </style>
   </head>
   <body>
-    <header>
+    <nav class="nav">
       <div class="container">
-        <div class="header-content">
-          <a href="#" class="logo">ReceiptRadar</a>
-          <nav>
-            <ul class="nav-links">
-              <li><a href="#features">Features</a></li>
-              <li><a href="#how-it-works">How It Works</a></li>
-              <li><a href="#about">About</a></li>
-            </ul>
-          </nav>
+        <div class="nav__content">
+          <a href="#" class="nav__logo">ReceiptRadar</a>
+          <ul class="nav__links">
+            <li><a href="#features" class="nav__link">Features</a></li>
+            <li><a href="#process" class="nav__link">Process</a></li>
+            <li><a href="#about" class="nav__link">About</a></li>
+          </ul>
         </div>
       </div>
-    </header>
+    </nav>
 
-    <section class="hero">
+    <section class="section section--hero">
+      <div class="floating-element"></div>
+      <div class="floating-element"></div>
+      <div class="floating-element"></div>
+      <div class="floating-element"></div>
       <div class="container">
-        <h1>Mint for groceries, Plaid for FMCG</h1>
-        <p class="tagline">
-          Transform receipt tracking into comprehensive grocery intelligence.
-          Snap receipts, track spending, and discover savings with 95% accuracy.
-        </p>
-        <a href="#download" class="cta-button">Download App</a>
+        <div class="hero">
+          <h1 class="hero__title">ReceiptRadar</h1>
+          <p class="hero__subtitle">
+            Transform receipt tracking into comprehensive grocery intelligence.
+            Snap receipts, track spending, and discover savings with 95%
+            accuracy.
+          </p>
+          <a href="#download" class="hero__cta">
+            Download App
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 3v14m0 0l-5-5m5 5l5-5"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </a>
+        </div>
       </div>
     </section>
 
-    <section class="features" id="features">
+    <section class="section section--features" id="features">
       <div class="container">
-        <h2 class="section-title">Smart Grocery Intelligence</h2>
-        <div class="features-grid">
-          <div class="feature-card">
-            <div class="feature-icon">📱</div>
-            <h3>2-Tap Receipt Scanning</h3>
-            <p>
-              Simply snap a photo of your receipt and let our AI do the rest.
-              95% accuracy benchmark vs Google Vision with automatic
-              categorization.
+        <div class="section__header">
+          <h2 class="section__title">Intelligent Features</h2>
+          <p class="section__subtitle">
+            Every interaction designed with purpose and precision
+          </p>
+        </div>
+        <div class="features">
+          <div class="feature fade-in">
+            <div class="feature__icon">📱</div>
+            <h3 class="feature__title">Two-Tap Scanning</h3>
+            <p class="feature__description">
+              Simply snap a photo of your receipt. Our AI extracts every detail
+              with 95% accuracy, benchmarked against Google Vision.
             </p>
           </div>
-          <div class="feature-card">
-            <div class="feature-icon">💰</div>
-            <h3>Real-Time Price Intelligence</h3>
-            <p>
-              Compare prices across stores instantly. Get historical price
-              tracking and personalized store recommendations to maximize your
-              savings.
+          <div class="feature fade-in">
+            <div class="feature__icon">💰</div>
+            <h3 class="feature__title">Price Intelligence</h3>
+            <p class="feature__description">
+              Real-time price comparison across stores with historical tracking
+              and personalized recommendations.
             </p>
           </div>
-          <div class="feature-card">
-            <div class="feature-icon">📊</div>
-            <h3>Basket-Level Analysis</h3>
-            <p>
-              Understand your spending patterns with detailed analytics.
-              Identify savings opportunities and track your grocery budget over
-              time.
+          <div class="feature fade-in">
+            <div class="feature__icon">📊</div>
+            <h3 class="feature__title">Basket Analysis</h3>
+            <p class="feature__description">
+              Understand spending patterns with detailed analytics and identify
+              savings opportunities over time.
             </p>
           </div>
-          <div class="feature-card">
-            <div class="feature-icon">🎯</div>
-            <h3>Cashback Integration</h3>
-            <p>
-              Earn cashback on your grocery purchases automatically. Connect
-              your loyalty programs and never miss a saving opportunity.
+          <div class="feature fade-in">
+            <div class="feature__icon">🎯</div>
+            <h3 class="feature__title">Cashback Integration</h3>
+            <p class="feature__description">
+              Earn cashback automatically on grocery purchases with seamless
+              loyalty program connections.
             </p>
           </div>
-          <div class="feature-card">
-            <div class="feature-icon">🔔</div>
-            <h3>Smart Price Alerts</h3>
-            <p>
-              Get notified when your favorite items go on sale. Set price
-              targets and receive alerts when prices drop below your threshold.
+          <div class="feature fade-in">
+            <div class="feature__icon">🔔</div>
+            <h3 class="feature__title">Smart Alerts</h3>
+            <p class="feature__description">
+              Get notified when favorite items go on sale with customizable
+              price targets and thresholds.
             </p>
           </div>
-          <div class="feature-card">
-            <div class="feature-icon">🏠</div>
-            <h3>Household Management</h3>
-            <p>
+          <div class="feature fade-in">
+            <div class="feature__icon">🏠</div>
+            <h3 class="feature__title">Household Sync</h3>
+            <p class="feature__description">
               Share receipts with family members and track household spending
-              together. Perfect for families looking to optimize their grocery
-              budget.
+              together for optimal budget management.
             </p>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="how-it-works" id="how-it-works">
+    <section class="section section--process" id="process">
       <div class="container">
-        <h2 class="section-title">How It Works</h2>
-        <div class="steps">
-          <div class="step">
-            <div class="step-number">1</div>
-            <h3>Snap Receipt</h3>
-            <p>
-              Take a photo of any grocery receipt using your phone's camera. Our
-              AI works with receipts from major retailers.
+        <div class="section__header">
+          <h2 class="section__title">How It Works</h2>
+          <p class="section__subtitle">
+            Three simple steps to intelligent grocery management
+          </p>
+        </div>
+        <div class="process">
+          <div class="step slide-in-left">
+            <div class="step__number">1</div>
+            <h3 class="step__title">Capture</h3>
+            <p class="step__description">
+              Take a photo of any grocery receipt using your phone's camera.
+              Works with all major retailers.
             </p>
           </div>
-          <div class="step">
-            <div class="step-number">2</div>
-            <h3>Instant Analysis</h3>
-            <p>
-              Our OCR technology extracts every item, price, and detail with 95%
-              accuracy. No manual entry required.
+          <div class="step fade-in">
+            <div class="step__number">2</div>
+            <h3 class="step__title">Analyze</h3>
+            <p class="step__description">
+              Our OCR technology extracts every item, price, and detail with
+              industry-leading accuracy.
             </p>
           </div>
-          <div class="step">
-            <div class="step-number">3</div>
-            <h3>Discover Savings</h3>
-            <p>
-              Get real-time price comparisons, historical trends, and
-              personalized recommendations to save money on your next shop.
+          <div class="step slide-in-right">
+            <div class="step__number">3</div>
+            <h3 class="step__title">Optimize</h3>
+            <p class="step__description">
+              Discover real-time price comparisons, historical trends, and
+              personalized savings recommendations.
             </p>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="stats">
+    <section class="section section--stats">
       <div class="container">
-        <div class="stats-grid">
-          <div class="stat-item">
-            <h3>95%</h3>
-            <p>OCR Accuracy</p>
+        <div class="stats">
+          <div class="stat fade-in">
+            <div class="stat__value">95%</div>
+            <div class="stat__label">OCR Accuracy</div>
           </div>
-          <div class="stat-item">
-            <h3>$18</h3>
-            <p>Average Monthly Savings</p>
+          <div class="stat fade-in">
+            <div class="stat__value">$18</div>
+            <div class="stat__label">Monthly Savings</div>
           </div>
-          <div class="stat-item">
-            <h3>55%</h3>
-            <p>Day 1 Retention</p>
+          <div class="stat fade-in">
+            <div class="stat__value">55%</div>
+            <div class="stat__label">Day 1 Retention</div>
           </div>
-          <div class="stat-item">
-            <h3>30%</h3>
-            <p>Day 30 Retention</p>
+          <div class="stat fade-in">
+            <div class="stat__value">30%</div>
+            <div class="stat__label">Day 30 Retention</div>
           </div>
         </div>
       </div>
     </section>
 
-    <footer>
+    <footer class="footer">
       <div class="container">
-        <div class="footer-content">
-          <div>
-            <p>
-              &copy; 2024 ReceiptRadar. Built with ❤️ for smarter grocery
-              shopping.
-            </p>
-          </div>
-          <nav>
-            <ul class="footer-links">
-              <li><a href="#privacy">Privacy</a></li>
-              <li><a href="#terms">Terms</a></li>
-              <li><a href="#support">Support</a></li>
-            </ul>
-          </nav>
+        <div class="footer__content">
+          <p class="footer__text">
+            &copy; 2024 ReceiptRadar. Designed with intention.
+          </p>
+          <ul class="footer__links">
+            <li><a href="#privacy" class="footer__link">Privacy</a></li>
+            <li><a href="#terms" class="footer__link">Terms</a></li>
+            <li><a href="#support" class="footer__link">Support</a></li>
+          </ul>
         </div>
       </div>
     </footer>
 
     <script>
-      // Smooth scrolling for anchor links
-      document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
-        anchor.addEventListener("click", function (e) {
-          e.preventDefault();
-          const target = document.querySelector(this.getAttribute("href"));
-          if (target) {
-            target.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-            });
-          }
-        });
-      });
-
-      // Simple scroll-based animations
+      // Intersection Observer for scroll animations
       const observerOptions = {
         threshold: 0.1,
         rootMargin: "0px 0px -50px 0px",
@@ -488,18 +999,70 @@
       const observer = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            entry.target.style.opacity = "1";
-            entry.target.style.transform = "translateY(0)";
+            entry.target.classList.add("visible");
           }
         });
       }, observerOptions);
 
-      // Observe feature cards and steps
-      document.querySelectorAll(".feature-card, .step").forEach((el) => {
-        el.style.opacity = "0";
-        el.style.transform = "translateY(20px)";
-        el.style.transition = "opacity 0.6s ease, transform 0.6s ease";
-        observer.observe(el);
+      // Observe all animated elements
+      document
+        .querySelectorAll(".fade-in, .slide-in-left, .slide-in-right")
+        .forEach((el) => {
+          observer.observe(el);
+        });
+
+      // Smooth scrolling for navigation
+      document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+        anchor.addEventListener("click", function (e) {
+          e.preventDefault();
+          const target = document.querySelector(this.getAttribute("href"));
+          if (target) {
+            const headerOffset = 80;
+            const elementPosition = target.getBoundingClientRect().top;
+            const offsetPosition =
+              elementPosition + window.pageYOffset - headerOffset;
+
+            window.scrollTo({
+              top: offsetPosition,
+              behavior: "smooth",
+            });
+          }
+        });
+      });
+
+      // Navbar scroll effect
+      let lastScroll = 0;
+      const navbar = document.querySelector(".nav");
+
+      window.addEventListener("scroll", () => {
+        const currentScroll = window.pageYOffset;
+
+        if (currentScroll > 100) {
+          navbar.style.background = "rgba(255, 255, 255, 0.99)";
+          navbar.style.boxShadow = "0 4px 40px rgba(0, 0, 0, 0.1)";
+        } else {
+          navbar.style.background = "rgba(255, 255, 255, 0.98)";
+          navbar.style.boxShadow = "0 2px 30px rgba(0, 0, 0, 0.1)";
+        }
+
+        lastScroll = currentScroll;
+      });
+
+      // Page load animation
+      document.addEventListener("DOMContentLoaded", () => {
+        document.body.classList.add("loaded");
+      });
+
+      // Add some interactive effects
+      document.querySelectorAll(".feature").forEach((feature) => {
+        feature.addEventListener("mouseenter", () => {
+          feature.style.transform =
+            "translateY(-12px) scale(1.03) rotate(2deg)";
+        });
+
+        feature.addEventListener("mouseleave", () => {
+          feature.style.transform = "translateY(0) scale(1) rotate(0deg)";
+        });
       });
     </script>
   </body>

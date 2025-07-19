@@ -32,7 +32,7 @@ export const ProcessingScreen: React.FC<ProcessingScreenProps> = ({
 
   useEffect(() => {
     // Pulse animation for the processing icon
-    Animated.loop(
+    const pulseLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
           toValue: 1.1,
@@ -45,13 +45,19 @@ export const ProcessingScreen: React.FC<ProcessingScreenProps> = ({
           useNativeDriver: true,
         }),
       ])
-    ).start();
+    );
+    pulseLoop.start();
+
+    // Cleanup function
+    return () => {
+      pulseLoop.stop();
+    };
 
     // Progress animation
     Animated.timing(progressAnim, {
       toValue: progress / 100,
       duration: 300,
-      useNativeDriver: false,
+      useNativeDriver: true,
     }).start();
   }, [progress]);
 

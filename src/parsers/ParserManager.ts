@@ -6,15 +6,15 @@ import { PaknSaveParser } from "./PaknSaveParser";
 import { FourSquareParser } from "./FourSquareParser";
 
 export class ParserManager {
-  private parsers: { [key: string]: IReceiptParser };
+  private parsers: IReceiptParser[];
 
   constructor() {
-    this.parsers = {
-      [STORES.COUNTDOWN]: new CountdownParser(),
-      [STORES.NEW_WORLD]: new NewWorldParser(),
-      [STORES.PAKNSAVE]: new PaknSaveParser(),
-      [STORES.FOUR_SQUARE]: new FourSquareParser(),
-    };
+    this.parsers = [
+      new CountdownParser(),
+      new NewWorldParser(),
+      new PaknSaveParser(),
+      new FourSquareParser(),
+    ];
   }
 
   isReceipt(text: string): boolean {
@@ -37,19 +37,50 @@ export class ParserManager {
 
   async parse(text: string): Promise<ParsedReceiptData | null> {
     if (!this.isReceipt(text)) {
-      // Here the worm can say "This is not a receipt. This is chaos."
       console.log("Text does not appear to be a receipt.");
       return null;
     }
 
-    const storeName = this.getStoreName(text);
-    if (storeName && this.parsers[storeName]) {
-      const parser = this.parsers[storeName];
-      return parser.parse(text);
+    // Try store-specific parsers first
+    for (const parser of this.parsers) {
+      if (parser.canParse && parser.canParse(text)) {
+        console.log(`Using ${parser.constructor.name} for parsing`);
+        const result = await parser.parse(text);
+        if (result) {
+          return result;
+        }
+      }
     }
 
-    console.log(`No parser found for store: ${storeName}`);
-    // Potentially try a generic parser here in the future
-    return null;
+    // Fallback to store name detection
+    const storeName = this.getStoreName(text);
+    if (storeName) {
+      console.log(`Falling back to store name detection: ${storeName}`);
+      // Try to find a parser for this store
+      for (const parser of this.parsers) {
+        if (
+          parser.constructor.name
+            .toLowerCase()
+            .includes(storeName.toLowerCase().replace(/\s+/g, ""))
+        ) {
+          const result = await parser.parse(text);
+          if (result) {
+            return result;
+          }
+        }
+      }
+    }
+
+    console.log("No suitable parser found, using fallback data");
+    return this.getFallbackResult();
+  }
+
+  private getFallbackResult(): ParsedReceiptData {
+    return {
+      storeName: "Unknown Store",
+      date: new Date().toISOString().split("T")[0],
+      total: 0,
+      items: [],
+    };
   }
 }

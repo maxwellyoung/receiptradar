@@ -168,7 +168,7 @@ export const RadarWorm: React.FC<RadarWormProps> = ({
     if (!animated) return;
 
     // Continuous goo blob animation
-    Animated.loop(
+    const gooBlobLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(gooBlobAnim, {
           toValue: 1,
@@ -181,10 +181,11 @@ export const RadarWorm: React.FC<RadarWormProps> = ({
           useNativeDriver: true,
         }),
       ])
-    ).start();
+    );
+    gooBlobLoop.start();
 
     // Goo wave animation
-    Animated.loop(
+    const gooWaveLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(gooWaveAnim, {
           toValue: 1,
@@ -197,14 +198,55 @@ export const RadarWorm: React.FC<RadarWormProps> = ({
           useNativeDriver: true,
         }),
       ])
-    ).start();
+    );
+    gooWaveLoop.start();
+
+    // Cleanup function
+    return () => {
+      gooBlobLoop.stop();
+      gooWaveLoop.stop();
+    };
   }, [mood, animated, config.gooSpeed]);
 
   // Advanced gooey physics animation
   useEffect(() => {
     if (!animated) return;
 
+    let isActive = true;
+
     const gooeyLoop = () => {
+      if (!isActive) return;
+
+      const bounceLoop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(bounceAnim, {
+            toValue: config.bounceIntensity,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(bounceAnim, {
+            toValue: 0,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
+      const glowLoop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(glowAnim, {
+            toValue: 1,
+            duration: 3000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(glowAnim, {
+            toValue: 0,
+            duration: 3000,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+
       Animated.parallel([
         Animated.sequence([
           Animated.timing(squishAnim, {
@@ -230,47 +272,32 @@ export const RadarWorm: React.FC<RadarWormProps> = ({
             useNativeDriver: true,
           }),
         ]),
-        Animated.loop(
-          Animated.sequence([
-            Animated.timing(bounceAnim, {
-              toValue: config.bounceIntensity,
-              duration: 2000,
-              useNativeDriver: true,
-            }),
-            Animated.timing(bounceAnim, {
-              toValue: 0,
-              duration: 2000,
-              useNativeDriver: true,
-            }),
-          ])
-        ),
-        Animated.loop(
-          Animated.sequence([
-            Animated.timing(glowAnim, {
-              toValue: 1,
-              duration: 3000,
-              useNativeDriver: true,
-            }),
-            Animated.timing(glowAnim, {
-              toValue: 0,
-              duration: 3000,
-              useNativeDriver: true,
-            }),
-          ])
-        ),
-      ]).start(() => gooeyLoop());
+        bounceLoop,
+        glowLoop,
+      ]).start(() => {
+        if (isActive) {
+          gooeyLoop();
+        }
+      });
     };
 
     gooeyLoop();
+
+    // Cleanup function
+    return () => {
+      isActive = false;
+    };
   }, [mood, animated, config.gooeyness, config.bounceIntensity]);
 
   // Characterful eye animations
   useEffect(() => {
     if (!animated) return;
 
+    let eyeLoop: Animated.CompositeAnimation | null = null;
+
     switch (config.eyeStyle) {
       case "wide":
-        Animated.loop(
+        eyeLoop = Animated.loop(
           Animated.sequence([
             Animated.timing(eyeAnim, {
               toValue: 1.5,
@@ -283,10 +310,11 @@ export const RadarWorm: React.FC<RadarWormProps> = ({
               useNativeDriver: true,
             }),
           ])
-        ).start();
+        );
+        eyeLoop.start();
         break;
       case "narrow":
-        Animated.loop(
+        eyeLoop = Animated.loop(
           Animated.sequence([
             Animated.timing(eyeAnim, {
               toValue: 0.5,
@@ -299,10 +327,11 @@ export const RadarWorm: React.FC<RadarWormProps> = ({
               useNativeDriver: true,
             }),
           ])
-        ).start();
+        );
+        eyeLoop.start();
         break;
       case "sparkle":
-        Animated.loop(
+        eyeLoop = Animated.loop(
           Animated.sequence([
             Animated.timing(eyeAnim, {
               toValue: 1.4,
@@ -315,7 +344,8 @@ export const RadarWorm: React.FC<RadarWormProps> = ({
               useNativeDriver: true,
             }),
           ])
-        ).start();
+        );
+        eyeLoop.start();
         break;
       case "squint":
         eyeAnim.setValue(0.4);
@@ -323,13 +353,20 @@ export const RadarWorm: React.FC<RadarWormProps> = ({
       default:
         eyeAnim.setValue(1);
     }
+
+    // Cleanup function
+    return () => {
+      if (eyeLoop) {
+        eyeLoop.stop();
+      }
+    };
   }, [mood, animated]);
 
   // Continuous wiggle animation
   useEffect(() => {
     if (!animated) return;
 
-    Animated.loop(
+    const wiggleLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(wiggleAnim, {
           toValue: 1,
@@ -342,7 +379,13 @@ export const RadarWorm: React.FC<RadarWormProps> = ({
           useNativeDriver: true,
         }),
       ])
-    ).start();
+    );
+    wiggleLoop.start();
+
+    // Cleanup function
+    return () => {
+      wiggleLoop.stop();
+    };
   }, [animated]);
 
   // Entrance animation
@@ -502,7 +545,7 @@ export const RadarWorm: React.FC<RadarWormProps> = ({
 
   const onGestureEvent = Animated.event(
     [{ nativeEvent: { translationX: pan.x, translationY: pan.y } }],
-    { useNativeDriver: false }
+    { useNativeDriver: true }
   );
 
   const onHandlerStateChange = (event: any) => {
@@ -516,13 +559,13 @@ export const RadarWorm: React.FC<RadarWormProps> = ({
       Animated.parallel([
         Animated.spring(pan.x, {
           toValue: 0,
-          useNativeDriver: false,
+          useNativeDriver: true,
           tension: 30,
           friction: 8,
         }),
         Animated.spring(pan.y, {
           toValue: 0,
-          useNativeDriver: false,
+          useNativeDriver: true,
           tension: 30,
           friction: 8,
         }),
