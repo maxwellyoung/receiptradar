@@ -45,85 +45,66 @@ class OCRService {
     this.baseUrl = baseUrl;
   }
 
+  private createFormData(imageUri: string): FormData {
+    const formData = new FormData();
+
+    // Handle different image URI formats
+    const imageFile = {
+      uri: imageUri,
+      type: "image/jpeg",
+      name: "receipt.jpg",
+    } as any;
+
+    formData.append("file", imageFile);
+    return formData;
+  }
+
   async parseReceipt(imageUri: string): Promise<OCRResult> {
     try {
       logger.info("Starting OCR processing", { imageUri });
 
-      // Create FormData for image upload
-      const formData = new FormData();
-
-      // Handle different image URI formats
-      const imageFile = {
-        uri: imageUri,
-        type: "image/jpeg",
-        name: "receipt.jpg",
-      } as any;
-
-      formData.append("file", imageFile);
-
-      // Add retry mechanism
-      const maxRetries = 3;
-      let lastError: Error | null = null;
-
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        try {
-          const response = await fetch(`${this.baseUrl}/parse`, {
-            method: "POST",
-            body: formData,
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-            // Add timeout
-            signal: AbortSignal.timeout(30000), // 30 second timeout
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(
-              `OCR service error: ${response.status} - ${errorText}`
-            );
-          }
-
-          const result = await response.json();
-
-          // Validate the result
-          if (!this.validateOCRResult(result)) {
-            throw new Error("Invalid OCR result received");
-          }
-
-          logger.info("OCR processing completed", {
-            itemCount: result.items?.length || 0,
-            total: result.total,
-            processingTime: result.processing_time,
-            confidence: result.validation?.confidence_score,
-          });
-
-          return result;
-        } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : String(error);
-          lastError = new Error(errorMessage);
-          logger.warn(`OCR attempt ${attempt} failed`, {
-            errorMessage,
-            attempt,
-            maxRetries,
-          });
-
-          // If this is the last attempt, throw the error
-          if (attempt === maxRetries) {
-            throw error;
-          }
-
-          // Wait before retrying (exponential backoff)
-          await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
-        }
+      // Check if service is available first
+      const isHealthy = await this.healthCheck();
+      if (!isHealthy) {
+        logger.warn("OCR service unavailable, using fallback immediately");
+        return this.getFallbackResult("OCR service unavailable");
       }
 
-      throw lastError || new Error("OCR processing failed after all retries");
+      // Try to process with OCR service
+      const response = await fetch(`${this.baseUrl}/parse`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        body: this.createFormData(imageUri),
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `OCR service returned ${response.status}: ${response.statusText}`
+        );
+      }
+
+      const result = await response.json();
+
+      // Validate the result
+      if (this.validateOCRResult(result)) {
+        logger.info("OCR processing successful", {
+          store: result.store_name,
+          total: result.total,
+          itemCount: result.items?.length || 0,
+        });
+        return result;
+      } else {
+        throw new Error("Invalid OCR result structure");
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      logger.error("OCR processing failed", { errorMessage, imageUri });
+      logger.warn("OCR processing failed, using fallback", {
+        errorMessage,
+        imageUri,
+      });
 
       // Return enhanced fallback result with error information
       return this.getFallbackResult(errorMessage);
@@ -316,7 +297,9 @@ class OCRService {
 
       return await response.json();
     } catch (error) {
-      logger.error("Price history failed", { error, itemName });
+      const errorObj =
+        error instanceof Error ? error : new Error(String(error));
+      logger.error("Price history failed", errorObj, { itemName });
       return { price_history: [] };
     }
   }
