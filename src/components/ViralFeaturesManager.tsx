@@ -7,11 +7,13 @@ import {
   Text,
   Animated,
   Easing,
+  Dimensions,
 } from "react-native";
 import { ReceiptCritter } from "./ReceiptCritter";
 import { ConfettiBarcodeRain } from "./ConfettiBarcodeRain";
 import { GroceryAura } from "./GroceryAura";
 import * as Haptics from "expo-haptics";
+import { MaterialIcons } from "@expo/vector-icons";
 
 interface ViralFeaturesManagerProps {
   totalSpend: number;
@@ -23,6 +25,7 @@ interface ViralFeaturesManagerProps {
 const BUTTON_BOUNCE_DURATION = 200;
 const MASCOT_POP_DURATION = 400;
 const MASCOT_SLIDE_DISTANCE = 60;
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 export const ViralFeaturesManager: React.FC<ViralFeaturesManagerProps> = ({
   totalSpend,
@@ -41,8 +44,24 @@ export const ViralFeaturesManager: React.FC<ViralFeaturesManagerProps> = ({
   );
   const mascotBounceAnim = useRef(new Animated.Value(0)).current;
   const auraRevealAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
 
   useEffect(() => {
+    // Start entrance animations
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
     if (step === "confetti") {
       setShowConfetti(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -81,47 +100,41 @@ export const ViralFeaturesManager: React.FC<ViralFeaturesManagerProps> = ({
     console.log("Sharing critter!");
   };
 
-  const handleCritterContinue = async () => {
-    // Animate button bounce
+  const handleContinue = () => {
+    if (step === "confetti") {
+      setStep("mascot");
+    } else if (step === "mascot") {
+      setShowCritter(false);
+      setStep("aura");
+    } else if (step === "aura") {
+      setShowAura(false);
+      setStep("done");
+    }
+  };
+
+  const handleCritterComplete = () => {
+    setCritterDone(true);
+    setTimeout(() => {
+      setShowCritter(false);
+      setStep("aura");
+    }, 1000);
+  };
+
+  const handleButtonPress = () => {
     Animated.sequence([
       Animated.timing(buttonAnim, {
-        toValue: 1.15,
-        duration: BUTTON_BOUNCE_DURATION,
+        toValue: 0.95,
+        duration: BUTTON_BOUNCE_DURATION / 2,
         useNativeDriver: true,
-        easing: Easing.out(Easing.ease),
       }),
       Animated.timing(buttonAnim, {
         toValue: 1,
-        duration: BUTTON_BOUNCE_DURATION,
+        duration: BUTTON_BOUNCE_DURATION / 2,
         useNativeDriver: true,
-        easing: Easing.in(Easing.ease),
       }),
     ]).start();
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // TODO: Play button sound here when sound file is available
-    // Confetti burst (reuse ConfettiBarcodeRain or trigger parent confetti if needed)
-    setTimeout(() => {
-      setShowCritter(false);
-      setCritterDone(true);
-      setTimeout(() => {
-        setShowAura(true);
-      }, 500);
-    }, BUTTON_BOUNCE_DURATION * 2);
-  };
 
-  const handleAuraShare = () => {
-    setShowAura(false);
-  };
-
-  const handleContinue = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (step === "mascot") {
-      setShowCritter(false);
-      setTimeout(() => setStep("aura"), 400);
-    } else if (step === "aura") {
-      setShowAura(false);
-      setTimeout(() => setStep("done"), 400);
-    }
+    handleContinue();
   };
 
   return (
@@ -133,52 +146,79 @@ export const ViralFeaturesManager: React.FC<ViralFeaturesManagerProps> = ({
         animationType="fade"
         onRequestClose={() => setShowCritter(false)}
       >
-        <View style={styles.fullScreenModal}>
+        <View style={styles.background}>
           <Animated.View
-            style={{
-              transform: [
-                { scale: mascotAnim },
-                {
-                  translateY: mascotAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [MASCOT_SLIDE_DISTANCE, 0],
-                  }),
-                },
-              ],
-              opacity: mascotAnim,
-            }}
+            style={[
+              styles.fullScreenModal,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              },
+            ]}
           >
-            <Animated.View
-              style={{
-                transform: [
-                  {
-                    scale: mascotBounceAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.7, 1],
-                    }),
-                  },
-                ],
-              }}
-            >
-              <ReceiptCritter
-                totalSpend={totalSpend}
-                categoryBreakdown={categoryBreakdown}
-                onShare={handleCritterShare}
-                visible={showCritter}
-              />
-            </Animated.View>
-          </Animated.View>
-          <Text style={styles.critterCopy}>
-            You're a grocery genius. Your mascot is here to celebrate your
-            mindful spending!
-          </Text>
-          <Animated.View style={{ transform: [{ scale: buttonAnim }] }}>
-            <TouchableOpacity
-              style={styles.continueButton}
-              onPress={handleContinue}
-            >
-              <Text style={styles.continueButtonText}>Continue ➡️</Text>
-            </TouchableOpacity>
+            <View style={styles.contentContainer}>
+              <Animated.View
+                style={{
+                  transform: [
+                    { scale: mascotAnim },
+                    {
+                      translateY: mascotAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [MASCOT_SLIDE_DISTANCE, 0],
+                      }),
+                    },
+                  ],
+                  opacity: mascotAnim,
+                }}
+              >
+                <Animated.View
+                  style={{
+                    transform: [
+                      {
+                        scale: mascotBounceAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.7, 1],
+                        }),
+                      },
+                    ],
+                  }}
+                >
+                  <ReceiptCritter
+                    totalSpend={totalSpend}
+                    categoryBreakdown={categoryBreakdown}
+                    onShare={handleCritterShare}
+                    visible={showCritter}
+                  />
+                </Animated.View>
+              </Animated.View>
+
+              <View style={styles.textContainer}>
+                <Text style={styles.critterTitle}>
+                  🎉 You're a Grocery Genius! 🎉
+                </Text>
+                <Text style={styles.critterCopy}>
+                  Your mascot is here to celebrate your mindful spending! Keep
+                  up the amazing work with your budget.
+                </Text>
+              </View>
+
+              <Animated.View style={{ transform: [{ scale: buttonAnim }] }}>
+                <TouchableOpacity
+                  style={styles.continueButton}
+                  onPress={handleButtonPress}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.buttonContent}>
+                    <Text style={styles.continueButtonText}>Continue</Text>
+                    <MaterialIcons
+                      name="arrow-forward"
+                      size={20}
+                      color="#FFFFFF"
+                    />
+                  </View>
+                </TouchableOpacity>
+              </Animated.View>
+            </View>
           </Animated.View>
         </View>
       </Modal>
@@ -198,18 +238,43 @@ export const ViralFeaturesManager: React.FC<ViralFeaturesManagerProps> = ({
         onRequestClose={() => setShowAura(false)}
       >
         <View style={styles.modalOverlay}>
-          <Animated.View style={{ opacity: auraRevealAnim }}>
-            <GroceryAura
-              categoryBreakdown={categoryBreakdown}
-              totalSpend={totalSpend}
-              weekNumber={weekNumber}
-            />
-            <TouchableOpacity
-              onPress={handleContinue}
-              style={styles.continueButton}
-            >
-              <Text style={styles.continueButtonText}>Continue ➡️</Text>
-            </TouchableOpacity>
+          <Animated.View
+            style={[
+              styles.modalContent,
+              {
+                opacity: fadeAnim,
+                transform: [{ scale: slideAnim }],
+              },
+            ]}
+          >
+            <View style={styles.modalBackground}>
+              <Animated.View
+                style={[styles.auraContainer, { opacity: auraRevealAnim }]}
+              >
+                <GroceryAura
+                  categoryBreakdown={categoryBreakdown}
+                  totalSpend={totalSpend}
+                  weekNumber={weekNumber}
+                />
+              </Animated.View>
+
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity
+                  onPress={handleButtonPress}
+                  style={styles.auraContinueButton}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.auraButtonContent}>
+                    <Text style={styles.auraContinueButtonText}>Continue</Text>
+                    <MaterialIcons
+                      name="arrow-forward"
+                      size={20}
+                      color="#FFFFFF"
+                    />
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
           </Animated.View>
         </View>
       </Modal>
@@ -225,43 +290,126 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 1000,
+    pointerEvents: "box-none",
   },
-  modalOverlay: {
+  background: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: "#F2F2F7",
   },
   fullScreenModal: {
     flex: 1,
-    backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
-    padding: 32,
+    padding: 24,
+  },
+  contentContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+  },
+  textContainer: {
+    alignItems: "center",
+    marginTop: 32,
+    marginBottom: 40,
+    paddingHorizontal: 20,
+  },
+  critterTitle: {
+    fontSize: 24,
+    fontWeight: "600",
+    color: "#1D1D1F",
+    textAlign: "center",
+    marginBottom: 16,
+    letterSpacing: -0.5,
   },
   critterCopy: {
-    fontSize: 18,
-    color: "#222",
+    fontSize: 16,
+    color: "#86868B",
     textAlign: "center",
-    marginVertical: 24,
-    fontWeight: "500",
+    lineHeight: 22,
+    fontWeight: "400",
   },
   continueButton: {
-    backgroundColor: "#10B981",
-    borderRadius: 24,
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    marginTop: 12,
-    shadowColor: "#000",
+    backgroundColor: "#007AFF",
+    borderRadius: 12,
+    overflow: "hidden",
+    shadowColor: "#007AFF",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 8,
+  },
+  buttonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    gap: 8,
   },
   continueButtonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "700",
-    letterSpacing: 1,
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  modalOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+    zIndex: 1001,
+  },
+  modalContent: {
+    width: screenWidth - 40,
+    maxHeight: screenHeight - 120,
+    borderRadius: 20,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalBackground: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  auraContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  buttonContainer: {
+    padding: 24,
+    paddingTop: 0,
+  },
+  auraContinueButton: {
+    backgroundColor: "#007AFF",
+    borderRadius: 12,
+    overflow: "hidden",
+    shadowColor: "#007AFF",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  auraButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    gap: 8,
+  },
+  auraContinueButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

@@ -1,8 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { rateLimiter } from "hono-rate-limiter";
-import { serve } from "@hono/node-server";
 
 import { auth } from "./middleware/auth";
 import { receipts } from "./routes/receipts";
@@ -10,18 +8,17 @@ import { households } from "./routes/households";
 // import { users } from "./routes/users";
 // import { analytics } from "./routes/analytics";
 // import { webhooks } from "./routes/webhooks";
-import Redis from "ioredis";
 
 const app = new Hono();
 
-// Initialize Redis client
-export const redis = new Redis({
-  host: "redis-13324.c232.us-east-1-2.ec2.redns.redis-cloud.com",
-  port: 13324,
-  username: "default", // change if you have a custom user
-  password: "", // TODO: Set your actual Redis password here
-  db: 0, // default database
-});
+// Initialize Redis client (commented out for Cloudflare Workers compatibility)
+// export const redis = new Redis({
+//   host: "redis-13324.c232.us-east-1-2.ec2.redns.redis-cloud.com",
+//   port: 13324,
+//   username: "default", // change if you have a custom user
+//   password: "", // TODO: Set your actual Redis password here
+//   db: 0, // default database
+// });
 
 // Middleware
 app.use("*", logger());
@@ -34,21 +31,21 @@ app.use(
   })
 );
 
-// Rate Limiting
-const limiter = rateLimiter({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 100, // Limit each IP to 100 requests per `window`
-  standardHeaders: "draft-6",
-  keyGenerator: (c) => {
-    // A more robust key generator would be needed in a real app
-    return (
-      c.req.header("x-forwarded-for") ||
-      c.req.header("cf-connecting-ip") ||
-      "unknown"
-    );
-  },
-});
-app.use(limiter);
+// Rate Limiting (commented out for Cloudflare Workers compatibility)
+// const limiter = rateLimiter({
+//   windowMs: 15 * 60 * 1000, // 15 minutes
+//   limit: 100, // Limit each IP to 100 requests per `window`
+//   standardHeaders: "draft-6",
+//   keyGenerator: (c) => {
+//     // A more robust key generator would be needed in a real app
+//     return (
+//       c.req.header("x-forwarded-for") ||
+//       c.req.header("cf-connecting-ip") ||
+//       "unknown"
+//     );
+//   },
+// });
+// app.use(limiter);
 
 // Health check
 app.get("/", (c) => {
@@ -91,14 +88,6 @@ app.notFound((c) => {
   );
 });
 
-// --- Server ---
-
-const port = 3000;
-console.log(`Server is running on port ${port}`);
-
-serve({
-  fetch: app.fetch,
-  port,
-});
+// --- Cloudflare Workers Export ---
 
 export default app;

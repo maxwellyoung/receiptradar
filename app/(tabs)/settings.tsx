@@ -152,6 +152,7 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
+      edges={["top", "left", "right"]}
     >
       <ScrollView
         contentContainerStyle={styles.scrollContentContainer}

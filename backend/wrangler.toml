@@ -6,6 +6,15 @@
 name = "receiptradar-api"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
+nodejs_compat = true
+
+[dev]
+port = 8787
+local = true
+host = "0.0.0.0"
+
+[triggers]
+crons = []
 
 [env.production]
 name = "receiptradar-api"
@@ -13,11 +22,11 @@ name = "receiptradar-api"
 [env.production.vars]
 ENVIRONMENT = "production"
 SUPABASE_URL = "https://cihuylmusthumxpuexrl.supabase.co"
-SUPABASE_ANON_KEY = "<your_supabase_anon_key>"
-SUPABASE_SERVICE_ROLE_KEY = "<your_supabase_service_role_key>"
-OCR_SERVICE_URL = "https://receiptradar-ocr.fly.dev" # or your local OCR URL
-STRIPE_SECRET_KEY = "<your_stripe_secret_key>"
-STRIPE_WEBHOOK_SECRET = "<your_stripe_webhook_secret>"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpaHV5bG11c3RodW14cHVleHJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1NjkxMTEsImV4cCI6MjA2ODE0NTExMX0.x8hRnjkgiqDtrninQ44hn76bkHwTRLjNsiQRh4x-fPU"
+SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpaHV5bG11c3RodW14cHVleHJsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjU2OTExMSwiZXhwIjoyMDY4MTQ1MTExfQ.2sdXqL8HuvZris4IRzP0uG-yLyUIlgVyWwrKv6MpLTQ"
+OCR_SERVICE_URL = "https://receiptradar-ocr.fly.dev"
+STRIPE_SECRET_KEY = ""
+STRIPE_WEBHOOK_SECRET = ""
 
 [env.staging]
 name = "receiptradar-api-staging"

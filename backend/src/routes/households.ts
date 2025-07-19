@@ -42,7 +42,7 @@ households.post(
 
     // Add the owner as a member of the household
     const { error: memberError } = await supabaseClient
-      .from("household_members")
+      .from("household_users")
       .insert({ household_id: household.id, user_id: user.id });
 
     if (memberError) {
@@ -67,12 +67,43 @@ households.get("/", async (c) => {
       id,
       name,
       owner_id,
-      members:household_members(user_id)
+      members:household_users(user_id)
     `
     )
     .eq("members.user_id", user.id);
 
   if (error) {
+    return c.json({ error: error.message }, 500);
+  }
+
+  return c.json(data);
+});
+
+// Get the current user's household (first one they're a member of)
+households.get("/mine", async (c) => {
+  const user = c.get("user");
+  const supabaseClient = createSupabaseClient(c.env);
+
+  const { data, error } = await supabaseClient
+    .from("households")
+    .select(
+      `
+      id,
+      name,
+      owner_id,
+      created_at,
+      updated_at,
+      members:household_users(user:users(id, email))
+    `
+    )
+    .eq("members.user_id", user.id)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") {
+      // No household found
+      return c.json({ error: "No household found" }, 404);
+    }
     return c.json({ error: error.message }, 500);
   }
 
@@ -119,7 +150,7 @@ households.post(
 
     // 3. Add the new member to the household
     const { error: insertError } = await supabaseClient
-      .from("household_members")
+      .from("household_users")
       .insert({ household_id: householdId, user_id: newMember.id });
 
     if (insertError) {
@@ -147,7 +178,7 @@ households.get("/:id", async (c) => {
       id,
       name,
       owner_id,
-      members:household_members(user:users(id, email))
+      members:household_users(user:users(id, email))
     `
     )
     .eq("id", id)

@@ -3,6 +3,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useThemeContext } from "@/contexts/ThemeContext";
 import { View, ActivityIndicator } from "react-native";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { spacing, shadows } from "@/constants/theme";
 
 // Debug logging to test file loading and imports
 console.log("=== TAB LAYOUT DEBUG ===");
@@ -53,9 +54,10 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: theme.colors.surface,
           borderTopWidth: 0,
-          elevation: 0,
-          paddingTop: 12,
-          height: 90,
+          paddingTop: spacing.sm,
+          paddingBottom: spacing.sm,
+          height: 88,
+          ...shadows.lg, // Add subtle shadow to tab bar
         },
         headerShown: false,
         tabBarShowLabel: false,

@@ -13,7 +13,7 @@ from decimal import Decimal
 import asyncpg
 from asyncpg.pool import Pool
 from receipt_parser import ReceiptData, ReceiptItem
-from ocr.constants import BUSINESS_RULES
+from constants import BUSINESS_RULES
 
 logger = logging.getLogger(__name__)
 

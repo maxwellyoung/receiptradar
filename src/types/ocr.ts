@@ -25,8 +25,8 @@ export interface ReceiptOCRData {
   receipt_number?: string;
   validation: {
     is_valid: boolean;
-    warnings: string[];
-    errors: string[];
+    confidence_score: number;
+    issues: string[];
   };
   processing_time: number;
 }
@@ -44,4 +44,4 @@ export interface ReceiptValidation {
   isValid: boolean;
   warnings: string[];
   errors: string[];
-} 
+}

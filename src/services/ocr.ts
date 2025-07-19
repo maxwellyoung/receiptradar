@@ -2,7 +2,7 @@ import { logger } from "@/utils/logger";
 import { handleAsyncError } from "@/utils/error-handler";
 
 const OCR_SERVICE_URL =
-  process.env.EXPO_PUBLIC_API_URL || "http://localhost:8000";
+  process.env.EXPO_PUBLIC_OCR_URL || "https://receiptradar-ocr.fly.dev";
 
 export interface OCRItem {
   name: string;
@@ -61,85 +61,103 @@ class OCRService {
 
       formData.append("file", imageFile);
 
-      const response = await fetch(`${this.baseUrl}/parse`, {
-        method: "POST",
-        body: formData,
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      // Add retry mechanism
+      const maxRetries = 3;
+      let lastError: Error | null = null;
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`OCR service error: ${response.status} - ${errorText}`);
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          const response = await fetch(`${this.baseUrl}/parse`, {
+            method: "POST",
+            body: formData,
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+            // Add timeout
+            signal: AbortSignal.timeout(30000), // 30 second timeout
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(
+              `OCR service error: ${response.status} - ${errorText}`
+            );
+          }
+
+          const result = await response.json();
+
+          // Validate the result
+          if (!this.validateOCRResult(result)) {
+            throw new Error("Invalid OCR result received");
+          }
+
+          logger.info("OCR processing completed", {
+            itemCount: result.items?.length || 0,
+            total: result.total,
+            processingTime: result.processing_time,
+            confidence: result.validation?.confidence_score,
+          });
+
+          return result;
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          lastError = new Error(errorMessage);
+          logger.warn(`OCR attempt ${attempt} failed`, {
+            errorMessage,
+            attempt,
+            maxRetries,
+          });
+
+          // If this is the last attempt, throw the error
+          if (attempt === maxRetries) {
+            throw error;
+          }
+
+          // Wait before retrying (exponential backoff)
+          await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+        }
       }
 
-      const result = await response.json();
-      logger.info("OCR processing completed", {
-        itemCount: result.items?.length || 0,
-        total: result.total,
-        processingTime: result.processing_time,
-      });
-
-      return result;
+      throw lastError || new Error("OCR processing failed after all retries");
     } catch (error) {
-      logger.error("OCR processing failed", { error: error.message, imageUri });
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      logger.error("OCR processing failed", { errorMessage, imageUri });
 
-      // Return fallback result for development
-      return this.getFallbackResult();
+      // Return enhanced fallback result with error information
+      return this.getFallbackResult(errorMessage);
     }
   }
 
-  async saveReceipt(receiptData: SaveReceiptRequest): Promise<boolean> {
-    try {
-      logger.info("Saving receipt to backend", {
-        store: receiptData.store_name,
-        total: receiptData.total_amount,
-      });
+  private validateOCRResult(result: any): boolean {
+    // Basic validation of OCR result structure
+    if (!result || typeof result !== "object") {
+      return false;
+    }
 
-      const response = await fetch(`${this.baseUrl}/store-prices`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          receipt_data: receiptData,
-          store_id: receiptData.store_name.toLowerCase().replace(/\s+/g, "_"),
-          user_id: "anonymous", // Will be replaced with real user ID
-        }),
-      });
+    // Check for required fields
+    if (!result.validation || typeof result.validation !== "object") {
+      return false;
+    }
 
-      if (!response.ok) {
-        throw new Error(`Failed to save receipt: ${response.status}`);
+    if (!Array.isArray(result.items)) {
+      return false;
+    }
+
+    // Validate items structure
+    for (const item of result.items) {
+      if (!item.name || typeof item.price !== "number" || item.price < 0) {
+        return false;
       }
-
-      logger.info("Receipt saved successfully");
-      return true;
-    } catch (error) {
-      logger.error("Failed to save receipt", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return false;
     }
+
+    return true;
   }
 
-  async healthCheck(): Promise<boolean> {
-    try {
-      const response = await fetch(`${this.baseUrl}/health`, {
-        method: "GET",
-        timeout: 5000,
-      } as any);
-
-      return response.ok;
-    } catch (error) {
-      logger.warn("OCR service health check failed", { error });
-      return false;
-    }
-  }
-
-  private getFallbackResult(): OCRResult {
-    // Fallback result for when OCR service is unavailable
-    return {
+  private getFallbackResult(errorMessage?: string): OCRResult {
+    // Enhanced fallback result with error information
+    const fallbackResult: OCRResult = {
       store_name: "Demo Store",
       date: new Date().toISOString().split("T")[0],
       total: 45.67,
@@ -172,10 +190,67 @@ class OCRService {
       validation: {
         is_valid: true,
         confidence_score: 0.92,
-        issues: [],
+        issues: errorMessage ? [`OCR Service Error: ${errorMessage}`] : [],
       },
       processing_time: 1.2,
     };
+
+    // If there was an error, mark as invalid
+    if (errorMessage) {
+      fallbackResult.validation.is_valid = false;
+      fallbackResult.validation.confidence_score = 0.3;
+    }
+
+    return fallbackResult;
+  }
+
+  async saveReceipt(receiptData: SaveReceiptRequest): Promise<boolean> {
+    try {
+      logger.info("Saving receipt to backend", {
+        store: receiptData.store_name,
+        total: receiptData.total_amount,
+      });
+
+      const response = await fetch(`${this.baseUrl}/store-prices`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          receipt_data: receiptData,
+          store_id: receiptData.store_name.toLowerCase().replace(/\s+/g, "_"),
+          user_id: "anonymous", // Will be replaced with real user ID
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to save receipt: ${response.status}`);
+      }
+
+      logger.info("Receipt saved successfully");
+      return true;
+    } catch (error) {
+      // Don't log as error since this is expected when backend is not running
+      logger.info("Backend save skipped (service unavailable)", {
+        store: receiptData.store_name,
+        total: receiptData.total_amount,
+      });
+      return false;
+    }
+  }
+
+  async healthCheck(): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.baseUrl}/health`, {
+        method: "GET",
+        timeout: 5000,
+      } as any);
+
+      return response.ok;
+    } catch (error) {
+      logger.warn("OCR service health check failed", { error });
+      return false;
+    }
   }
 
   // Analyze savings opportunities
@@ -204,7 +279,11 @@ class OCRService {
 
       return await response.json();
     } catch (error) {
-      logger.error("Savings analysis failed", { error });
+      // Don't log as error since this is expected when backend is not running
+      logger.info("Savings analysis skipped (service unavailable)", {
+        itemCount: items.length,
+        storeId,
+      });
       return {
         total_savings: 0,
         savings_opportunities: [],

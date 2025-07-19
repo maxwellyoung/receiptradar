@@ -14,6 +14,7 @@ import logging
 from loguru import logger
 from receipt_parser import ReceiptParser, ReceiptData, ReceiptItem
 from price_intelligence import PriceIntelligenceService, BasketAnalysis
+import re
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -80,23 +81,191 @@ class OCRResponse(BaseModel):
     image_size: dict
 
 def preprocess_image(image_bytes: bytes) -> np.ndarray:
-    """Preprocess image for better OCR results"""
+    """Enhanced preprocessing for better OCR results"""
     # Convert bytes to numpy array
     nparr = np.frombuffer(image_bytes, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     
+    # Get image dimensions
+    height, width = img.shape[:2]
+    
     # Convert to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     
-    # Apply adaptive thresholding
+    # Apply perspective correction if needed
+    corrected = apply_perspective_correction(gray)
+    
+    # Enhance contrast
+    enhanced = enhance_contrast(corrected)
+    
+    # Apply adaptive thresholding with better parameters
     thresh = cv2.adaptiveThreshold(
-        gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2
+        enhanced, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 15, 5
     )
     
-    # Denoise
-    denoised = cv2.fastNlMeansDenoising(thresh)
+    # Denoise with better parameters
+    denoised = cv2.fastNlMeansDenoising(thresh, None, 10, 7, 21)
     
-    return denoised
+    # Apply morphological operations to clean up text
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+    cleaned = cv2.morphologyEx(denoised, cv2.MORPH_CLOSE, kernel)
+    
+    return cleaned
+
+def apply_perspective_correction(image: np.ndarray) -> np.ndarray:
+    """Apply perspective correction to straighten receipt"""
+    try:
+        # Find edges
+        edges = cv2.Canny(image, 50, 150, apertureSize=3)
+        
+        # Find contours
+        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        if contours:
+            # Find the largest contour (likely the receipt)
+            largest_contour = max(contours, key=cv2.contourArea)
+            
+            # Approximate the contour to a polygon
+            epsilon = 0.02 * cv2.arcLength(largest_contour, True)
+            approx = cv2.approxPolyDP(largest_contour, epsilon, True)
+            
+            # If we have 4 points, it's likely a rectangle
+            if len(approx) == 4:
+                # Order points: top-left, top-right, bottom-right, bottom-left
+                pts = approx.reshape(4, 2)
+                rect = np.zeros((4, 2), dtype="float32")
+                
+                # Top-left point will have the smallest sum
+                s = pts.sum(axis=1)
+                rect[0] = pts[np.argmin(s)]
+                rect[2] = pts[np.argmax(s)]
+                
+                # Top-right point will have the smallest difference
+                diff = np.diff(pts, axis=1)
+                rect[1] = pts[np.argmin(diff)]
+                rect[3] = pts[np.argmax(diff)]
+                
+                # Calculate new width and height
+                widthA = np.sqrt(((rect[2][0] - rect[3][0]) ** 2) + ((rect[2][1] - rect[3][1]) ** 2))
+                widthB = np.sqrt(((rect[1][0] - rect[0][0]) ** 2) + ((rect[1][1] - rect[0][1]) ** 2))
+                maxWidth = max(int(widthA), int(widthB))
+                
+                heightA = np.sqrt(((rect[1][0] - rect[2][0]) ** 2) + ((rect[1][1] - rect[2][1]) ** 2))
+                heightB = np.sqrt(((rect[0][0] - rect[3][0]) ** 2) + ((rect[0][1] - rect[3][1]) ** 2))
+                maxHeight = max(int(heightA), int(heightB))
+                
+                # Define destination points
+                dst = np.array([
+                    [0, 0],
+                    [maxWidth - 1, 0],
+                    [maxWidth - 1, maxHeight - 1],
+                    [0, maxHeight - 1]
+                ], dtype="float32")
+                
+                # Calculate perspective transform matrix
+                M = cv2.getPerspectiveTransform(rect, dst)
+                
+                # Apply perspective transform
+                warped = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
+                return warped
+    except Exception as e:
+        logger.warning(f"Perspective correction failed: {e}")
+    
+    return image
+
+def enhance_contrast(image: np.ndarray) -> np.ndarray:
+    """Enhance image contrast for better OCR"""
+    # Apply CLAHE (Contrast Limited Adaptive Histogram Equalization)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    enhanced = clahe.apply(image)
+    
+    # Apply slight Gaussian blur to reduce noise
+    blurred = cv2.GaussianBlur(enhanced, (1, 1), 0)
+    
+    return blurred
+
+def filter_ocr_results(results: List[Dict], min_confidence: float = 0.6) -> List[Dict]:
+    """Filter OCR results by confidence and clean up text"""
+    filtered_results = []
+    
+    for result in results:
+        if result['confidence'] >= min_confidence:
+            # Clean up text
+            cleaned_text = clean_text(result['text'])
+            if cleaned_text and len(cleaned_text.strip()) > 1:
+                result['text'] = cleaned_text
+                filtered_results.append(result)
+    
+    # Sort by vertical position (top to bottom)
+    filtered_results.sort(key=lambda x: x['bbox'][0][1] if x['bbox'] else 0)
+    
+    return filtered_results
+
+def clean_text(text: str) -> str:
+    """Clean and normalize OCR text"""
+    if not text:
+        return ""
+    
+    # Remove common OCR artifacts
+    text = re.sub(r'[^\w\s\.\-\$\,\/\@\#\&\*\(\)]', '', text)
+    
+    # Fix common OCR mistakes
+    text = re.sub(r'[0O]', '0', text)  # Replace O with 0 in numbers
+    text = re.sub(r'[1l]', '1', text)  # Replace l with 1 in numbers
+    
+    # Normalize whitespace
+    text = re.sub(r'\s+', ' ', text)
+    
+    return text.strip()
+
+def validate_receipt_data(receipt_data: Dict) -> Dict[str, Any]:
+    """Validate extracted receipt data"""
+    validation = {
+        'is_valid': True,
+        'confidence_score': 0.0,
+        'issues': [],
+        'warnings': []
+    }
+    
+    # Check for required fields
+    if not receipt_data.get('store_name'):
+        validation['issues'].append('Store name not detected')
+        validation['is_valid'] = False
+    
+    if not receipt_data.get('total') or receipt_data['total'] <= 0:
+        validation['issues'].append('Total amount not detected or invalid')
+        validation['is_valid'] = False
+    
+    if not receipt_data.get('items') or len(receipt_data['items']) == 0:
+        validation['issues'].append('No items detected')
+        validation['is_valid'] = False
+    
+    # Check for reasonable values
+    if receipt_data.get('total', 0) > 10000:
+        validation['warnings'].append('Total amount seems unusually high')
+    
+    if len(receipt_data.get('items', [])) > 100:
+        validation['warnings'].append('Unusually high number of items')
+    
+    # Calculate confidence score
+    confidence_factors = []
+    
+    if receipt_data.get('store_name'):
+        confidence_factors.append(0.2)
+    
+    if receipt_data.get('date'):
+        confidence_factors.append(0.15)
+    
+    if receipt_data.get('total') and receipt_data['total'] > 0:
+        confidence_factors.append(0.25)
+    
+    if receipt_data.get('items'):
+        item_confidence = min(0.4, len(receipt_data['items']) * 0.02)
+        confidence_factors.append(item_confidence)
+    
+    validation['confidence_score'] = sum(confidence_factors)
+    
+    return validation
 
 @app.get("/health")
 async def health_check():
@@ -199,11 +368,16 @@ async def parse_receipt(file: UploadFile = File(...)):
                     'confidence': score
                 })
         
+        # Filter and clean OCR results
+        filtered_results = filter_ocr_results(ocr_results, min_confidence=0.5)
+        
+        logger.info(f"OCR extracted {len(ocr_results)} text elements, filtered to {len(filtered_results)} high-confidence elements")
+        
         # Parse receipt data
         receipt_data = receipt_parser.parse_ocr_results(ocr_results)
         
         # Validate receipt
-        validation = receipt_parser.validate_receipt(receipt_data)
+        validation = validate_receipt_data(receipt_data)
         
         processing_time = time.time() - start_time
         
@@ -247,7 +421,7 @@ async def parse_ocr_results(ocr_results: List[Dict]):
         receipt_data = receipt_parser.parse_ocr_results(ocr_results)
         
         # Validate receipt
-        validation = receipt_parser.validate_receipt(receipt_data)
+        validation = validate_receipt_data(receipt_data)
         
         # Convert to response format
         items_response = [

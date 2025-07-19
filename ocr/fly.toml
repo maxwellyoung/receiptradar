@@ -1,5 +1,5 @@
 app = "receiptradar-ocr"
-primary_region = "akl"
+primary_region = "syd"
 
 [build]
   dockerfile = "Dockerfile"

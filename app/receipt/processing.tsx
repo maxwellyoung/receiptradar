@@ -1,6 +1,13 @@
 console.log("[LOG] app/receipt/processing.tsx loaded");
 import React, { useState, useEffect, useRef } from "react";
-import { View, StyleSheet, Image, Alert, Animated } from "react-native";
+import {
+  View,
+  StyleSheet,
+  Image,
+  Alert,
+  Animated,
+  Dimensions,
+} from "react-native";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -13,6 +20,9 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { useReceipts } from "@/hooks/useReceipts";
 import { ViralFeaturesManager } from "@/components/ViralFeaturesManager";
 import { RadarWorm } from "@/components/RadarWorm";
+import { NotReceiptScreen } from "@/components/NotReceiptScreen";
+import { ReceiptSuccessScreen } from "@/components/ReceiptSuccessScreen";
+import { ProcessingScreen } from "@/components/ProcessingScreen";
 import { useRadarMood } from "@/hooks/useRadarMood";
 import { useThemeContext } from "@/contexts/ThemeContext";
 // @ts-ignore: No types for confetti cannon
@@ -20,6 +30,8 @@ import ConfettiCannon from "react-native-confetti-cannon";
 import { ocrService } from "@/services/ocr";
 import { storageService } from "@/services/supabase";
 import { ParserManager } from "@/parsers/ParserManager";
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 interface ProcessingStep {
   name: string;
@@ -70,6 +82,12 @@ export default function ReceiptProcessingScreen() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [notAReceipt, setNotAReceipt] = useState(false);
 
+  // Animation values
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
   // Radar mood calculation
   const radarMood = useRadarMood({
     receiptData,
@@ -87,10 +105,49 @@ export default function ReceiptProcessingScreen() {
   });
 
   useEffect(() => {
+    // Start entrance animations
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Start subtle pulse animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.05,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
     if (photoUri) {
       processReceipt();
     }
   }, [photoUri]);
+
+  // Animate progress bar
+  useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: progress / 100,
+      duration: 400,
+      useNativeDriver: false,
+    }).start();
+  }, [progress]);
 
   const processReceipt = async () => {
     try {
@@ -175,7 +232,11 @@ export default function ReceiptProcessingScreen() {
           subtotal: parsed.subtotal,
           tax: parsed.tax,
           receipt_number: parsed.receipt_number,
-          validation: parsed.validation,
+          validation: parsed.validation || {
+            is_valid: true,
+            confidence_score: 0.8,
+            issues: [],
+          },
           processing_time: parsed.processing_time,
         },
         savings_identified: 0,
@@ -194,60 +255,59 @@ export default function ReceiptProcessingScreen() {
 
       // In the background, save to OCR service for price intelligence
       ocrService.saveReceipt(receiptToSave).catch((error) => {
-        console.error("Failed to save receipt to backend:", error);
+        console.error("Failed to save receipt to OCR service:", error);
       });
 
-      // Analyze savings opportunities in background
-      if (parsed.items && parsed.items.length > 0) {
-        ocrService
-          .analyzeSavings(
-            parsed.items,
-            parsed.store_name?.toLowerCase().replace(/\s+/g, "_") || "unknown",
-            user?.id || "anonymous"
-          )
-          .then((savingsAnalysis) => {
-            if (savingsAnalysis.total_savings > 0) {
-              setReceiptData((prev: any) => ({
-                ...prev,
-                savings_identified: savingsAnalysis.total_savings,
-                cashback_earned: savingsAnalysis.cashback_available,
-              }));
-            }
-          })
-          .catch(console.error);
-      }
-
-      setProcessingComplete(true);
       setProgress(100);
+      setProcessingComplete(true);
 
-      // Show viral features after a short delay
+      // Show confetti after a short delay
+      setTimeout(() => {
+        setShowConfetti(true);
+      }, 500);
+
+      // Show viral features after confetti
       setTimeout(() => {
         setShowViralFeatures(true);
-      }, 1000);
+      }, 2000);
     } catch (error) {
-      console.error("Receipt processing error:", error);
+      console.error("Error processing receipt:", error);
       Alert.alert(
         "Processing Error",
         "Failed to process receipt. Please try again.",
-        [
-          { text: "Retry", onPress: handleRetry },
-          { text: "Cancel", onPress: () => router.back() },
-        ]
+        [{ text: "OK", onPress: handleRetry }]
       );
     }
   };
 
   const handleContinue = () => {
-    setShowConfetti(true);
     setShowViralFeatures(false);
-    router.replace("/(tabs)");
+    processReceipt();
+  };
+
+  const handleViewReceipt = () => {
+    if (receiptData) {
+      router.push(`/receipt/${receiptData.id}`);
+    }
+  };
+
+  const handleScanAnother = () => {
+    router.push("/modals/camera");
+  };
+
+  const handleGoToTrends = () => {
+    router.push("/(tabs)/trends");
+  };
+
+  const handleBackToHome = () => {
+    router.push("/(tabs)");
   };
 
   const handleRetry = () => {
-    setCurrentStep(0);
-    setProgress(0);
     setProcessingComplete(false);
-    setReceiptData(null);
+    setProgress(0);
+    setCurrentStep(0);
+    setNotAReceipt(false);
     setShowViralFeatures(false);
     processReceipt();
   };
@@ -261,225 +321,111 @@ export default function ReceiptProcessingScreen() {
   }
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-    >
-      <View style={styles.content}>
-        <View style={styles.lottieAnimation}>
-          <MaterialIcons
-            name="hourglass-empty"
-            size={64}
-            color={theme.colors.primary}
+    <SafeAreaView style={styles.container}>
+      <Animated.View
+        style={[
+          styles.content,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}
+      >
+        {/* Processing State */}
+        {!processingComplete && (
+          <ProcessingScreen
+            currentStep={currentStep}
+            progress={progress}
+            processingSteps={processingSteps}
           />
-        </View>
-        <Text variant="titleLarge" style={styles.processingText}>
-          The worm is chewing...
-        </Text>
-        <ProgressBar
-          progress={progress / 100}
-          style={styles.progressBar}
-          color={theme.colors.primary}
-        />
-      </View>
+        )}
 
-      {/* Receipt Image */}
-      <Card style={styles.imageCard}>
-        <Card.Content>
-          <Image source={{ uri: photoUri }} style={styles.receiptImage} />
-        </Card.Content>
-      </Card>
+        {/* Results State */}
+        {processingComplete && notAReceipt && (
+          <NotReceiptScreen
+            onRetry={handleRetry}
+            onViewReceipt={handleViewReceipt}
+            onScanAnother={handleScanAnother}
+            onBackToHome={handleBackToHome}
+            onViewTrends={handleGoToTrends}
+          />
+        )}
 
-      {/* Processing Progress */}
-      <Card style={styles.progressCard}>
-        <Card.Content>
-          <View style={styles.progressHeader}>
-            <MaterialIcons
-              name={processingSteps[currentStep]?.icon as any}
-              size={24}
-              color={theme.colors.primary}
-            />
-            <Text variant="titleMedium" style={styles.stepTitle}>
-              {processingSteps[currentStep]?.name}
-            </Text>
-          </View>
+        {processingComplete && receiptData && !notAReceipt && (
+          <ReceiptSuccessScreen
+            receiptData={receiptData}
+            photoUri={photoUri}
+            radarMood={radarMood}
+            onViewReceipt={handleViewReceipt}
+            onScanAnother={handleScanAnother}
+            onBackToHome={handleBackToHome}
+            onViewTrends={handleGoToTrends}
+          />
+        )}
+      </Animated.View>
 
-          <Text variant="bodyMedium" style={styles.stepDescription}>
-            {processingSteps[currentStep]?.description}
-          </Text>
-
-          {/* Radar during processing */}
-          {!processingComplete && (
-            <RadarWorm
-              mood={radarMood.mood}
-              message={radarMood.message}
-              visible={true}
-              size="small"
-              showSpeechBubble={radarMood.showSpeechBubble}
-              animated={true}
-            />
-          )}
-
-          <Text variant="bodySmall" style={styles.progressText}>
-            {Math.round(progress)}% complete
-          </Text>
-        </Card.Content>
-      </Card>
-
-      {/* Results */}
-      {processingComplete && notAReceipt && (
-        <Card
-          style={[
-            styles.resultsCard,
-            {
-              borderColor: "#FFB300",
-              borderWidth: 2,
-              backgroundColor: "#FFF8E1",
-            },
-          ]}
-        >
-          <Card.Content>
-            <View style={styles.resultsHeader}>
-              <MaterialIcons
-                name="sentiment-very-satisfied"
-                size={28}
-                color="#FFB300"
-              />
-              <Text variant="titleMedium" style={styles.resultsTitle}>
-                Oops! Not a Receipt 🚀
-              </Text>
-            </View>
-            <Text
-              style={{
-                fontSize: 18,
-                textAlign: "center",
-                marginVertical: 12,
-                color: "#FF9800",
-                fontWeight: "700",
-              }}
-            >
-              That looks fun, but it's not a receipt!
-            </Text>
-            <Text
-              style={{
-                fontSize: 16,
-                textAlign: "center",
-                color: "#FF9800",
-                marginBottom: 12,
-              }}
-            >
-              Try scanning a real grocery receipt. (Cats, memes, and selfies are
-              always welcome, but they won't help your budget!)
-            </Text>
+      {/* Action Buttons - Only show for successful receipts */}
+      {processingComplete && receiptData && !notAReceipt && (
+        <View style={styles.actions}>
+          <View style={styles.actionButtonsContainer}>
             <Button
               mode="contained"
-              onPress={handleRetry}
-              style={[styles.continueButton, { backgroundColor: "#FFB300" }]}
-              contentStyle={styles.buttonContent}
-              labelStyle={{ fontWeight: "700", fontSize: 18, color: "#fff" }}
+              onPress={handleViewReceipt}
+              style={styles.primaryButton}
+              labelStyle={styles.buttonLabel}
+              icon="receipt"
             >
-              Try Again
+              View Receipt
             </Button>
-          </Card.Content>
-        </Card>
-      )}
-      {processingComplete && receiptData && !notAReceipt && (
-        <Card style={styles.resultsCard}>
-          <Card.Content>
-            <View style={styles.resultsHeader}>
-              <MaterialIcons name="check-circle" size={24} color="#10B981" />
-              <Text variant="titleMedium" style={styles.resultsTitle}>
-                🎉 Receipt Zapped! 🎉
-              </Text>
+
+            <View style={styles.buttonRow}>
+              <Button
+                mode="outlined"
+                onPress={handleScanAnother}
+                style={styles.secondaryButton}
+                labelStyle={styles.secondaryButtonLabel}
+                icon="camera"
+              >
+                Scan Another
+              </Button>
+
+              <Button
+                mode="outlined"
+                onPress={handleGoToTrends}
+                style={styles.secondaryButton}
+                labelStyle={styles.secondaryButtonLabel}
+                icon="chart-line"
+              >
+                View Trends
+              </Button>
             </View>
 
-            {/* Radar's Reaction */}
-            <RadarWorm
-              mood={radarMood.mood}
-              message={radarMood.message}
-              totalSpend={receiptData.total_amount}
-              categoryBreakdown={receiptData.ocr_data?.items?.reduce(
-                (acc: any, item: any) => {
-                  acc[item.category] =
-                    (acc[item.category] || 0) + (item.price || 0);
-                  return acc;
-                },
-                {}
-              )}
-              visible={true}
-              size="medium"
-              showSpeechBubble={radarMood.showSpeechBubble}
-              onPress={() => {
-                // Optional: Add interaction like sharing or more details
-                console.log("Radar was tapped!");
-              }}
-            />
-
-            <View style={styles.resultsInfo}>
-              <Text variant="bodyMedium">
-                <Text style={{ fontWeight: "600" }}>Store:</Text>{" "}
-                {receiptData.store_name}
-              </Text>
-              <Text variant="bodyMedium">
-                <Text style={{ fontWeight: "600" }}>Total:</Text> $
-                {receiptData.total_amount.toFixed(2)}
-              </Text>
-              <Text variant="bodyMedium">
-                <Text style={{ fontWeight: "600" }}>Date:</Text>{" "}
-                {receiptData.date}
-              </Text>
-            </View>
-            <Text
-              style={{
-                marginTop: 16,
-                fontSize: 16,
-                color: "#10B981",
-                fontWeight: "700",
-                textAlign: "center",
-              }}
+            <Button
+              mode="text"
+              onPress={handleBackToHome}
+              style={styles.textButton}
+              labelStyle={styles.textButtonLabel}
+              icon="home"
             >
-              You just outsmarted your grocery bill. 🎯
-            </Text>
-          </Card.Content>
-        </Card>
+              Back to Home
+            </Button>
+          </View>
+        </View>
       )}
-
-      {/* Action Buttons */}
-      <View style={styles.actions}>
-        {processingComplete ? (
-          <Button
-            mode="contained"
-            onPress={handleContinue}
-            style={styles.continueButton}
-            contentStyle={styles.buttonContent}
-            labelStyle={{ fontWeight: "700", fontSize: 18 }}
-          >
-            Dash away ➡️
-          </Button>
-        ) : (
-          <Button
-            mode="outlined"
-            onPress={handleRetry}
-            style={styles.retryButton}
-            contentStyle={styles.buttonContent}
-            disabled={!processingComplete}
-          >
-            Retry
-          </Button>
-        )}
-      </View>
 
       {/* Viral Features */}
-      {showViralFeatures && receiptData && (
+      {showViralFeatures && receiptData && processingComplete && (
         <ViralFeaturesManager
           totalSpend={receiptData.total_amount}
           categoryBreakdown={receiptData.ocr_data.items.reduce(
             (acc: any, item: any) => {
-              acc[item.category] = (acc[item.category] || 0) + item.amount;
+              acc[item.category] =
+                (acc[item.category] || 0) + (item.amount || item.price || 0);
               return acc;
             },
             {}
           )}
-          savingsAmount={12.5} // Mock savings
+          savingsAmount={12.5}
           weekNumber={1}
         />
       )}
@@ -488,7 +434,7 @@ export default function ReceiptProcessingScreen() {
       {showConfetti && (
         <ConfettiCannon
           count={120}
-          origin={{ x: 200, y: 0 }}
+          origin={{ x: screenWidth / 2, y: 0 }}
           fadeOut={true}
           explosionSpeed={350}
           fallSpeed={2500}
@@ -502,89 +448,53 @@ export default function ReceiptProcessingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
-    padding: spacing.md,
+    backgroundColor: "#F2F2F7",
   },
   content: {
+    flex: 1,
     alignItems: "center",
-    marginBottom: spacing.md,
-  },
-  lottieAnimation: {
-    width: 150,
-    height: 150,
-  },
-  processingText: {
-    marginTop: spacing.sm,
-    fontFamily: "Inter_600SemiBold",
-  },
-  header: {
-    marginBottom: spacing.lg,
-  },
-  title: {
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  imageCard: {
-    marginBottom: spacing.md,
-    borderRadius: 12,
-  },
-  receiptImage: {
-    width: "100%",
-    height: 200,
-    borderRadius: 8,
-    resizeMode: "cover",
-  },
-  progressCard: {
-    marginBottom: spacing.md,
-    borderRadius: 12,
-  },
-  progressHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: spacing.sm,
-  },
-  stepTitle: {
-    marginLeft: spacing.sm,
-    fontWeight: "600",
-  },
-  stepDescription: {
-    marginBottom: spacing.md,
-    opacity: 0.7,
-  },
-  progressBar: {
-    width: "80%",
-    marginTop: spacing.md,
-  },
-  progressText: {
-    textAlign: "center",
-    opacity: 0.7,
-  },
-  resultsCard: {
-    marginBottom: spacing.lg,
-    borderRadius: 12,
-  },
-  resultsHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: spacing.md,
-  },
-  resultsTitle: {
-    marginLeft: spacing.sm,
-    fontWeight: "600",
-  },
-  resultsInfo: {
-    gap: spacing.xs,
+    justifyContent: "center",
+    paddingHorizontal: 24,
   },
   actions: {
     marginTop: "auto",
+    paddingTop: 24,
+    paddingBottom: 24,
   },
-  continueButton: {
+  actionButtonsContainer: {
+    gap: 16,
+  },
+  primaryButton: {
+    backgroundColor: "#007AFF",
     borderRadius: 12,
+    paddingHorizontal: 24,
   },
-  retryButton: {
+  secondaryButton: {
+    borderColor: "#D1D1D6",
     borderRadius: 12,
+    paddingHorizontal: 20,
+    flex: 1,
   },
-  buttonContent: {
-    paddingVertical: spacing.sm,
+  textButton: {
+    marginTop: 8,
+  },
+  buttonLabel: {
+    fontWeight: "600",
+    fontSize: 16,
+    color: "#FFFFFF",
+  },
+  secondaryButtonLabel: {
+    fontWeight: "500",
+    fontSize: 16,
+    color: "#007AFF",
+  },
+  textButtonLabel: {
+    fontWeight: "500",
+    fontSize: 16,
+    color: "#86868B",
+  },
+  buttonRow: {
+    flexDirection: "row",
+    gap: 12,
   },
 });

@@ -6,6 +6,7 @@ import { AppTheme } from "@/constants/theme";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useReceipts } from "@/hooks/useReceipts";
 import { subDays, format, parseISO } from "date-fns";
+import { spacing, typography, borderRadius, shadows } from "@/constants/theme";
 
 export function WeeklyInsights() {
   const theme = useTheme<AppTheme>();
@@ -47,7 +48,11 @@ export function WeeklyInsights() {
         style={[
           styles.container,
           styles.loadingContainer,
-          { backgroundColor: theme.colors.surfaceVariant },
+          {
+            backgroundColor: theme.colors.surfaceVariant,
+            borderRadius: borderRadius.lg,
+            ...shadows.sm,
+          },
         ]}
       >
         <ActivityIndicator color={theme.colors.primary} />
@@ -60,10 +65,18 @@ export function WeeklyInsights() {
       <View
         style={[
           styles.container,
-          { backgroundColor: theme.colors.surfaceVariant },
+          {
+            backgroundColor: theme.colors.surfaceVariant,
+            borderRadius: borderRadius.lg,
+            ...shadows.sm,
+          },
         ]}
       >
-        <Text>No spending data for this week yet.</Text>
+        <Text
+          style={[typography.body1, { color: theme.colors.onSurfaceVariant }]}
+        >
+          No spending data for this week yet.
+        </Text>
       </View>
     );
   }
@@ -72,15 +85,27 @@ export function WeeklyInsights() {
     <View
       style={[
         styles.container,
-        { backgroundColor: theme.colors.surfaceVariant },
+        {
+          backgroundColor: theme.colors.surfaceVariant,
+          borderRadius: borderRadius.lg,
+          ...shadows.sm,
+        },
       ]}
     >
-      <Text variant="titleMedium" style={styles.title}>
+      <Text
+        style={[
+          typography.title2,
+          {
+            color: theme.colors.onSurfaceVariant,
+            marginBottom: spacing.sm,
+          },
+        ]}
+      >
         Last 7 Days
       </Text>
       <LineChart
         data={chartData}
-        width={Dimensions.get("window").width - 48}
+        width={Dimensions.get("window").width - spacing.lg * 2}
         height={220}
         yAxisLabel="$"
         yAxisSuffix=""
@@ -89,25 +114,30 @@ export function WeeklyInsights() {
           backgroundGradientFrom: theme.colors.surfaceVariant,
           backgroundGradientTo: theme.colors.surfaceVariant,
           decimalPlaces: 2,
-          color: (opacity = 1) => `rgba(10, 132, 255, ${opacity})`,
+          color: (opacity = 1) => `rgba(0, 122, 255, ${opacity})`, // Use primary color
           labelColor: (opacity = 1) => theme.colors.onSurfaceVariant,
           style: {
-            borderRadius: 16,
+            borderRadius: borderRadius.md,
           },
           propsForDots: {
             r: "6",
             strokeWidth: "2",
-            stroke: "#0A84FF",
+            stroke: theme.colors.primary,
           },
         }}
         bezier
         style={{
-          marginVertical: 8,
-          borderRadius: 16,
+          marginVertical: spacing.sm,
+          borderRadius: borderRadius.md,
         }}
       />
       <View style={styles.footer}>
-        <Text variant="bodySmall" style={styles.footerText}>
+        <Text
+          style={[
+            typography.caption1,
+            { color: theme.colors.onSurfaceVariant },
+          ]}
+        >
           Based on your spending in the last 7 days.
         </Text>
       </View>
@@ -117,24 +147,16 @@ export function WeeklyInsights() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 24,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
   },
   loadingContainer: {
     justifyContent: "center",
     alignItems: "center",
     height: 250,
   },
-  title: {
-    color: "#8A8A8E",
-    marginBottom: 8,
-  },
   footer: {
-    marginTop: 8,
+    marginTop: spacing.sm,
     alignItems: "center",
-  },
-  footerText: {
-    color: "#8A8A8E",
   },
 });

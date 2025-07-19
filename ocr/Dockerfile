@@ -26,13 +26,22 @@ RUN apt-get update && apt-get install -y \
     gfortran \
     wget \
     curl \
+    build-essential \
+    make \
+    gcc \
+    g++ \
+    swig \
+    pkg-config \
+    libssl-dev \
+    libffi-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
 COPY requirements.txt .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies with better error handling
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir --prefer-binary -r requirements.txt
 
 # Copy application code
 COPY . .

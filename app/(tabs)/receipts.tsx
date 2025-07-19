@@ -42,6 +42,7 @@ export default function ReceiptsScreen() {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
+      edges={["top", "left", "right"]}
     >
       <View style={styles.header}>
         <Text
@@ -99,7 +100,7 @@ const styles = StyleSheet.create({
   },
   listContentContainer: {
     paddingHorizontal: 16,
-    paddingBottom: 100,
+    paddingBottom: 88, // Full tab bar height
   },
   emptyContainer: {
     flex: 1,

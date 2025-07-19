@@ -4,7 +4,7 @@ import {
   configureFonts,
 } from "react-native-paper";
 
-// Define the font config using Inter
+// Define the font config using Inter - inspired by modern typography principles
 const fontConfig = {
   customVariant: {
     fontFamily: "Inter_400Regular",
@@ -44,37 +44,37 @@ const fontConfig = {
     letterSpacing: 0.4,
   },
   displayLarge: {
-    fontFamily: "Inter_700Bold",
+    fontFamily: "Inter_200ExtraLight", // Inspired by Beirut's editorial typography
     fontSize: 57,
-    fontWeight: "700" as const,
+    fontWeight: "200" as const,
     lineHeight: 64,
     letterSpacing: -0.25,
   },
   displayMedium: {
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Inter_300Light",
     fontSize: 45,
-    fontWeight: "600" as const,
+    fontWeight: "300" as const,
     lineHeight: 52,
     letterSpacing: 0,
   },
   displaySmall: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Inter_400Regular",
     fontSize: 36,
-    fontWeight: "500" as const,
+    fontWeight: "400" as const,
     lineHeight: 44,
     letterSpacing: 0,
   },
   headlineLarge: {
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "Inter_300Light",
     fontSize: 32,
-    fontWeight: "600" as const,
+    fontWeight: "300" as const,
     lineHeight: 40,
     letterSpacing: 0,
   },
   headlineMedium: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Inter_400Regular",
     fontSize: 28,
-    fontWeight: "500" as const,
+    fontWeight: "400" as const,
     lineHeight: 36,
     letterSpacing: 0,
   },
@@ -107,9 +107,9 @@ const fontConfig = {
     letterSpacing: 0.5,
   },
   titleLarge: {
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Inter_400Regular",
     fontSize: 22,
-    fontWeight: "500" as const,
+    fontWeight: "400" as const,
     lineHeight: 28,
     letterSpacing: 0,
   },
@@ -129,42 +129,108 @@ const fontConfig = {
   },
 };
 
-// 1. Design Philosophy
-// • Minimalist utility. Every pixel should serve a purpose.
-// • Friendly surveillance. Data-driven, but disarmingly cute.
-// • System-first aesthetic. Think iOS-native, not skeuomorphic parody.
-// • Contrast & clarity. Embrace legibility over decoration.
-// • Whimsy, precisely measured. The worm is your only indulgence.
+// Design Philosophy inspired by legendary designers:
+// • Jony Ive: "Design is not just what it looks like and feels like. Design is how it works."
+// • Dieter Rams: "Less, but better" - functional, honest, long-lasting
+// • Michael Beirut: Editorial clarity and purposeful hierarchy
+// • Benji Taylor: Modern minimalism with thoughtful details
+// • Mariana Castilho: Refined micro-interactions and human touch
+// • Rauno Freiberg: Systematic design with clear visual language
+// • Jason Yuan: Contemporary elegance through simplicity
+// • MDS: Systematic approach with accessibility at core
+// • Jordan Singer: Functional beauty in every interaction
+// • Emil Kowalski: Typography as the foundation of design
 
-// 2. Colour Palette (Light Mode)
+// Enhanced Color Palette - Inspired by Dieter Rams' timeless approach
 const lightColors = {
-  background: "#F9F9FB", // Even lighter off-white
-  primary: "#FF3B30", // Tomato Red (for the worm, highlights)
-  secondary: "#3A3A3C", // Near Black for text
-  surface: "#FFFFFF", // For cards
-  surfaceVariant: "#EEF2F5", // Notion-esque lavender grey-blue
-  onSurface: "#1C1C1E",
-  onSurfaceVariant: "#6b7280", // Muted grey for secondary text
-  text: "#1C1C1E",
-  accent: "#5E5CE6", // Vibrant Blue/Purple
-  positive: "#30D158", // Emerald
-  error: "#FF3B30",
+  // Core colors - inspired by Rams' functional design
+  background: "#FAFAFA", // Pure, minimal background
+  surface: "#FFFFFF", // Clean surface
+  surfaceVariant: "#F5F5F5", // Subtle surface variation
+  onSurface: "#1A1A1A", // High contrast text
+  onSurfaceVariant: "#666666", // Secondary text with reduced contrast
+
+  // Primary colors - inspired by Ive's attention to materials
+  primary: "#007AFF", // Apple-inspired blue (functional, trustworthy)
+  onPrimary: "#FFFFFF",
+  primaryContainer: "#E3F2FD", // Subtle primary background
+  onPrimaryContainer: "#0D47A1",
+
+  // Secondary colors - inspired by Beirut's editorial approach
+  secondary: "#FF6B35", // Warm accent (the worm's color)
+  onSecondary: "#FFFFFF",
+  secondaryContainer: "#FFF3E0",
+  onSecondaryContainer: "#E65100",
+
+  // Semantic colors - inspired by systematic design
+  positive: "#34C759", // Success green
+  error: "#FF3B30", // Error red
+  warning: "#FF9500", // Warning orange
+  info: "#5AC8FA", // Info blue
+
+  // Neutral colors - inspired by Kowalski's refined palette
+  neutral: {
+    50: "#FAFAFA",
+    100: "#F5F5F5",
+    200: "#EEEEEE",
+    300: "#E0E0E0",
+    400: "#BDBDBD",
+    500: "#9E9E9E",
+    600: "#757575",
+    700: "#616161",
+    800: "#424242",
+    900: "#212121",
+  },
+
+  // Legacy support
+  text: "#1A1A1A",
+  accent: "#007AFF",
   notification: "#FF9500",
 };
 
-// 3. Colour Palette (Dark Mode)
 const darkColors = {
-  background: "#161618", // Deeper dark background
-  primary: "#FF453A", // Brighter Tomato Red
-  secondary: "#E5E5EA", // Lighter gray for text/icons
-  surface: "#232326", // Slightly lighter card background
-  surfaceVariant: "#33373E", // Darker lavender grey-blue
-  onSurface: "#FFFFFF",
-  onSurfaceVariant: "#9ca3af", // Lighter muted grey
+  // Core colors - maintaining Rams' functional approach
+  background: "#121212", // Deep, rich background
+  surface: "#1E1E1E", // Elevated surface
+  surfaceVariant: "#2D2D2D", // Subtle surface variation
+  onSurface: "#FFFFFF", // High contrast text
+  onSurfaceVariant: "#B0B0B0", // Secondary text
+
+  // Primary colors - maintaining Ive's material sensitivity
+  primary: "#0A84FF", // Brighter blue for dark mode
+  onPrimary: "#FFFFFF",
+  primaryContainer: "#1A3A5F", // Darker primary background
+  onPrimaryContainer: "#BBDEFB",
+
+  // Secondary colors - maintaining Beirut's editorial clarity
+  secondary: "#FF6B35", // Consistent worm color
+  onSecondary: "#FFFFFF",
+  secondaryContainer: "#4A2C1A", // Darker secondary background
+  onSecondaryContainer: "#FFCC02",
+
+  // Semantic colors - maintaining systematic approach
+  positive: "#30D158", // Brighter success green
+  error: "#FF453A", // Brighter error red
+  warning: "#FF9F0A", // Brighter warning orange
+  info: "#64D2FF", // Brighter info blue
+
+  // Neutral colors - maintaining Kowalski's refined palette
+  neutral: {
+    50: "#121212",
+    100: "#1E1E1E",
+    200: "#2D2D2D",
+    300: "#404040",
+    400: "#5A5A5A",
+    500: "#737373",
+    600: "#8E8E93",
+    700: "#AEAEB2",
+    800: "#C7C7CC",
+    900: "#FFFFFF",
+  },
+
+  // Legacy support
   text: "#FFFFFF",
-  accent: "#6466F1", // Brighter Blue/Purple
-  positive: "#32D74B", // Brighter Emerald
-  error: "#FF453A",
+  accent: "#0A84FF",
   notification: "#FF9F0A",
 };
 
@@ -188,32 +254,32 @@ export const darkTheme = {
 
 export type AppTheme = typeof lightTheme;
 
-// Refined spacing system inspired by systematic design
+// Systematic spacing inspired by Rauno Freiberg's grid systems
 export const spacing = {
-  xxs: 2,
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
-  xxl: 48,
-  xxxl: 64,
-  xxxxl: 96,
+  xxs: 2, // Micro spacing for fine adjustments
+  xs: 4, // Small spacing for tight layouts
+  sm: 8, // Standard spacing unit
+  md: 16, // Base spacing unit (inspired by 8pt grid)
+  lg: 24, // Comfortable spacing
+  xl: 32, // Section spacing
+  xxl: 48, // Large section spacing
+  xxxl: 64, // Hero spacing
+  xxxxl: 96, // Maximum spacing
 };
 
-// Minimal border radius system
+// Refined border radius system inspired by Ive's attention to detail
 export const borderRadius = {
-  none: 0,
-  xs: 2,
-  sm: 4,
-  md: 8,
-  lg: 12,
-  xl: 16,
-  xxl: 24,
-  full: 9999,
+  none: 0, // Sharp edges for technical elements
+  xs: 2, // Subtle rounding
+  sm: 4, // Standard rounding
+  md: 8, // Comfortable rounding
+  lg: 12, // Generous rounding
+  xl: 16, // Large rounding
+  xxl: 24, // Maximum rounding
+  full: 9999, // Circular elements
 };
 
-// Subtle shadow system inspired by Jony Ive's attention to light
+// Enhanced shadow system inspired by Ive's material sensitivity
 export const shadows = {
   none: {
     shadowColor: "transparent",
@@ -225,21 +291,21 @@ export const shadows = {
   xs: {
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 2,
     elevation: 1,
   },
   sm: {
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.06,
     shadowRadius: 4,
     elevation: 2,
   },
   md: {
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 4,
   },
@@ -253,11 +319,11 @@ export const shadows = {
   xl: {
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.16,
     shadowRadius: 24,
     elevation: 12,
   },
-  // Special shadows
+  // Special shadows for specific use cases
   floating: {
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 8 },
@@ -276,32 +342,32 @@ export const shadows = {
   subtle: {
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 2,
     elevation: 1,
   },
   medium: {
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 4,
   },
   large: {
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.12,
     shadowRadius: 16,
     elevation: 8,
   },
 };
 
-// Editorial typography system inspired by Michael Beirut
+// Editorial typography system inspired by Michael Beirut and Emil Kowalski
 export const typography = {
-  // Display styles - for hero content
+  // Display styles - for hero content (inspired by Beirut's editorial work)
   display1: {
     fontSize: 72,
-    fontWeight: "200" as const,
+    fontWeight: "200" as const, // Extra light for elegance
     letterSpacing: -3,
     lineHeight: 80,
   },
@@ -318,10 +384,10 @@ export const typography = {
     lineHeight: 56,
   },
 
-  // Headline styles - for section titles
+  // Headline styles - for section titles (inspired by Kowalski's hierarchy)
   headline1: {
     fontSize: 36,
-    fontWeight: "300" as const,
+    fontWeight: "300" as const, // Light for elegance
     letterSpacing: -1,
     lineHeight: 44,
   },
@@ -338,7 +404,7 @@ export const typography = {
     lineHeight: 36,
   },
 
-  // Title styles - for card headers
+  // Title styles - for card headers (inspired by systematic design)
   title1: {
     fontSize: 24,
     fontWeight: "400" as const,
@@ -358,7 +424,7 @@ export const typography = {
     lineHeight: 24,
   },
 
-  // Body styles - for content
+  // Body styles - for content (inspired by functional design)
   body1: {
     fontSize: 16,
     fontWeight: "400" as const,
@@ -372,7 +438,7 @@ export const typography = {
     lineHeight: 20,
   },
 
-  // Label styles - for UI elements
+  // Label styles - for UI elements (inspired by MDS)
   label1: {
     fontSize: 14,
     fontWeight: "500" as const,
@@ -386,7 +452,7 @@ export const typography = {
     lineHeight: 16,
   },
 
-  // Caption styles - for secondary text
+  // Caption styles - for secondary text (inspired by refined details)
   caption1: {
     fontSize: 12,
     fontWeight: "400" as const,
@@ -400,7 +466,7 @@ export const typography = {
     lineHeight: 14,
   },
 
-  // Special styles
+  // Special styles (inspired by editorial design)
   overline: {
     fontSize: 10,
     fontWeight: "500" as const,
@@ -416,25 +482,127 @@ export const typography = {
   },
 };
 
-// Refined animation system
+// Enhanced animation system inspired by Mariana Castilho's micro-interactions
 export const animation = {
   duration: {
-    fast: 200,
-    normal: 400,
-    slow: 600,
+    instant: 100, // Immediate feedback
+    fast: 200, // Quick transitions
+    normal: 300, // Standard transitions
+    slow: 500, // Deliberate animations
+    slower: 700, // Complex animations
   },
   easing: {
+    // Inspired by human-centered design
     ease: "ease",
     easeIn: "ease-in",
     easeOut: "ease-out",
     easeInOut: "ease-in-out",
+    // Custom easings for specific interactions
+    bounce: "cubic-bezier(0.68, -0.55, 0.265, 1.55)",
+    elastic: "cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+    smooth: "cubic-bezier(0.4, 0.0, 0.2, 1)",
+  },
+  // Predefined animations for common interactions
+  presets: {
+    fadeIn: {
+      opacity: [0, 1],
+      duration: 300,
+      easing: "ease-out",
+    },
+    slideUp: {
+      transform: [{ translateY: [20, 0] }],
+      opacity: [0, 1],
+      duration: 300,
+      easing: "ease-out",
+    },
+    scaleIn: {
+      transform: [{ scale: [0.95, 1] }],
+      opacity: [0, 1],
+      duration: 200,
+      easing: "ease-out",
+    },
   },
 };
 
-// Layout constants
+// Layout constants inspired by systematic design principles
 export const layout = {
   maxWidth: 1200,
   containerPadding: spacing.lg,
   sectionSpacing: spacing.xxl,
   cardSpacing: spacing.lg,
+  // Grid system inspired by systematic design
+  grid: {
+    columns: 12,
+    gutter: spacing.md,
+    margin: spacing.lg,
+  },
+  // Breakpoints for responsive design
+  breakpoints: {
+    mobile: 0,
+    tablet: 768,
+    desktop: 1024,
+    wide: 1440,
+  },
+};
+
+// Component-specific design tokens inspired by functional design
+export const components = {
+  // Card design inspired by clean interfaces
+  card: {
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    shadow: shadows.card,
+    backgroundColor: "surface",
+  },
+  // Button design inspired by functional beauty
+  button: {
+    height: 48,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.sm,
+    fontSize: 14,
+    fontWeight: "500" as const,
+  },
+  // Input design inspired by systematic approach
+  input: {
+    height: 48,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    fontSize: 16,
+  },
+  // Navigation design inspired by clear hierarchy
+  navigation: {
+    height: 56,
+    paddingHorizontal: spacing.md,
+    backgroundColor: "surface",
+  },
+};
+
+// Accessibility tokens inspired by inclusive design
+export const accessibility = {
+  // Minimum touch targets (inspired by human-centered design)
+  minTouchTarget: 44,
+  // Focus indicators
+  focusRing: {
+    width: 2,
+    color: "primary",
+    style: "solid",
+  },
+  // High contrast mode support
+  highContrast: {
+    enabled: true,
+    threshold: 4.5, // WCAG AA standard
+  },
+};
+
+// Export all design tokens for easy access
+export const designTokens = {
+  spacing,
+  borderRadius,
+  shadows,
+  typography,
+  animation,
+  layout,
+  components,
+  accessibility,
 };

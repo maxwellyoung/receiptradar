@@ -217,19 +217,25 @@ export default function DebugScreen() {
 
             <Text variant="bodySmall" style={styles.configText}>
               <Text style={{ fontWeight: "600" }}>Supabase URL:</Text>{" "}
-              {process.env.EXPO_PUBLIC_SUPABASE_URL
-                ? "✓ Configured"
-                : "✗ Missing"}
+              <Text>
+                {process.env.EXPO_PUBLIC_SUPABASE_URL
+                  ? "✓ Configured"
+                  : "✗ Missing"}
+              </Text>
             </Text>
             <Text variant="bodySmall" style={styles.configText}>
               <Text style={{ fontWeight: "600" }}>Supabase Key:</Text>{" "}
-              {process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
-                ? "✓ Configured"
-                : "✗ Missing"}
+              <Text>
+                {process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
+                  ? "✓ Configured"
+                  : "✗ Missing"}
+              </Text>
             </Text>
             <Text variant="bodySmall" style={styles.configText}>
               <Text style={{ fontWeight: "600" }}>OCR Service:</Text>{" "}
-              {process.env.EXPO_PUBLIC_API_URL || "http://localhost:8000"}
+              <Text>
+                {process.env.EXPO_PUBLIC_API_URL || "http://localhost:8000"}
+              </Text>
             </Text>
           </Card.Content>
         </Card>

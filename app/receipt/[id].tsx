@@ -373,27 +373,29 @@ export default function ReceiptDetailScreen() {
                   }
                 />
                 <Text variant="bodyMedium" style={styles.validationTitle}>
-                  OCR Confidence:{" "}
-                  {Math.round(
-                    receipt.ocr_data.validation.confidence_score * 100
-                  )}
-                  %
+                  OCR Validation:{" "}
+                  {receipt.ocr_data.validation.is_valid
+                    ? "Valid"
+                    : "Issues Found"}
                 </Text>
               </View>
 
-              {receipt.ocr_data.validation.issues.length > 0 && (
-                <View style={styles.issuesList}>
-                  {receipt.ocr_data.validation.issues.map((issue, index) => (
-                    <Text
-                      key={index}
-                      variant="bodySmall"
-                      style={styles.issueText}
-                    >
-                      • {issue}
-                    </Text>
-                  ))}
-                </View>
-              )}
+              {receipt.ocr_data.validation.issues &&
+                receipt.ocr_data.validation.issues.length > 0 && (
+                  <View style={styles.issuesList}>
+                    {receipt.ocr_data.validation.issues.map(
+                      (issue: string, index: number) => (
+                        <Text
+                          key={index}
+                          variant="bodySmall"
+                          style={styles.issueText}
+                        >
+                          • {issue}
+                        </Text>
+                      )
+                    )}
+                  </View>
+                )}
             </Card.Content>
           </Card>
         )}

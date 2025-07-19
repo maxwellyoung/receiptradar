@@ -15,6 +15,8 @@ if (!API_URL) {
 }
 
 export const API_CONFIG = {
-  baseUrl: API_URL || "http://localhost:8000",
-  honoApiUrl: process.env.EXPO_PUBLIC_HONO_API_URL || "http://127.0.0.1:8787",
+  baseUrl: API_URL || "https://receiptradar-api.receipt-radar.workers.dev",
+  honoApiUrl:
+    process.env.EXPO_PUBLIC_HONO_API_URL ||
+    "https://receiptradar-api.receipt-radar.workers.dev",
 } as const;

@@ -304,6 +304,33 @@ export const storageService = {
     try {
       logger.info("Uploading receipt image", { fileName, userId });
 
+      // Check if storage bucket exists first
+      const { data: buckets, error: bucketError } =
+        await supabase.storage.listBuckets();
+
+      if (bucketError) {
+        logger.warn("Storage bucket check failed", {
+          error: bucketError.message,
+        });
+        return { data: null, error: bucketError };
+      }
+
+      const bucketExists = buckets?.some(
+        (bucket) => bucket.name === "receipt-images"
+      );
+      if (!bucketExists) {
+        logger.warn("Storage bucket 'receipt-images' not found", {
+          availableBuckets: buckets?.map((b) => b.name) || [],
+        });
+        return {
+          data: null,
+          error: {
+            message:
+              "Storage bucket 'receipt-images' not found. Please create it in your Supabase dashboard.",
+          } as any,
+        };
+      }
+
       // Create file path
       const timestamp = Date.now();
       const cleanFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, "_");

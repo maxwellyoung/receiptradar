@@ -87,7 +87,8 @@ export const GroceryAura: React.FC<GroceryAuraProps> = ({
   }, []);
 
   // Calculate dominant categories and their percentages
-  const sortedCategories = Object.entries(categoryBreakdown)
+  const sortedCategories = Object.entries(categoryBreakdown || {})
+    .filter(([, amount]) => amount && amount > 0 && !isNaN(amount))
     .sort(([, a], [, b]) => b - a)
     .slice(0, 3); // Top 3 categories
 
@@ -100,7 +101,7 @@ export const GroceryAura: React.FC<GroceryAuraProps> = ({
       : ["#6FCF97", "#F2C94C", "#9B51E0"];
 
   // Calculate aura intensity based on total spend
-  const auraIntensity = Math.min(totalSpend / 100, 1);
+  const auraIntensity = Math.min((totalSpend || 0) / 100, 1);
 
   const handleShare = async () => {
     try {
@@ -134,6 +135,12 @@ export const GroceryAura: React.FC<GroceryAuraProps> = ({
     };
 
     return descriptions[topCategory || ""] || "Balanced & Beautiful ✨";
+  };
+
+  // Format amount safely
+  const formatAmount = (amount: number) => {
+    if (!amount || isNaN(amount)) return "$0.00";
+    return `$${amount.toFixed(2)}`;
   };
 
   return (
@@ -217,7 +224,7 @@ export const GroceryAura: React.FC<GroceryAuraProps> = ({
 
               <View style={styles.auraInfo}>
                 <Text style={styles.description}>{getAuraDescription()}</Text>
-                <Text style={styles.spendText}>${totalSpend.toFixed(2)}</Text>
+                <Text style={styles.spendText}>{formatAmount(totalSpend)}</Text>
               </View>
 
               {/* Category breakdown */}
@@ -235,7 +242,7 @@ export const GroceryAura: React.FC<GroceryAuraProps> = ({
                     />
                     <Text style={styles.categoryText}>{category}</Text>
                     <Text style={styles.categoryAmount}>
-                      ${amount.toFixed(2)}
+                      {formatAmount(amount)}
                     </Text>
                   </View>
                 ))}
@@ -262,11 +269,13 @@ export const GroceryAura: React.FC<GroceryAuraProps> = ({
 const styles = StyleSheet.create({
   container: {
     alignItems: "center",
-    padding: 20,
+    padding: 16,
+    width: "100%",
+    maxHeight: "100%",
   },
   shotContainer: {
-    width: screenWidth - 40,
-    height: screenWidth - 40,
+    width: Math.min(screenWidth - 112, 400),
+    height: Math.min(screenWidth - 112, 400),
     borderRadius: 20,
     overflow: "hidden",
   },
@@ -288,92 +297,93 @@ const styles = StyleSheet.create({
   },
   auraRing: {
     position: "absolute",
-    width: 200,
-    height: 200,
-    borderRadius: 100,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
     borderWidth: 2,
     borderColor: "rgba(255, 255, 255, 0.3)",
   },
   content: {
     alignItems: "center",
-    padding: 30,
+    padding: 24,
     zIndex: 1,
+    width: "100%",
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "bold",
     color: "#333",
-    marginBottom: 8,
+    marginBottom: 6,
   },
   weekText: {
-    fontSize: 16,
+    fontSize: 14,
     color: "#666",
-    marginBottom: 20,
+    marginBottom: 16,
   },
   auraInfo: {
     alignItems: "center",
-    marginBottom: 30,
+    marginBottom: 24,
   },
   description: {
-    fontSize: 18,
+    fontSize: 16,
     color: "#333",
     textAlign: "center",
-    marginBottom: 10,
+    marginBottom: 8,
   },
   spendText: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "bold",
     color: "#10B981",
   },
   categoryList: {
     width: "100%",
-    marginBottom: 30,
+    marginBottom: 24,
   },
   categoryItem: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
-    paddingHorizontal: 20,
+    marginBottom: 10,
+    paddingHorizontal: 16,
   },
   categoryDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 12,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 10,
   },
   categoryText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13,
     color: "#333",
   },
   categoryAmount: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
     color: "#333",
   },
   branding: {
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 16,
   },
   brandText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "bold",
     color: "#2563EB",
   },
   tagline: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#666",
-    marginTop: 4,
+    marginTop: 3,
   },
   shareHint: {
-    marginTop: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     backgroundColor: "rgba(255, 255, 255, 0.9)",
-    borderRadius: 16,
+    borderRadius: 12,
   },
   hintText: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#666",
     textAlign: "center",
   },
@@ -383,7 +393,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    borderRadius: 120,
+    borderRadius: 100,
     backgroundColor: "#fff",
     opacity: 0.18,
     width: "80%",
@@ -392,6 +402,6 @@ const styles = StyleSheet.create({
     shadowColor: "#fff",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.7,
-    shadowRadius: 24,
+    shadowRadius: 20,
   },
 });

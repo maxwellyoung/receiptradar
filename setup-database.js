@@ -66,7 +66,7 @@ async function setupDatabase() {
       }
     }
 
-    // 2. Seed Stores
+    // 2. Seed Stores (Fixed conflict resolution)
     console.log("\n🏪 Seeding stores...");
     const stores = [
       { name: "Countdown", location: "Auckland" },
@@ -78,43 +78,38 @@ async function setupDatabase() {
     ];
 
     for (const store of stores) {
-      const { error } = await supabase
-        .from("stores")
-        .upsert(store, { onConflict: "name" });
+      // Try to insert, if it fails due to constraint, that's okay
+      const { error } = await supabase.from("stores").insert(store);
 
       if (error) {
-        console.error(`❌ Error creating store ${store.name}:`, error.message);
+        if (
+          error.message.includes("duplicate key") ||
+          error.message.includes("unique constraint")
+        ) {
+          console.log(`✅ Store already exists: ${store.name}`);
+        } else {
+          console.error(
+            `❌ Error creating store ${store.name}:`,
+            error.message
+          );
+        }
       } else {
         console.log(`✅ Created store: ${store.name}`);
       }
     }
 
-    // 3. Create a test user (if you want to test with sample data)
-    console.log("\n👤 Creating test user...");
-    const testUser = {
-      email: "test@receiptradar.com",
-      password: "testpassword123",
-    };
-
-    const { data: authData, error: authError } = await supabase.auth.signUp(
-      testUser
+    // 3. Skip test user creation (not essential for MVP)
+    console.log("\n👤 Test user creation skipped");
+    console.log(
+      "💡 Create a user manually through the app or Supabase dashboard"
     );
-
-    if (authError) {
-      console.error("❌ Error creating test user:", authError.message);
-      console.log(
-        "💡 You can create a user manually through the app or Supabase dashboard."
-      );
-    } else {
-      console.log("✅ Created test user:", testUser.email);
-      console.log("   Password:", testUser.password);
-    }
 
     console.log("\n🎉 Database setup complete!");
     console.log("\n📱 Next steps:");
-    console.log("   1. Start your app: npx expo start");
-    console.log("   2. Sign in with the test user or create a new account");
-    console.log("   3. Start scanning receipts to see real data in action!");
+    console.log("   1. Your app is already running at http://localhost:8082");
+    console.log("   2. Sign up with a new email");
+    console.log("   3. Try scanning a receipt!");
+    console.log("   4. Check if the receipt appears in your dashboard");
   } catch (error) {
     console.error("❌ Setup failed:", error.message);
     process.exit(1);

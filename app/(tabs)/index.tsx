@@ -14,10 +14,25 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { ReceiptCard } from "@/components/ReceiptCard";
 import { WeeklyInsights } from "@/components/WeeklyInsights";
 import { debounce } from "lodash";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useRadarMood } from "@/hooks/useRadarMood";
 import { RadarWorm } from "@/components/RadarWorm";
 import { EdgeCaseRenderer } from "@/components/EdgeCaseRenderer";
+import {
+  spacing,
+  typography,
+  shadows,
+  borderRadius,
+  animation,
+} from "@/constants/theme";
+import {
+  createContainerStyle,
+  createAnimationStyle,
+  commonStyles,
+} from "@/utils/designSystem";
 
 const WORM_GREETINGS = [
   "Your grocery footprint, day by day.",
@@ -36,6 +51,7 @@ export default function DashboardScreen() {
   const { receipts, loading, search } = useReceipts(user?.id ?? "");
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [searchQuery, setSearchQuery] = useState("");
+  const insets = useSafeAreaInsets();
 
   const totalSpending = receipts.reduce(
     (acc, receipt) => acc + receipt.total,
@@ -60,9 +76,11 @@ export default function DashboardScreen() {
   }, [searchQuery, debouncedSearch]);
 
   useEffect(() => {
+    // Use design system animation
+    const fadeInAnimation = createAnimationStyle("fadeIn");
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 1000,
+      duration: fadeInAnimation.duration,
       useNativeDriver: true,
     }).start();
   }, [fadeAnim]);
@@ -74,16 +92,20 @@ export default function DashboardScreen() {
       <View style={styles.header}>
         <View style={styles.headerRow}>
           <Text
-            variant="headlineLarge"
-            style={[styles.title, { color: theme.colors.onBackground }]}
+            style={[typography.headline1, { color: theme.colors.onSurface }]}
           >
             Every Receipt Tells a Story
           </Text>
           <RadarWorm mood={mood} size="small" visible={true} />
         </View>
         <Text
-          variant="titleMedium"
-          style={[styles.subtitle, { color: theme.colors.onSurfaceVariant }]}
+          style={[
+            typography.title1,
+            {
+              color: theme.colors.onSurfaceVariant,
+              marginTop: spacing.sm,
+            },
+          ]}
         >
           {greeting}
         </Text>
@@ -93,11 +115,21 @@ export default function DashboardScreen() {
           placeholder="Search by store or item..."
           onChangeText={onChangeSearch}
           value={searchQuery}
-          style={[styles.searchBar, { backgroundColor: theme.colors.surface }]}
+          style={[
+            styles.searchBar,
+            {
+              backgroundColor: theme.colors.surface,
+              borderRadius: borderRadius.md,
+              ...shadows.sm,
+            },
+          ]}
           icon="magnify"
           iconColor={theme.colors.onSurfaceVariant}
           placeholderTextColor={theme.colors.onSurfaceVariant}
-          inputStyle={{ color: theme.colors.onSurface }}
+          inputStyle={{
+            color: theme.colors.onSurface,
+            ...typography.body1,
+          }}
         />
       </View>
       <WeeklyInsights />
@@ -107,6 +139,7 @@ export default function DashboardScreen() {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
+      edges={["top", "left", "right"]}
     >
       <Animated.View style={[{ flex: 1, opacity: fadeAnim }]}>
         <FlatList
@@ -126,16 +159,27 @@ export default function DashboardScreen() {
               message="Scan your first receipt to begin the gentle judgment."
             />
           }
-          contentContainerStyle={styles.listContentContainer}
+          contentContainerStyle={[
+            styles.listContentContainer,
+            { paddingBottom: 88 + insets.bottom },
+          ]}
           onRefresh={() => search("")}
           refreshing={loading}
         />
         <FAB
-          style={[styles.fab, { backgroundColor: theme.colors.primary }]}
-          icon="plus"
+          style={[
+            styles.fab,
+            {
+              backgroundColor: theme.colors.primary,
+              bottom: spacing.lg + insets.bottom,
+              ...shadows.floating,
+            },
+          ]}
+          icon="camera"
           color={theme.colors.onPrimary}
           onPress={() => router.push("/modals/camera")}
           mode="flat"
+          label="Scan Receipt"
         />
       </Animated.View>
     </SafeAreaView>
@@ -146,58 +190,30 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  emptyContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 64,
-  },
   listContentContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 150, // Added padding for FAB and tab bar
+    paddingHorizontal: spacing.lg,
+    paddingBottom: 88, // Full tab bar height
   },
   header: {
-    paddingTop: 24, // Reduced from 48
-    paddingBottom: 24,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
   },
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 4,
-  },
-  title: {
-    fontFamily: "Inter_600SemiBold",
-    letterSpacing: -1,
-  },
-  subtitle: {
-    fontFamily: "Inter_500Medium",
-    fontSize: 18,
-    lineHeight: 24,
+    marginBottom: spacing.xs,
   },
   searchBarContainer: {
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
   searchBar: {
-    borderRadius: 12,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.05)",
-  },
-  noReceiptsText: {
-    textAlign: "center",
-    fontFamily: "Inter_400Regular",
-    marginTop: 16,
+    elevation: 0, // Remove default elevation, use our shadow system
   },
   fab: {
     position: "absolute",
-    margin: 24, // Increased margin
+    margin: spacing.md,
     right: 0,
-    bottom: 0,
-    borderRadius: 28,
+    borderRadius: borderRadius.full,
   },
 });

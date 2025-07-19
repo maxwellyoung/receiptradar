@@ -134,7 +134,7 @@ export default function TrendsScreen() {
 
   if (!hasData) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
         <View style={styles.emptyContainer}>
           <RadarWorm mood="suspicious" size="large" visible />
           <Text variant="headlineSmall" style={styles.emptyTitle}>
@@ -149,7 +149,7 @@ export default function TrendsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Text variant="displaySmall" style={styles.headerTitle}>
