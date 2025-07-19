@@ -16,11 +16,28 @@ const Section = ({
   title: string;
   children: React.ReactNode;
 }) => (
-  <View style={styles.section}>
-    <Text variant="titleMedium" style={styles.sectionTitle}>
+  <View style={{ marginBottom: spacing.xl }}>
+    <Text
+      variant="titleMedium"
+      style={{
+        textTransform: "uppercase",
+        color: "grey",
+        letterSpacing: 1.2,
+        marginBottom: spacing.sm,
+        marginLeft: spacing.md,
+      }}
+    >
       {title}
     </Text>
-    <View style={styles.sectionCard}>{children}</View>
+    <View
+      style={{
+        backgroundColor: "rgba(128, 128, 128, 0.1)",
+        borderRadius: borderRadius.lg,
+        overflow: "hidden",
+      }}
+    >
+      {children}
+    </View>
   </View>
 );
 
@@ -237,6 +254,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContentContainer: {
+    flexGrow: 1,
     padding: spacing.lg,
     paddingTop: 0,
   },
@@ -245,21 +263,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontWeight: "700",
-  },
-  section: {
-    marginBottom: spacing.xl,
-  },
-  sectionTitle: {
-    textTransform: "uppercase",
-    color: "grey",
-    letterSpacing: 1.2,
-    marginBottom: spacing.sm,
-    marginLeft: spacing.md,
-  },
-  sectionCard: {
-    backgroundColor: "rgba(128, 128, 128, 0.1)",
-    borderRadius: borderRadius.lg,
-    overflow: "hidden",
   },
   row: {
     flexDirection: "row",

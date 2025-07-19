@@ -11,8 +11,9 @@ import {
 } from "react-native";
 import { MotiView } from "moti";
 import * as Haptics from "expo-haptics";
-import { theme, spacing, borderRadius, shadows } from "@/constants/theme";
+import { spacing, borderRadius, shadows } from "@/constants/theme";
 import { supabase } from "@/services/supabase";
+import { useThemeContext } from "@/contexts/ThemeContext";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -28,6 +29,7 @@ export const EmailConfirmationScreen: React.FC<
 > = ({ email, onEmailConfirmed, onResendEmail, onBackToSignIn }) => {
   const [isResending, setIsResending] = useState(false);
   const [resendCountdown, setResendCountdown] = useState(0);
+  const { theme } = useThemeContext();
 
   const handleResendEmail = async () => {
     if (resendCountdown > 0) return;
@@ -103,6 +105,8 @@ export const EmailConfirmationScreen: React.FC<
       Alert.alert("Error", "Failed to check email status. Please try again.");
     }
   };
+
+  const styles = getStyles(theme);
 
   return (
     <KeyboardAvoidingView
@@ -213,137 +217,126 @@ export const EmailConfirmationScreen: React.FC<
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xxl,
-  },
-  header: {
-    marginBottom: spacing.xxxl,
-    alignItems: "center",
-  },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: theme.colors.surfaceVariant,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: spacing.lg,
-    ...shadows.sm,
-  },
-  icon: {
-    fontSize: 36,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "300",
-    textAlign: "center",
-    marginBottom: spacing.sm,
-    color: theme.colors.onBackground,
-    letterSpacing: -0.5,
-    lineHeight: 36,
-  },
-  subtitle: {
-    fontSize: 16,
-    fontWeight: "400",
-    textAlign: "center",
-    color: theme.colors.onSurfaceVariant,
-    letterSpacing: 0.15,
-    lineHeight: 24,
-    marginBottom: spacing.xs,
-  },
-  email: {
-    fontSize: 16,
-    fontWeight: "500",
-    textAlign: "center",
-    color: theme.colors.primary,
-    letterSpacing: 0.15,
-    lineHeight: 24,
-  },
-  instructions: {
-    marginBottom: spacing.xxxl,
-  },
-  instructionItem: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: spacing.lg,
-  },
-  instructionNumber: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: theme.colors.primary,
-    color: theme.colors.onPrimary,
-    fontSize: 14,
-    fontWeight: "500",
-    textAlign: "center",
-    lineHeight: 24,
-    marginRight: spacing.md,
-    marginTop: 2,
-  },
-  instructionText: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: "400",
-    color: theme.colors.onSurface,
-    letterSpacing: 0.15,
-    lineHeight: 24,
-  },
-  actions: {
-    width: "100%",
-  },
-  primaryButton: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: borderRadius.sm,
-    paddingVertical: spacing.md,
-    marginBottom: spacing.md,
-    ...shadows.sm,
-  },
-  secondaryButton: {
-    backgroundColor: theme.colors.surface,
-    borderWidth: 1,
-    borderColor: theme.colors.outline,
-    borderRadius: borderRadius.sm,
-    paddingVertical: spacing.md,
-    marginBottom: spacing.lg,
-    ...shadows.xs,
-  },
-  buttonDisabled: {
-    backgroundColor: theme.colors.surfaceTertiary,
-    borderColor: theme.colors.outlineVariant,
-    ...shadows.none,
-  },
-  buttonContent: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  primaryButtonText: {
-    color: theme.colors.onPrimary,
-    fontSize: 16,
-    fontWeight: "500",
-    letterSpacing: 0.1,
-  },
-  secondaryButtonText: {
-    color: theme.colors.onSurface,
-    fontSize: 16,
-    fontWeight: "400",
-    letterSpacing: 0.1,
-  },
-  backButton: {
-    alignItems: "center",
-    paddingVertical: spacing.sm,
-  },
-  backButtonText: {
-    color: theme.colors.primary,
-    fontSize: 14,
-    fontWeight: "400",
-    letterSpacing: 0.25,
-  },
-});
+const getStyles = (theme: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    content: {
+      flex: 1,
+      justifyContent: "center",
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.xxl,
+    },
+    header: {
+      marginBottom: spacing.xxxl,
+      alignItems: "center",
+    },
+    iconContainer: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: theme.colors.surfaceVariant,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: spacing.lg,
+      ...shadows.sm,
+    },
+    icon: {
+      fontSize: 36,
+    },
+    title: {
+      fontSize: 28,
+      fontWeight: "300",
+      textAlign: "center",
+      marginBottom: spacing.sm,
+      color: theme.colors.text,
+      letterSpacing: -0.5,
+    },
+    subtitle: {
+      fontSize: 16,
+      textAlign: "center",
+      color: theme.colors.onSurfaceVariant,
+      marginBottom: spacing.xs,
+    },
+    email: {
+      fontSize: 16,
+      fontWeight: "600",
+      textAlign: "center",
+      color: theme.colors.text,
+    },
+    instructions: {
+      marginBottom: spacing.xxxl,
+    },
+    instructionItem: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      marginBottom: spacing.lg,
+    },
+    instructionNumber: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: theme.colors.primary,
+      color: theme.colors.onPrimary,
+      fontSize: 14,
+      fontWeight: "600",
+      textAlign: "center",
+      lineHeight: 24,
+      marginRight: spacing.md,
+      marginTop: 2,
+    },
+    instructionText: {
+      flex: 1,
+      fontSize: 16,
+      fontWeight: "400",
+      color: theme.colors.onSurface,
+      letterSpacing: 0.15,
+      lineHeight: 24,
+    },
+    actions: {
+      width: "100%",
+    },
+    primaryButton: {
+      backgroundColor: theme.colors.primary,
+      borderRadius: borderRadius.sm,
+      paddingVertical: spacing.md,
+      marginBottom: spacing.md,
+      ...shadows.sm,
+    },
+    secondaryButton: {
+      marginTop: spacing.md,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+      borderRadius: borderRadius.md,
+      alignItems: "center",
+    },
+    buttonDisabled: {
+      backgroundColor: theme.colors.surfaceDisabled,
+    },
+    buttonContent: {
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    primaryButtonText: {
+      color: theme.colors.onPrimary,
+      fontSize: 16,
+      fontWeight: "500",
+      letterSpacing: 0.1,
+    },
+    secondaryButtonText: {
+      fontSize: 16,
+      color: theme.colors.primary,
+      fontWeight: "500",
+    },
+    backButton: {
+      marginTop: spacing.xl,
+    },
+    backButtonText: {
+      fontSize: 14,
+      color: theme.colors.onSurfaceVariant,
+      textAlign: "center",
+      fontWeight: "500",
+    },
+  });

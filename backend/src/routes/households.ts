@@ -1,199 +1,167 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { supabase } from "../lib/supabase";
+import { createSupabaseClient } from "@/lib/supabase";
 
-export const households = new Hono()
-  // POST /api/v1/households -> creates a new household
-  .post(
-    "/",
-    zValidator(
-      "json",
-      z.object({
-        name: z.string().min(1, "Household name cannot be empty."),
-      })
-    ),
-    async (c) => {
-      const { name } = c.req.valid("json");
-      const user = c.get("user"); // Assumes user is set in auth middleware
+type User = {
+  id: string;
+  email: string;
+};
 
-      // 1. Create the household
-      const { data: household, error: householdError } = await supabase
-        .from("households")
-        .insert({ name: name, owner_id: user.id })
-        .select()
-        .single();
+type Env = {
+  Variables: {
+    user: User;
+  };
+};
 
-      if (householdError) {
-        return c.json(
-          {
-            error: "Failed to create household",
-            details: householdError.message,
-          },
-          500
-        );
-      }
+const households = new Hono<Env>();
 
-      // 2. Add the creator as the first member with an 'admin' role
-      const { error: memberError } = await supabase
-        .from("household_users")
-        .insert({
-          household_id: household.id,
-          user_id: user.id,
-          role: "admin",
-        });
-
-      if (memberError) {
-        // TODO: In a real scenario, we might want to roll back the household creation
-        return c.json(
-          {
-            error: "Failed to add owner to household",
-            details: memberError.message,
-          },
-          500
-        );
-      }
-
-      // 3. Set this as the user's active household
-      const { error: updateUserError } = await supabase
-        .from("users")
-        .update({ active_household_id: household.id })
-        .eq("id", user.id);
-
-      if (updateUserError) {
-        // Not a deal-breaker, so we'll just log this error
-        console.error(
-          "Failed to set active household for user",
-          updateUserError
-        );
-      }
-
-      return c.json(household, 201);
-    }
-  )
-
-  // POST /api/v1/households/:householdId/members -> adds a member to a household
-  .post(
-    "/:householdId/members",
-    zValidator(
-      "json",
-      z.object({
-        email: z.string().email("Invalid email address."),
-      })
-    ),
-    async (c) => {
-      const { householdId } = c.req.param();
-      const { email: newMemberEmail } = c.req.valid("json");
-      const requester = c.get("user");
-
-      // 1. Verify requester is an admin of the household
-      const { data: membership, error: membershipError } = await supabase
-        .from("household_users")
-        .select("role")
-        .eq("household_id", householdId)
-        .eq("user_id", requester.id)
-        .single();
-
-      if (membershipError || membership?.role !== "admin") {
-        return c.json(
-          {
-            error:
-              "Forbidden: You do not have permission to add members to this household.",
-          },
-          403
-        );
-      }
-
-      // 2. Find the user to be added by their email
-      const { data: newMember, error: userError } = await supabase
-        .from("users")
-        .select("id")
-        .eq("email", newMemberEmail)
-        .single();
-
-      if (userError || !newMember) {
-        return c.json({ error: "User not found." }, 404);
-      }
-
-      // 3. Add the new member to the household
-      const { error: addMemberError } = await supabase
-        .from("household_users")
-        .insert({
-          household_id: householdId,
-          user_id: newMember.id,
-          role: "member", // New users are always members by default
-        });
-
-      if (addMemberError) {
-        // Handle potential duplicate entry (user is already in the household)
-        if (addMemberError.code === "23505") {
-          // unique_violation
-          return c.json(
-            { error: "This user is already a member of the household." },
-            409
-          );
-        }
-        return c.json(
-          { error: "Failed to add member", details: addMemberError.message },
-          500
-        );
-      }
-
-      return c.json({ success: true, message: "Member added successfully." });
-    }
-  )
-
-  // GET /api/v1/households/mine -> gets the active household and its members for the current user
-  .get("/mine", async (c) => {
+// Create a new household
+households.post(
+  "/",
+  zValidator(
+    "json",
+    z.object({
+      name: z.string().min(1, "Household name cannot be empty."),
+    })
+  ),
+  async (c) => {
+    const { name } = c.req.valid("json");
     const user = c.get("user");
+    const supabaseClient = createSupabaseClient(c.env);
 
-    // First, get the user's active household ID
-    const { data: userData, error: userError } = await supabase
-      .from("users")
-      .select("active_household_id")
-      .eq("id", user.id)
-      .single();
-
-    if (userError || !userData?.active_household_id) {
-      return c.json({ error: "User does not have an active household." }, 404);
-    }
-
-    const householdId = userData.active_household_id;
-
-    // Now, fetch the household details and its members
-    const { data: household, error: householdError } = await supabase
+    const { data: household, error } = await supabaseClient
       .from("households")
-      .select(
-        `
-        id,
-        name,
-        created_at,
-        owner_id,
-        members:household_users (
-          role,
-          user:users (
-            id,
-            email
-          )
-        )
-      `
-      )
-      .eq("id", householdId)
+      .insert({ name: name, owner_id: user.id })
+      .select()
       .single();
 
-    if (householdError) {
-      return c.json(
-        {
-          error: "Failed to fetch household details",
-          details: householdError.message,
-        },
-        500
-      );
+    if (error) {
+      return c.json({ error: error.message }, 500);
     }
 
-    if (!household) {
-      return c.json({ error: "Active household not found." }, 404);
+    // Add the owner as a member of the household
+    const { error: memberError } = await supabaseClient
+      .from("household_members")
+      .insert({ household_id: household.id, user_id: user.id });
+
+    if (memberError) {
+      // If adding the member fails, we should probably roll back the household creation
+      // For now, we'll just log the error and return the created household
+      console.error("Failed to add owner to household:", memberError);
     }
 
-    return c.json(household);
-  });
+    return c.json(household, 201);
+  }
+);
+
+// Get all households for the current user
+households.get("/", async (c) => {
+  const user = c.get("user");
+  const supabaseClient = createSupabaseClient(c.env);
+
+  const { data, error } = await supabaseClient
+    .from("households")
+    .select(
+      `
+      id,
+      name,
+      owner_id,
+      members:household_members(user_id)
+    `
+    )
+    .eq("members.user_id", user.id);
+
+  if (error) {
+    return c.json({ error: error.message }, 500);
+  }
+
+  return c.json(data);
+});
+
+// Add a member to a household
+households.post(
+  "/:householdId/members",
+  zValidator(
+    "json",
+    z.object({
+      email: z.string().email("Invalid email address."),
+    })
+  ),
+  async (c) => {
+    const { householdId } = c.req.param();
+    const { email: newMemberEmail } = c.req.valid("json");
+    const requester = c.get("user");
+    const supabaseClient = createSupabaseClient(c.env);
+
+    // 1. Verify the requester is the owner of the household
+    const { data: household, error: householdError } = await supabaseClient
+      .from("households")
+      .select("owner_id")
+      .eq("id", householdId)
+      .eq("owner_id", requester.id)
+      .single();
+
+    if (householdError || !household) {
+      return c.json({ error: "Unauthorized or household not found" }, 403);
+    }
+
+    // 2. Find the user to be added by their email
+    const { data: newMember, error: userError } = await supabaseClient
+      .from("users")
+      .select("id")
+      .eq("email", newMemberEmail)
+      .single();
+
+    if (userError || !newMember) {
+      return c.json({ error: "User to be added not found" }, 404);
+    }
+
+    // 3. Add the new member to the household
+    const { error: insertError } = await supabaseClient
+      .from("household_members")
+      .insert({ household_id: householdId, user_id: newMember.id });
+
+    if (insertError) {
+      // Handle potential duplicate members or other db errors
+      if (insertError.code === "23505") {
+        return c.json({ error: "User is already a member" }, 409);
+      }
+      return c.json({ error: "Failed to add member" }, 500);
+    }
+
+    return c.json({ message: "Member added successfully" }, 201);
+  }
+);
+
+// Get a single household's details
+households.get("/:id", async (c) => {
+  const { id } = c.req.param();
+  const user = c.get("user");
+  const supabaseClient = createSupabaseClient(c.env);
+
+  const { data, error } = await supabaseClient
+    .from("households")
+    .select(
+      `
+      id,
+      name,
+      owner_id,
+      members:household_members(user:users(id, email))
+    `
+    )
+    .eq("id", id)
+    .eq("members.user_id", user.id) // Ensure user is part of the household
+    .single();
+
+  if (error) {
+    return c.json(
+      { error: "Household not found or you are not a member" },
+      404
+    );
+  }
+
+  return c.json(data);
+});
+
+export { households };

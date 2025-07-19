@@ -4,6 +4,26 @@ import { useThemeContext } from "@/contexts/ThemeContext";
 import { View, ActivityIndicator } from "react-native";
 import { useAuthContext } from "@/contexts/AuthContext";
 
+// Debug logging to test file loading and imports
+console.log("=== TAB LAYOUT DEBUG ===");
+console.log("File loaded: app/(tabs)/_layout.tsx");
+console.log("Testing import resolution...");
+try {
+  console.log("ThemeContext import:", typeof useThemeContext);
+  console.log("AuthContext import:", typeof useAuthContext);
+  console.log("MaterialCommunityIcons import:", typeof MaterialCommunityIcons);
+} catch (error) {
+  console.error("Import error:", error);
+}
+console.log("========================");
+
+// Explicit type for tabBarIcon props
+interface IconProps {
+  color: string;
+  size: number;
+  focused?: boolean;
+}
+
 export default function TabLayout() {
   const { theme } = useThemeContext();
   const { loading } = useAuthContext();
@@ -44,7 +64,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          tabBarIcon: ({ color, size, focused }) => (
+          tabBarIcon: ({ color, size, focused }: IconProps) => (
             <MaterialCommunityIcons
               name={focused ? "script-text" : "script-text-outline"}
               size={size}
@@ -54,9 +74,21 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="receipts"
+        options={{
+          tabBarIcon: ({ color, size, focused }: IconProps) => (
+            <MaterialCommunityIcons
+              name={focused ? "clipboard-text" : "clipboard-text-outline"}
+              size={size}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="trends"
         options={{
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color, size }: IconProps) => (
             <MaterialCommunityIcons
               name="chart-arc"
               size={size}
@@ -66,9 +98,21 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="household"
+        options={{
+          tabBarIcon: ({ color, size, focused }: IconProps) => (
+            <MaterialCommunityIcons
+              name={focused ? "account-group" : "account-group-outline"}
+              size={size}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="radar-demo"
         options={{
-          tabBarIcon: ({ color, size, focused }) => (
+          tabBarIcon: ({ color, size, focused }: IconProps) => (
             <MaterialCommunityIcons
               name={focused ? "account-heart" : "account-heart-outline"}
               size={size}
@@ -80,7 +124,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          tabBarIcon: ({ color, size, focused }) => (
+          tabBarIcon: ({ color, size, focused }: IconProps) => (
             <MaterialCommunityIcons
               name={focused ? "tune" : "tune-variant"}
               size={size}

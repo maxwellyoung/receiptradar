@@ -5,8 +5,9 @@ import { Platform } from "react-native";
 import { useAuthContext } from "@/contexts/AuthContext";
 import * as Haptics from "expo-haptics";
 import { MotiView } from "moti";
-import { theme, borderRadius, shadows } from "@/constants/theme";
+import { useThemeContext } from "@/contexts/ThemeContext";
 import Constants from "expo-constants";
+import { borderRadius, shadows } from "@/constants/theme";
 
 interface AppleSignInButtonProps {
   onSuccess?: (user: any) => void;
@@ -22,6 +23,7 @@ export const AppleSignInButton: React.FC<AppleSignInButtonProps> = ({
   const [isAvailable, setIsAvailable] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { signInWithApple } = useAuthContext();
+  const { theme } = useThemeContext();
 
   useEffect(() => {
     checkAvailability();
@@ -141,7 +143,13 @@ export const AppleSignInButton: React.FC<AppleSignInButtonProps> = ({
           buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
           buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
           cornerRadius={borderRadius.sm}
-          style={styles.button}
+          style={[
+            styles.button,
+            {
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.onSurfaceVariant,
+            },
+          ]}
           onPress={handleAppleSignIn}
         />
       </MotiView>

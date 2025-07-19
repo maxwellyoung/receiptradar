@@ -5,13 +5,13 @@
 // before any other code in the app, which is critical for compatibility
 // with older browsers or environments that don't support modern
 // JavaScript features (like `structuredClone`).
-import "../src/utils/globalPolyfill";
+import "@/utils/polyfills";
 
 // The globalPolyfill now handles all necessary polyfills.
 // This import is no longer needed.
 // import "@/utils";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -31,6 +31,10 @@ import {
   Inter_700Bold,
 } from "@expo-google-fonts/inter";
 import * as SplashScreen from "expo-splash-screen";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { OnboardingScreen } from "@/components/OnboardingScreen";
+
+console.log("[LOG] app/_layout.tsx loaded");
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -75,6 +79,24 @@ function RootContent() {
   const { user, loading } = useAuthContext();
   const router = useRouter();
   const segments = useSegments();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      if (loading || !user) return;
+
+      try {
+        const hasOnboarded = await AsyncStorage.getItem("@hasOnboarded");
+        if (!hasOnboarded) {
+          setShowOnboarding(true);
+        }
+      } catch (e) {
+        console.error("Failed to fetch onboarding status", e);
+      }
+    };
+
+    checkOnboarding();
+  }, [user, loading]);
 
   useEffect(() => {
     if (loading) return; // Wait until auth state is confirmed
@@ -91,6 +113,17 @@ function RootContent() {
       router.replace("/(tabs)");
     }
   }, [user, loading, segments, router]);
+
+  const handleOnboardingDismiss = async () => {
+    try {
+      await AsyncStorage.setItem("@hasOnboarded", "true");
+      setShowOnboarding(false);
+    } catch (e) {
+      console.error("Failed to save onboarding status", e);
+      // Still dismiss the screen even if storage fails
+      setShowOnboarding(false);
+    }
+  };
 
   // Show a loading indicator while we check for a user
   if (loading) {
@@ -129,6 +162,10 @@ function RootContent() {
           />
           <Stack.Screen name="viral-demo" options={{ presentation: "modal" }} />
         </Stack>
+        <OnboardingScreen
+          isVisible={showOnboarding}
+          onDismiss={handleOnboardingDismiss}
+        />
       </SafeAreaProvider>
     </PaperProvider>
   );

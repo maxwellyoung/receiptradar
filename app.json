@@ -6,18 +6,17 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.receiptradar.app",
+      "jsEngine": "jsc",
       "infoPlist": {
         "NSCameraUsageDescription": "ReceiptRadar needs camera access to scan grocery receipts and track your spending.",
         "NSPhotoLibraryUsageDescription": "ReceiptRadar needs photo library access to select receipt images for scanning.",
@@ -30,6 +29,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.receiptradar.app",
+      "jsEngine": "jsc",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
@@ -41,7 +41,8 @@
     },
     "web": {
       "favicon": "./assets/favicon.png",
-      "bundler": "metro"
+      "bundler": "metro",
+      "jsEngine": "jsc"
     },
     "plugins": [
       "expo-router",
@@ -80,6 +81,7 @@
       "router": {
         "origin": false
       }
-    }
+    },
+    "jsEngine": "jsc"
   }
 }

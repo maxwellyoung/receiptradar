@@ -10,15 +10,6 @@ import { BUSINESS_RULES } from "@/constants/business-rules";
 import { OCRItem } from "@/types/ocr";
 import { handleAsyncError, logError } from "@/utils/error-handler";
 
-interface WeeklyInsights {
-  weeklyDelta: number;
-  averageSpend: number;
-  topSplurge: {
-    item: string;
-    emoji: string;
-  };
-}
-
 interface ReceiptsState {
   receipts: Receipt[];
   loading: boolean;
@@ -67,19 +58,31 @@ export const useReceipts = (userId: string) => {
       const appReceipts: Receipt[] = (data || []).map((dbReceipt: any) => ({
         id: dbReceipt.id,
         user_id: dbReceipt.user_id,
-        store_id: dbReceipt.store_id,
+        store_id:
+          dbReceipt.store_id ||
+          dbReceipt.store_name?.toLowerCase().replace(/\s+/g, "_"),
         ts: dbReceipt.date,
         total: dbReceipt.total_amount,
         raw_url: dbReceipt.image_url || "",
         created_at: dbReceipt.created_at,
         store: {
-          id: dbReceipt.store_id,
+          id:
+            dbReceipt.store_id ||
+            dbReceipt.store_name?.toLowerCase().replace(/\s+/g, "_"),
           name: dbReceipt.store_name,
-          chain: "Unknown",
+          chain: dbReceipt.store_name,
           lat: 0,
           lon: 0,
-          created_at: "",
+          created_at: dbReceipt.created_at || "",
         },
+        // Add additional fields for receipt detail view
+        store_name: dbReceipt.store_name,
+        total_amount: dbReceipt.total_amount,
+        date: dbReceipt.date,
+        image_url: dbReceipt.image_url,
+        ocr_data: dbReceipt.ocr_data,
+        savings_identified: dbReceipt.savings_identified || 0,
+        cashback_earned: dbReceipt.cashback_earned || 0,
       }));
 
       setState({
@@ -235,22 +238,49 @@ export const useReceipts = (userId: string) => {
     return breakdown;
   }, [state.receipts]);
 
-  const getCategoryBreakdown = (): CategoryBreakdown => categoryBreakdown;
+  const getSpendingByCategory = (): CategoryBreakdown => categoryBreakdown;
+
+  const getWeeklySpending = (numWeeks: number) => {
+    const weeklySpending: { week: string; total: number }[] = [];
+    const now = new Date();
+
+    for (let i = 0; i < numWeeks; i++) {
+      const endOfWeek = new Date(now);
+      endOfWeek.setDate(now.getDate() - i * 7);
+      const startOfWeek = new Date(endOfWeek);
+      startOfWeek.setDate(endOfWeek.getDate() - 6);
+
+      const weekLabel = `Week ${numWeeks - i}`;
+
+      const total = state.receipts
+        .filter((receipt) => {
+          const receiptDate = new Date(receipt.ts);
+          return receiptDate >= startOfWeek && receiptDate <= endOfWeek;
+        })
+        .reduce((sum, receipt) => sum + receipt.total, 0);
+
+      weeklySpending.unshift({ week: weekLabel, total });
+    }
+
+    return weeklySpending;
+  };
 
   const getSpendingAnalytics = (): SpendingAnalytics => {
     const totalSpent = state.receipts.reduce(
       (sum, receipt) => sum + receipt.total,
       0
     );
-    // These fields also need re-evaluation
-    const totalSavings = 0; // state.receipts.reduce(
-    //   (sum, receipt) => sum + (receipt.savings_identified || 0),
-    //   0
-    // );
-    const totalCashback = 0; // state.receipts.reduce(
-    //   (sum, receipt) => sum + (receipt.cashback_earned || 0),
-    //   0
-    // );
+
+    const totalSavings = state.receipts.reduce(
+      (sum, receipt) => sum + ((receipt as any).savings_identified || 0),
+      0
+    );
+
+    const totalCashback = state.receipts.reduce(
+      (sum, receipt) => sum + ((receipt as any).cashback_earned || 0),
+      0
+    );
+
     const receiptCount = state.receipts.length;
     const averageReceiptValue =
       receiptCount > 0 ? totalSpent / receiptCount : 0;
@@ -264,105 +294,18 @@ export const useReceipts = (userId: string) => {
     };
   };
 
-  const getWeeklySpending = (weeks: number = 4) => {
-    const weeklyData: { week: string; total: number }[] = [];
-    const now = new Date();
-
-    for (let i = 0; i < weeks; i++) {
-      const endOfWeek = new Date(now);
-      endOfWeek.setDate(now.getDate() - i * 7);
-      const startOfWeek = new Date(endOfWeek);
-      startOfWeek.setDate(endOfWeek.getDate() - 6);
-
-      const weekLabel = `${startOfWeek.getDate()}/${
-        startOfWeek.getMonth() + 1
-      }`;
-      const weekTotal = state.receipts
-        .filter((r) => {
-          const receiptDate = new Date(r.ts);
-          return receiptDate >= startOfWeek && receiptDate <= endOfWeek;
-        })
-        .reduce((sum, r) => sum + r.total, 0);
-
-      weeklyData.unshift({ week: weekLabel, total: weekTotal });
-    }
-
-    return weeklyData;
-  };
-
-  const getSpendingByCategory = () => {
-    return categoryBreakdown;
-  };
-
-  const weeklyInsights = useMemo((): WeeklyInsights => {
-    if (state.receipts.length === 0) {
-      return {
-        weeklyDelta: 0,
-        averageSpend: 0,
-        topSplurge: { item: "Nothing yet!", emoji: "🤔" },
-      };
-    }
-
-    const now = new Date();
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-
-    const thisWeekReceipts = state.receipts.filter(
-      (r) => new Date(r.ts) >= oneWeekAgo
-    );
-    const lastWeekReceipts = state.receipts.filter(
-      (r) => new Date(r.ts) >= twoWeeksAgo && new Date(r.ts) < oneWeekAgo
-    );
-
-    const thisWeekSpend = thisWeekReceipts.reduce((sum, r) => sum + r.total, 0);
-    const lastWeekSpend = lastWeekReceipts.reduce((sum, r) => sum + r.total, 0);
-
-    const weeklyDelta =
-      lastWeekSpend > 0
-        ? ((thisWeekSpend - lastWeekSpend) / lastWeekSpend) * 100
-        : thisWeekSpend > 0
-        ? 100
-        : 0;
-
-    const totalDaysWithReceipts = new Set(
-      state.receipts.map((r) => new Date(r.ts).toDateString())
-    ).size;
-    const totalSpend = state.receipts.reduce((sum, r) => sum + r.total, 0);
-    const averageSpend =
-      totalDaysWithReceipts > 0 ? totalSpend / totalDaysWithReceipts : 0;
-
-    const topSplurgeReceipt = thisWeekReceipts.sort(
-      (a, b) => b.total - a.total
-    )[0];
-    const topSplurgeItemName = topSplurgeReceipt?.store?.name || "Groceries";
-
-    const topSplurge = {
-      item: topSplurgeItemName,
-      emoji: "🛒", // Placeholder emoji
-    };
-
-    return {
-      weeklyDelta,
-      averageSpend,
-      topSplurge,
-    };
-  }, [state.receipts]);
-
   return {
     ...state,
     createReceipt,
     updateReceipt,
     deleteReceipt,
     getReceiptById,
-    refresh,
-    clearError,
     search,
-    // Analytics
+    clearError,
+    refresh,
     getTodaySpend,
-    getCategoryBreakdown,
+    getSpendingByCategory,
     getSpendingAnalytics,
     getWeeklySpending,
-    getSpendingByCategory,
-    weeklyInsights,
   };
 };

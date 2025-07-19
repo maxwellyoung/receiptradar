@@ -1,7 +1,9 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
-import { rateLimit } from "hono/rate-limit";
+import { rateLimiter } from "hono-rate-limiter";
+import { serve } from "@hono/node-server";
+
 import { auth } from "./middleware/auth";
 import { receipts } from "./routes/receipts";
 import { households } from "./routes/households";
@@ -26,39 +28,45 @@ app.use("*", logger());
 app.use(
   "*",
   cors({
-    origin: ["http://localhost:3000", "https://receiptradar.app"],
+    origin: "*", // In production, you should restrict this to your frontend's domain
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
   })
 );
 
-// Rate limiting
-app.use(
-  "*",
-  rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
-    message: "Too many requests from this IP",
-  })
-);
+// Rate Limiting
+const limiter = rateLimiter({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 100, // Limit each IP to 100 requests per `window`
+  standardHeaders: "draft-6",
+  keyGenerator: (c) => {
+    // A more robust key generator would be needed in a real app
+    return (
+      c.req.header("x-forwarded-for") ||
+      c.req.header("cf-connecting-ip") ||
+      "unknown"
+    );
+  },
+});
+app.use(limiter);
 
 // Health check
 app.get("/", (c) => {
-  return c.json({
-    status: "ok",
-    message: "ReceiptRadar API",
-    version: "1.0.0",
-    timestamp: new Date().toISOString(),
-  });
+  return c.text("Welcome to the ReceiptRadar API!");
 });
 
-// API routes
-app.route("/api/v1/receipts", auth, receipts);
-app.route("/api/v1/households", auth, households);
-// app.route("/api/v1/users", auth, users);
-// app.route("/api/v1/analytics", auth, analytics);
-// app.route("/api/v1/webhooks", webhooks);
+// Authenticated routes
+const v1 = new Hono();
+
+v1.use("*", auth);
+
+v1.route("/receipts", receipts);
+v1.route("/households", households);
+// v1.route("/api/v1/users", auth, users);
+// v1.route("/api/v1/analytics", auth, analytics);
+// v1.route("/api/v1/webhooks", webhooks);
+
+app.route("/api/v1", v1);
 
 // Error handling
 app.onError((err, c) => {
@@ -81,6 +89,16 @@ app.notFound((c) => {
     },
     404
   );
+});
+
+// --- Server ---
+
+const port = 3000;
+console.log(`Server is running on port ${port}`);
+
+serve({
+  fetch: app.fetch,
+  port,
 });
 
 export default app;

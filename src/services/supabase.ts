@@ -1,8 +1,5 @@
-// Import global polyfill first to ensure compatibility
-import "@/utils/globalPolyfill";
-
-// Import other polyfills
-import "@/utils";
+// Import polyfills first to ensure compatibility, especially for structuredClone.
+import "@/utils/polyfills";
 
 import { createClient, Session, AuthChangeEvent } from "@supabase/supabase-js";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -303,29 +300,99 @@ export const dbService = {
 
 // Storage service for images
 export const storageService = {
-  async uploadReceiptImage(
-    file: File | Blob,
-    fileName: string,
-    userId: string
-  ) {
-    const filePath = `receipts/${userId}/${fileName}`;
-    const { data, error } = await supabase.storage
-      .from("receipt-images")
-      .upload(filePath, file);
-    return { data, error };
+  async uploadReceiptImage(imageUri: string, fileName: string, userId: string) {
+    try {
+      logger.info("Uploading receipt image", { fileName, userId });
+
+      // Create file path
+      const timestamp = Date.now();
+      const cleanFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
+      const filePath = `receipts/${userId}/${timestamp}_${cleanFileName}`;
+
+      // For React Native, we need to handle the image URI differently
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+
+      const { data, error } = await supabase.storage
+        .from("receipt-images")
+        .upload(filePath, blob, {
+          contentType: "image/jpeg",
+          upsert: false,
+        });
+
+      if (error) {
+        logger.error("Image upload failed", { error: error.message, filePath });
+        return { data: null, error };
+      }
+
+      logger.info("Image uploaded successfully", { filePath });
+      return { data, error: null };
+    } catch (error) {
+      logger.error("Image upload error", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return { data: null, error: error as Error };
+    }
   },
 
   async getReceiptImageUrl(filePath: string) {
-    const { data } = supabase.storage
-      .from("receipt-images")
-      .getPublicUrl(filePath);
-    return data.publicUrl;
+    try {
+      const { data } = supabase.storage
+        .from("receipt-images")
+        .getPublicUrl(filePath);
+
+      return data.publicUrl;
+    } catch (error) {
+      logger.error("Failed to get image URL", { error, filePath });
+      return null;
+    }
   },
 
   async deleteReceiptImage(filePath: string) {
-    const { error } = await supabase.storage
-      .from("receipt-images")
-      .remove([filePath]);
-    return { error };
+    try {
+      const { error } = await supabase.storage
+        .from("receipt-images")
+        .remove([filePath]);
+
+      if (error) {
+        logger.error("Failed to delete image", { error, filePath });
+      }
+
+      return { error };
+    } catch (error) {
+      logger.error("Image deletion error", { error });
+      return { error: error as Error };
+    }
+  },
+
+  // Helper to extract file path from full URL
+  getFilePathFromUrl(url: string): string | null {
+    try {
+      const urlParts = url.split("/");
+      const bucketIndex = urlParts.findIndex(
+        (part) => part === "receipt-images"
+      );
+      if (bucketIndex !== -1 && bucketIndex < urlParts.length - 1) {
+        return urlParts.slice(bucketIndex + 1).join("/");
+      }
+      return null;
+    } catch (error) {
+      return null;
+    }
+  },
+
+  // Compress image before upload (optional optimization)
+  async compressImage(
+    imageUri: string,
+    quality: number = 0.8
+  ): Promise<string> {
+    try {
+      // This would require expo-image-manipulator
+      // For now, return the original URI
+      return imageUri;
+    } catch (error) {
+      logger.warn("Image compression failed, using original", { error });
+      return imageUri;
+    }
   },
 };

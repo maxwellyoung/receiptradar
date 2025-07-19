@@ -1,3 +1,4 @@
+console.log("[LOG] src/components/RadarWorm.tsx loaded");
 import React, { useEffect, useRef, useState } from "react";
 import { View, StyleSheet, Animated, TouchableOpacity } from "react-native";
 import { Text } from "react-native-paper";
@@ -28,7 +29,7 @@ const moodConfig = {
   calm: {
     emoji: "🙂",
     color: "#34C759",
-    message: "Frugal… suspiciously so. The worm nods.",
+    message: "Frugal — suspiciously so. The worm nods.",
     eyeStyle: "normal",
     accessory: "monocle",
   },

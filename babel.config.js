@@ -1,9 +1,21 @@
 module.exports = function (api) {
   api.cache(true);
+
+  // Force JSC by setting environment variables
+  process.env.EXPO_USE_HERMES = "false";
+  process.env.RN_HERMES_ENABLED = "false";
+  process.env.HERMES_ENABLED = "false";
+
   return {
-    presets: ["babel-preset-expo"],
+    presets: [
+      [
+        "babel-preset-expo",
+        {
+          useHermes: false,
+        },
+      ],
+    ],
     plugins: [
-      "react-native-reanimated/plugin",
       [
         "module-resolver",
         {
@@ -21,6 +33,7 @@ module.exports = function (api) {
           },
         },
       ],
+      "react-native-reanimated/plugin",
     ],
   };
 };

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+console.log("[LOG] app/receipt/processing.tsx loaded");
+import React, { useState, useEffect, useRef } from "react";
 import { View, StyleSheet, Image, Alert, Animated } from "react-native";
 import {
   SafeAreaView,
@@ -17,6 +18,8 @@ import { useThemeContext } from "@/contexts/ThemeContext";
 // @ts-ignore: No types for confetti cannon
 import ConfettiCannon from "react-native-confetti-cannon";
 import { ocrService } from "@/services/ocr";
+import { storageService } from "@/services/supabase";
+import { ParserManager } from "@/parsers/ParserManager";
 
 interface ProcessingStep {
   name: string;
@@ -91,26 +94,32 @@ export default function ReceiptProcessingScreen() {
 
   const processReceipt = async () => {
     try {
-      // Show progress steps while waiting for OCR
-      for (let i = 0; i < processingSteps.length - 1; i++) {
-        setCurrentStep(i);
-        setProgress((i / (processingSteps.length - 1)) * 100);
-        await new Promise((resolve) => setTimeout(resolve, 400));
+      // Step 1: Analyzing Image
+      setCurrentStep(0);
+      setProgress(10);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Step 2: OCR Processing - This is where the real work happens
+      setCurrentStep(1);
+      setProgress(30);
+
+      // Check if OCR service is available
+      const isServiceHealthy = await ocrService.healthCheck();
+      if (!isServiceHealthy) {
+        console.warn("OCR service unavailable, using fallback");
       }
 
-      // Call OCR backend for real parsing
-      setCurrentStep(processingSteps.length - 2); // 'Calculating Totals'
-      setProgress(90);
       const parsed = await ocrService.parseReceipt(photoUri!);
 
-      // In the background, save the processed receipt to the remote server.
-      // We don't need to wait for this to complete to show the user the results.
-      ocrService.saveReceipt(parsed).catch((error) => {
-        // If this fails, we don't want to block the user.
-        // We'll just log the error for now. A more robust solution
-        // might involve a background sync queue.
-        console.error("Failed to save receipt to backend:", error);
-      });
+      // Step 3: Categorizing Items
+      setCurrentStep(2);
+      setProgress(60);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      // Step 4: Calculating Totals
+      setCurrentStep(3);
+      setProgress(80);
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
       // Check if the result is NOT a receipt
       if (parsed.validation && parsed.validation.is_valid === false) {
@@ -120,17 +129,47 @@ export default function ReceiptProcessingScreen() {
         return;
       }
 
+      // Step 5: Saving Data
+      setCurrentStep(4);
+      setProgress(95);
+
+      // Upload image to Supabase storage
+      let imageUrl = photoUri;
+      if (user?.id) {
+        try {
+          const fileName = `receipt_${Date.now()}.jpg`;
+          const { data: uploadData, error: uploadError } =
+            await storageService.uploadReceiptImage(
+              photoUri!,
+              fileName,
+              user.id
+            );
+
+          if (uploadData && !uploadError) {
+            imageUrl =
+              (await storageService.getReceiptImageUrl(uploadData.path)) ||
+              photoUri;
+            console.log("Image uploaded successfully:", imageUrl);
+          } else {
+            console.warn("Image upload failed, using local URI:", uploadError);
+          }
+        } catch (error) {
+          console.warn("Image upload error, using local URI:", error);
+        }
+      }
+
       // Map parsed data to expected format for createReceipt
       const fallbackDate = new Date().toISOString().slice(0, 10);
       const dateString =
         typeof parsed.date === "string" && parsed.date
           ? parsed.date
           : fallbackDate;
+
       const receiptToSave = {
         store_name: parsed.store_name || "Unknown Store",
         total_amount: parsed.total || 0,
         date: dateString,
-        image_url: photoUri,
+        image_url: imageUrl,
         ocr_data: {
           items: parsed.items || [],
           subtotal: parsed.subtotal,
@@ -139,27 +178,62 @@ export default function ReceiptProcessingScreen() {
           validation: parsed.validation,
           processing_time: parsed.processing_time,
         },
+        savings_identified: 0,
+        cashback_earned: 0,
       };
 
       setReceiptData(receiptToSave);
+
+      // Save receipt to local database
+      if (user?.id) {
+        const { error } = await createReceipt(receiptToSave);
+        if (error) {
+          console.error("Failed to save receipt locally:", error);
+        }
+      }
+
+      // In the background, save to OCR service for price intelligence
+      ocrService.saveReceipt(receiptToSave).catch((error) => {
+        console.error("Failed to save receipt to backend:", error);
+      });
+
+      // Analyze savings opportunities in background
+      if (parsed.items && parsed.items.length > 0) {
+        ocrService
+          .analyzeSavings(
+            parsed.items,
+            parsed.store_name?.toLowerCase().replace(/\s+/g, "_") || "unknown",
+            user?.id || "anonymous"
+          )
+          .then((savingsAnalysis) => {
+            if (savingsAnalysis.total_savings > 0) {
+              setReceiptData((prev: any) => ({
+                ...prev,
+                savings_identified: savingsAnalysis.total_savings,
+                cashback_earned: savingsAnalysis.cashback_available,
+              }));
+            }
+          })
+          .catch(console.error);
+      }
+
       setProcessingComplete(true);
       setProgress(100);
-
-      // Save receipt
-      if (user?.id) {
-        await createReceipt(receiptToSave);
-      }
 
       // Show viral features after a short delay
       setTimeout(() => {
         setShowViralFeatures(true);
       }, 1000);
     } catch (error) {
+      console.error("Receipt processing error:", error);
       Alert.alert(
         "Processing Error",
-        "Failed to process receipt. Please try again."
+        "Failed to process receipt. Please try again.",
+        [
+          { text: "Retry", onPress: handleRetry },
+          { text: "Cancel", onPress: () => router.back() },
+        ]
       );
-      router.back();
     }
   };
 
@@ -187,12 +261,25 @@ export default function ReceiptProcessingScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text variant="headlineMedium" style={styles.title}>
-          Processing Receipt
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
+      <View style={styles.content}>
+        <View style={styles.lottieAnimation}>
+          <MaterialIcons
+            name="hourglass-empty"
+            size={64}
+            color={theme.colors.primary}
+          />
+        </View>
+        <Text variant="titleLarge" style={styles.processingText}>
+          The worm is chewing...
         </Text>
+        <ProgressBar
+          progress={progress / 100}
+          style={styles.progressBar}
+          color={theme.colors.primary}
+        />
       </View>
 
       {/* Receipt Image */}
@@ -231,12 +318,6 @@ export default function ReceiptProcessingScreen() {
               animated={true}
             />
           )}
-
-          <ProgressBar
-            progress={progress / 100}
-            style={styles.progressBar}
-            color={theme.colors.primary}
-          />
 
           <Text variant="bodySmall" style={styles.progressText}>
             {Math.round(progress)}% complete
@@ -356,7 +437,7 @@ export default function ReceiptProcessingScreen() {
                 textAlign: "center",
               }}
             >
-              You just outsmarted your grocery bill. ��
+              You just outsmarted your grocery bill. 🎯
             </Text>
           </Card.Content>
         </Card>
@@ -424,6 +505,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC",
     padding: spacing.md,
   },
+  content: {
+    alignItems: "center",
+    marginBottom: spacing.md,
+  },
+  lottieAnimation: {
+    width: 150,
+    height: 150,
+  },
+  processingText: {
+    marginTop: spacing.sm,
+    fontFamily: "Inter_600SemiBold",
+  },
   header: {
     marginBottom: spacing.lg,
   },
@@ -459,9 +552,8 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   progressBar: {
-    marginBottom: spacing.sm,
-    height: 8,
-    borderRadius: 4,
+    width: "80%",
+    marginTop: spacing.md,
   },
   progressText: {
     textAlign: "center",

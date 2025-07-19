@@ -17,6 +17,7 @@ import { debounce } from "lodash";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRadarMood } from "@/hooks/useRadarMood";
 import { RadarWorm } from "@/components/RadarWorm";
+import { EdgeCaseRenderer } from "@/components/EdgeCaseRenderer";
 
 const WORM_GREETINGS = [
   "Your grocery footprint, day by day.",
@@ -119,17 +120,11 @@ export default function DashboardScreen() {
           )}
           ListHeaderComponent={listHeader}
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <RadarWorm mood={mood} size="large" visible={true} />
-              <Text
-                style={[
-                  styles.noReceiptsText,
-                  { color: theme.colors.secondary },
-                ]}
-              >
-                The worm sees nothing... yet 👁
-              </Text>
-            </View>
+            <EdgeCaseRenderer
+              mood={mood}
+              title="The worm sees nothing... yet 👁"
+              message="Scan your first receipt to begin the gentle judgment."
+            />
           }
           contentContainerStyle={styles.listContentContainer}
           onRefresh={() => search("")}
@@ -185,7 +180,13 @@ const styles = StyleSheet.create({
   },
   searchBar: {
     borderRadius: 12,
-    elevation: 0,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.05)",
   },
   noReceiptsText: {
     textAlign: "center",
