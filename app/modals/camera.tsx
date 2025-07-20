@@ -15,7 +15,7 @@ import {
 } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { spacing, shadows } from "@/constants/holisticDesignSystem";
+import { spacing, shadows, borderRadius, typography } from "@/constants/theme";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import * as FileSystem from "expo-file-system";
@@ -35,7 +35,7 @@ export default function CameraScreen() {
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [fadeAnim] = useState(new Animated.Value(0));
 
-  // Elegant scanning animation values
+  // Refined scanning animation values
   const scanLineAnim = useRef(new Animated.Value(0)).current;
   const focusAnim = useRef(new Animated.Value(0)).current;
   const subtlePulseAnim = useRef(new Animated.Value(1)).current;
@@ -45,10 +45,8 @@ export default function CameraScreen() {
   const [detectionConfidence, setDetectionConfidence] = useState(0);
   const detectionAnim = useRef(new Animated.Value(0)).current;
 
-  // Flash mode state (for photo capture)
+  // Flash mode state
   const [flashMode, setFlashMode] = useState<"off" | "on" | "auto">("auto");
-
-  // Flashlight state (continuous light for scanning)
   const [flashlightOn, setFlashlightOn] = useState(false);
   const [flashlightSupported, setFlashlightSupported] = useState(false);
 
@@ -67,7 +65,6 @@ export default function CameraScreen() {
       const { status } = await Camera.requestCameraPermissionsAsync();
       setHasPermission(status === "granted");
 
-      // Check if device supports flashlight
       if (Device.isDevice) {
         setFlashlightSupported(true);
       }
@@ -82,7 +79,7 @@ export default function CameraScreen() {
     }).start();
   }, []);
 
-  // Receipt detection animation
+  // Refined receipt detection animation
   useEffect(() => {
     if (receiptDetected) {
       Animated.timing(detectionAnim, {
@@ -99,9 +96,9 @@ export default function CameraScreen() {
     }
   }, [receiptDetected, detectionAnim]);
 
-  // Elegant scanning animations
+  // Sophisticated scanning animations
   useEffect(() => {
-    // Subtle scanning line
+    // Elegant scanning line
     const scanAnimation = Animated.loop(
       Animated.timing(scanLineAnim, {
         toValue: 1,
@@ -110,7 +107,7 @@ export default function CameraScreen() {
       })
     );
 
-    // Gentle focus animation
+    // Refined focus animation
     const focusAnimation = Animated.loop(
       Animated.sequence([
         Animated.timing(focusAnim, {
@@ -126,7 +123,7 @@ export default function CameraScreen() {
       ])
     );
 
-    // Very subtle breathing effect
+    // Subtle breathing effect
     const breathingAnimation = Animated.loop(
       Animated.sequence([
         Animated.timing(subtlePulseAnim, {
@@ -153,20 +150,18 @@ export default function CameraScreen() {
     };
   }, [scanLineAnim, focusAnim, subtlePulseAnim]);
 
-  // Advanced receipt detection using multiple analysis techniques
+  // Advanced receipt detection
   const analyzeFrame = async () => {
     if (!cameraRef.current || isCapturing || isAnalyzing) return;
 
     setIsAnalyzing(true);
 
     try {
-      // Take a low-quality preview for analysis (reduced quality for stability)
       const photo = await cameraRef.current.takePictureAsync({
         quality: 0.1,
         skipProcessing: true,
       });
 
-      // Real receipt detection
       const detectionResult = await performReceiptDetection(photo.uri);
 
       setReceiptDetected(detectionResult.detected);
@@ -179,7 +174,6 @@ export default function CameraScreen() {
     }
   };
 
-  // Real receipt detection using OCR service
   const performReceiptDetection = async (
     imageUri: string
   ): Promise<{
@@ -194,20 +188,10 @@ export default function CameraScreen() {
     };
   }> => {
     try {
-      // Use the mock receipt detection service
       const detectionResult = await mockOCRService.detectReceipt(imageUri);
-
-      console.log("Receipt detection result:", {
-        detected: detectionResult.detected,
-        confidence: detectionResult.confidence,
-        details: detectionResult.details,
-      });
-
       return detectionResult;
     } catch (error) {
       console.error("Receipt detection error:", error);
-
-      // Fallback to basic detection
       return {
         detected: false,
         confidence: 0.2,
@@ -222,19 +206,18 @@ export default function CameraScreen() {
     }
   };
 
-  // Disable automatic frame analysis to prevent flashing
-  // useEffect(() => {
-  //   if (hasPermission && !previewUri) {
-  //     const analysisInterval = setInterval(analyzeFrame, 2000); // Analyze every 2 seconds for mock OCR
-  //     return () => clearInterval(analysisInterval);
-  //   }
-  // }, [hasPermission, previewUri, isCapturing]);
+  useEffect(() => {
+    if (hasPermission && !previewUri) {
+      const analysisInterval = setInterval(analyzeFrame, 2000);
+      return () => clearInterval(analysisInterval);
+    }
+  }, [hasPermission, previewUri, isCapturing]);
 
   const handleCapture = async () => {
     if (isCapturing || !cameraRef.current) return;
     setIsCapturing(true);
 
-    // Add a quick focus animation
+    // Refined capture animation
     Animated.sequence([
       Animated.timing(subtlePulseAnim, {
         toValue: 1.1,
@@ -248,58 +231,49 @@ export default function CameraScreen() {
       }),
     ]).start();
 
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
     try {
-      if (
-        typeof cameraRef.current === "undefined" ||
-        cameraRef.current === null
-      )
-        return;
-
       const photo = await cameraRef.current.takePictureAsync({
         quality: 0.8,
       });
 
-      if (photo && photo.uri) {
-        setPreviewUri(photo.uri);
-      }
+      setPreviewUri(photo.uri);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } catch (error) {
-      Alert.alert("Error", "Failed to capture photo. Please try again.");
+      console.error("Capture error:", error);
+      Alert.alert("Error", "Failed to capture photo");
     } finally {
       setIsCapturing(false);
     }
   };
 
   const handlePickFromLibrary = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.8,
-    });
-    if (
-      !result.canceled &&
-      result.assets &&
-      Array.isArray(result.assets) &&
-      result.assets.length > 0 &&
-      result.assets[0] &&
-      result.assets[0].uri
-    ) {
-      setPreviewUri(result.assets[0].uri);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setPreviewUri(result.assets[0].uri);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+    } catch (error) {
+      console.error("Image picker error:", error);
+      Alert.alert("Error", "Failed to pick image from library");
     }
   };
 
   const handleUsePhoto = async () => {
-    if (previewUri) {
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.push({
-        pathname: "/receipt/processing",
-        params: { photoUri: previewUri },
-      });
-    }
+    if (!previewUri) return;
+    router.push({
+      pathname: "/receipt/processing",
+      params: { photoUri: previewUri },
+    });
   };
 
   const handleRetake = () => {
     setPreviewUri(null);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const handleClose = () => {
@@ -307,15 +281,16 @@ export default function CameraScreen() {
   };
 
   const toggleFlashMode = () => {
-    const modes: ("off" | "on" | "auto")[] = ["auto", "on", "off"];
-    const currentIndex = modes.indexOf(flashMode);
-    const nextIndex = (currentIndex + 1) % modes.length;
-    setFlashMode(modes[nextIndex]);
+    setFlashMode((prev) => {
+      const modes: ("off" | "on" | "auto")[] = ["auto", "on", "off"];
+      const currentIndex = modes.indexOf(prev);
+      const nextIndex = (currentIndex + 1) % modes.length;
+      return modes[nextIndex];
+    });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const toggleFlashlight = () => {
-    if (!flashlightSupported) return;
-
     setFlashlightOn(!flashlightOn);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
@@ -326,31 +301,42 @@ export default function CameraScreen() {
         return "flash-on";
       case "off":
         return "flash-off";
-      case "auto":
       default:
         return "flash-auto";
     }
   };
 
   const getFlashlightIcon = () => {
-    return flashlightOn ? "highlight" : "highlight-outline";
+    return flashlightOn ? "lightbulb" : "lightbulb-outline";
   };
 
   if (hasPermission === null) {
-    return <View style={styles.permissionContainer} />;
+    return (
+      <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>
+            Requesting camera permission...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
   }
+
   if (hasPermission === false) {
     return (
-      <SafeAreaView style={styles.permissionContainer}>
-        <View
-          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-        >
-          <MaterialIcons name="camera-alt" size={48} color="#ccc" />
-          <View style={{ height: 16 }} />
+      <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.permissionContainer}>
+          <MaterialIcons name="camera-alt" size={64} color="#666" />
+          <Text style={styles.permissionTitle}>Camera Access Required</Text>
+          <Text style={styles.permissionText}>
+            Please enable camera access in your device settings to scan
+            receipts.
+          </Text>
           <TouchableOpacity
-            onPress={() => Camera.requestCameraPermissionsAsync()}
+            style={styles.permissionButton}
+            onPress={handleClose}
           >
-            <MaterialIcons name="refresh" size={32} color="#007AFF" />
+            <Text style={styles.permissionButtonText}>Go Back</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -359,38 +345,35 @@ export default function CameraScreen() {
 
   if (previewUri) {
     return (
-      <SafeAreaView style={styles.container}>
-        <Animated.View
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-            opacity: fadeAnim,
-          }}
-        >
-          <Image
-            source={{ uri: previewUri }}
-            style={styles.previewImage}
-            resizeMode="contain"
-          />
-          <View style={styles.confirmRow}>
-            <TouchableOpacity
-              onPress={handleRetake}
-              style={[styles.confirmButton, styles.retakeButton]}
-              activeOpacity={0.8}
-            >
-              <MaterialIcons name="refresh" size={28} color="#000" />
-              <Text style={styles.confirmText}>Retake</Text>
+      <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+        <Animated.View style={[{ flex: 1, opacity: fadeAnim }]}>
+          <View style={styles.previewHeader}>
+            <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+              <MaterialIcons name="close" size={24} color="white" />
             </TouchableOpacity>
+            <Text style={styles.previewTitle}>Review Photo</Text>
+            <View style={styles.placeholder} />
+          </View>
+
+          <View style={styles.previewContainer}>
+            <Image source={{ uri: previewUri }} style={styles.previewImage} />
+          </View>
+
+          <View style={styles.previewActions}>
             <TouchableOpacity
-              onPress={handleUsePhoto}
-              style={[styles.confirmButton, styles.useButton]}
-              activeOpacity={0.8}
+              style={styles.actionButton}
+              onPress={handleRetake}
             >
-              <MaterialIcons name="check" size={28} color="#fff" />
-              <Text style={[styles.confirmText, { color: "#fff" }]}>
-                Use Photo
-              </Text>
+              <MaterialIcons name="refresh" size={24} color="white" />
+              <Text style={styles.actionButtonText}>Retake</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={handleUsePhoto}
+            >
+              <MaterialIcons name="check" size={24} color="white" />
+              <Text style={styles.primaryButtonText}>Use Photo</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -399,102 +382,56 @@ export default function CameraScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+      <Animated.View style={[{ flex: 1, opacity: fadeAnim }]}>
+        {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity
-            onPress={handleClose}
-            style={styles.closeButton}
-            activeOpacity={0.7}
-          >
-            <MaterialIcons name="close" size={28} color="#8E8E93" />
+          <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+            <MaterialIcons name="close" size={24} color="white" />
           </TouchableOpacity>
 
           <View style={styles.headerControls}>
-            {/* Flashlight button (continuous light for scanning) */}
+            <TouchableOpacity
+              style={styles.controlButton}
+              onPress={toggleFlashMode}
+            >
+              <MaterialIcons name={getFlashIcon()} size={24} color="white" />
+            </TouchableOpacity>
+
             {flashlightSupported && (
               <TouchableOpacity
+                style={styles.controlButton}
                 onPress={toggleFlashlight}
-                style={[
-                  styles.flashButton,
-                  flashlightOn && styles.flashButtonActive,
-                ]}
-                activeOpacity={0.7}
               >
                 <MaterialIcons
-                  name={getFlashlightIcon() as any}
+                  name={getFlashlightIcon()}
                   size={24}
-                  color={flashlightOn ? "#FFD700" : "rgba(255, 255, 255, 0.8)"}
+                  color="white"
                 />
-                <Text
-                  style={[
-                    styles.flashModeText,
-                    flashlightOn && { color: "rgba(255, 215, 0, 0.8)" },
-                  ]}
-                >
-                  {flashlightOn ? "ON" : "OFF"}
-                </Text>
               </TouchableOpacity>
             )}
-
-            {/* Camera flash button (for photo capture) */}
-            <TouchableOpacity
-              onPress={toggleFlashMode}
-              style={styles.flashButton}
-              activeOpacity={0.7}
-            >
-              <MaterialIcons
-                name={getFlashIcon() as any}
-                size={24}
-                color={flashMode === "on" ? "#fff" : "rgba(255, 255, 255, 0.8)"}
-              />
-              <Text style={styles.flashModeText}>
-                {flashMode === "auto"
-                  ? "AUTO"
-                  : flashMode === "on"
-                  ? "ON"
-                  : "OFF"}
-              </Text>
-            </TouchableOpacity>
           </View>
         </View>
-        <Text style={styles.poeticPrompt}>Frame your receipt</Text>
-        <Text style={styles.subtitle}>Position within the guide</Text>
-        <View style={styles.cameraPreviewWrapper}>
-          <Animated.View
-            style={[
-              styles.cameraPreview,
-              { transform: [{ scale: subtlePulseAnim }] },
-            ]}
+
+        {/* Camera View */}
+        <View style={styles.cameraContainer}>
+          <CameraView
+            ref={cameraRef}
+            style={styles.camera}
+            facing="back"
+            flash={flashMode}
           >
-            <CameraView
-              ref={cameraRef}
-              style={styles.cameraView}
-              facing="back"
-              ratio="4:3"
-              flash={flashMode}
-              enableTorch={flashlightOn}
-            />
+            {/* Scanning Overlay */}
+            <View style={styles.overlay}>
+              {/* Corner Guides */}
+              <View style={styles.cornerGuides}>
+                <View style={[styles.corner, styles.cornerTopLeft]} />
+                <View style={[styles.corner, styles.cornerTopRight]} />
+                <View style={[styles.corner, styles.cornerBottomLeft]} />
+                <View style={[styles.corner, styles.cornerBottomRight]} />
+              </View>
 
-            {/* Elegant Scanning Overlay */}
-            <View style={styles.scanOverlay}>
-              {/* Minimal Scan Area */}
-              <Animated.View
-                style={[
-                  styles.scanArea,
-                  {
-                    opacity: focusAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.15, 0.25],
-                    }),
-                    borderColor: receiptDetected
-                      ? "rgba(255, 255, 255, 0.4)"
-                      : "rgba(255, 255, 255, 0.2)",
-                  },
-                ]}
-              />
-
-              {/* Subtle Scanning Line */}
+              {/* Scanning Line */}
               <Animated.View
                 style={[
                   styles.scanLine,
@@ -503,61 +440,59 @@ export default function CameraScreen() {
                       {
                         translateY: scanLineAnim.interpolate({
                           inputRange: [0, 1],
-                          outputRange: [0, 300],
+                          outputRange: [0, 200],
                         }),
                       },
                     ],
-                    opacity: scanLineAnim.interpolate({
-                      inputRange: [0, 0.3, 0.7, 1],
-                      outputRange: [0, 0.4, 0.4, 0],
-                    }),
                   },
                 ]}
               />
 
-              {/* Simple Status Indicator */}
-              <View style={styles.detectionIndicator}>
-                <Text style={styles.detectionText}>
-                  Position receipt in frame
-                </Text>
-              </View>
-
-              {/* Simple Status Text */}
-              <View style={styles.statusText}>
-                <Text style={styles.statusTextContent}>Ready to capture</Text>
-                {flashlightOn && (
-                  <Text style={styles.flashIndicator}>Flashlight on</Text>
-                )}
-                {flashMode === "on" && !flashlightOn && (
-                  <Text style={styles.flashIndicator}>Flash enabled</Text>
-                )}
-              </View>
+              {/* Detection Indicator */}
+              {receiptDetected && (
+                <Animated.View
+                  style={[
+                    styles.detectionIndicator,
+                    {
+                      opacity: detectionAnim,
+                      transform: [{ scale: detectionAnim }],
+                    },
+                  ]}
+                >
+                  <MaterialIcons
+                    name="check-circle"
+                    size={48}
+                    color="#34C759"
+                  />
+                  <Text style={styles.detectionText}>Receipt Detected</Text>
+                </Animated.View>
+              )}
             </View>
-          </Animated.View>
+          </CameraView>
         </View>
-        <View style={styles.controlsRow}>
+
+        {/* Bottom Controls */}
+        <View style={styles.bottomControls}>
           <TouchableOpacity
-            onPress={handlePickFromLibrary}
             style={styles.libraryButton}
-            activeOpacity={0.8}
+            onPress={handlePickFromLibrary}
           >
-            <MaterialIcons name="photo-library" size={24} color="#fff" />
+            <MaterialIcons name="photo-library" size={24} color="white" />
+            <Text style={styles.libraryButtonText}>Library</Text>
           </TouchableOpacity>
+
           <TouchableOpacity
-            onPress={handleCapture}
             style={[
               styles.captureButton,
-              receiptDetected && styles.captureButtonActive,
+              { transform: [{ scale: subtlePulseAnim }] },
             ]}
+            onPress={handleCapture}
             disabled={isCapturing}
-            activeOpacity={0.8}
           >
-            <MaterialIcons
-              name={isCapturing ? "hourglass-empty" : "camera-alt"}
-              size={32}
-              color="#000"
-            />
+            <View style={styles.captureButtonInner} />
           </TouchableOpacity>
+
+          <View style={styles.placeholder} />
         </View>
       </Animated.View>
     </SafeAreaView>
@@ -569,297 +504,227 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#000",
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "white",
+    fontSize: 16,
+  },
   permissionContainer: {
     flex: 1,
-    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: spacing.lg,
+  },
+  permissionTitle: {
+    color: "white",
+    fontSize: 24,
+    fontWeight: "600",
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  permissionText: {
+    color: "#CCC",
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: spacing.xl,
+  },
+  permissionButton: {
+    backgroundColor: "white",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+  },
+  permissionButtonText: {
+    color: "#000",
+    fontSize: 16,
+    fontWeight: "600",
   },
   header: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingTop: 12,
-    paddingHorizontal: 16,
-    zIndex: 10,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  closeButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerControls: {
     flexDirection: "row",
-    gap: 12,
+    gap: spacing.sm,
   },
-  closeButton: {
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
-    borderRadius: 24,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.15)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    backdropFilter: "blur(20px)",
-  },
-  flashButton: {
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
-    borderRadius: 24,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.15)",
+  controlButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    backdropFilter: "blur(20px)",
   },
-  flashButtonActive: {
-    backgroundColor: "rgba(255, 215, 0, 0.2)",
-    borderColor: "rgba(255, 215, 0, 0.4)",
-  },
-  flashModeText: {
-    color: "rgba(255, 255, 255, 0.6)",
-    fontSize: 8,
-    fontWeight: "500",
-    marginTop: 2,
-    letterSpacing: 0.5,
-    fontFamily: "Inter_500Medium",
-  },
-  flashIndicator: {
-    color: "rgba(255, 255, 255, 0.6)",
-    fontSize: 10,
-    fontWeight: "400",
-    marginTop: 4,
-    letterSpacing: 0.3,
-    fontFamily: "Inter_400Regular",
-  },
-  poeticPrompt: {
-    position: "absolute",
-    top: "12%",
-    left: 0,
-    right: 0,
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "400",
-    textAlign: "center",
-    letterSpacing: 1.2,
-    opacity: 0.95,
-    fontFamily: "Inter_400Regular",
-    textShadowColor: "rgba(0, 0, 0, 0.5)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  subtitle: {
-    position: "absolute",
-    top: "16%",
-    left: 0,
-    right: 0,
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "300",
-    textAlign: "center",
-    opacity: 0.7,
-    letterSpacing: 0.8,
-    fontFamily: "Inter_300Light",
-    textShadowColor: "rgba(0, 0, 0, 0.5)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  cameraPreviewWrapper: {
+  cameraContainer: {
     flex: 1,
     position: "relative",
   },
-  cameraPreview: {
+  camera: {
     flex: 1,
-    width: "100%",
-    height: "100%",
   },
-  cameraView: {
-    flex: 1,
-    width: "100%",
-    height: "100%",
-  },
-  scanOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
     alignItems: "center",
   },
-  scanArea: {
+  cornerGuides: {
     position: "absolute",
-    top: "15%",
-    left: "8%",
-    right: "8%",
-    bottom: "25%",
-    borderWidth: 2,
-    borderColor: "rgba(255, 255, 255, 0.15)",
-    borderRadius: 12,
-    backgroundColor: "rgba(255, 255, 255, 0.03)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
+    width: 280,
+    height: 200,
+  },
+  corner: {
+    position: "absolute",
+    width: 30,
+    height: 30,
+    borderColor: "white",
+    borderWidth: 3,
+  },
+  cornerTopLeft: {
+    top: 0,
+    left: 0,
+    borderBottomWidth: 0,
+    borderRightWidth: 0,
+  },
+  cornerTopRight: {
+    top: 0,
+    right: 0,
+    borderBottomWidth: 0,
+    borderLeftWidth: 0,
+  },
+  cornerBottomLeft: {
+    bottom: 0,
+    left: 0,
+    borderTopWidth: 0,
+    borderRightWidth: 0,
+  },
+  cornerBottomRight: {
+    bottom: 0,
+    right: 0,
+    borderTopWidth: 0,
+    borderLeftWidth: 0,
   },
   scanLine: {
     position: "absolute",
-    top: "15%",
-    left: "8%",
-    right: "8%",
+    width: 280,
     height: 2,
-    backgroundColor: "rgba(255, 255, 255, 0.4)",
+    backgroundColor: "rgba(52, 199, 89, 0.8)",
     borderRadius: 1,
-  },
-  statusText: {
-    position: "absolute",
-    bottom: "30%",
-    alignSelf: "center",
-  },
-  statusTextContent: {
-    color: "rgba(255, 255, 255, 0.8)",
-    fontSize: 13,
-    fontWeight: "400",
-    textAlign: "center",
-    letterSpacing: 0.5,
-    fontFamily: "Inter_400Regular",
   },
   detectionIndicator: {
     position: "absolute",
-    top: "8%",
-    alignSelf: "center",
-    flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-    borderRadius: 24,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    backdropFilter: "blur(20px)",
-  },
-  detectionDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    padding: spacing.lg,
+    borderRadius: borderRadius.lg,
   },
   detectionText: {
-    fontSize: 12,
-    fontWeight: "500",
-    letterSpacing: 0.3,
-    fontFamily: "Inter_500Medium",
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+    marginTop: spacing.sm,
   },
-  detectionDetails: {
-    fontSize: 10,
-    fontWeight: "400",
-    letterSpacing: 0.2,
-    fontFamily: "Inter_400Regular",
-    color: "rgba(255, 255, 255, 0.6)",
-    marginTop: 2,
-  },
-  controlsRow: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
+  bottomControls: {
     flexDirection: "row",
-    justifyContent: "center",
+    justifyContent: "space-between",
     alignItems: "center",
-    gap: 40,
-    paddingBottom: 40,
-    paddingTop: 20,
-    backgroundColor: "rgba(0, 0, 0, 0.2)",
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.1)",
-    backdropFilter: "blur(20px)",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xl,
   },
   libraryButton: {
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
-    borderRadius: 28,
-    width: 56,
-    height: 56,
     alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.15)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    backdropFilter: "blur(20px)",
+  },
+  libraryButtonText: {
+    color: "white",
+    fontSize: 12,
+    marginTop: spacing.xs,
   },
   captureButton: {
-    backgroundColor: "rgba(255, 255, 255, 0.95)",
-    borderRadius: 36,
-    width: 72,
-    height: 72,
-    alignItems: "center",
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    borderWidth: 3,
-    borderColor: "rgba(255, 255, 255, 0.3)",
+    alignItems: "center",
   },
-  captureButtonActive: {
-    backgroundColor: "rgba(255, 255, 255, 1)",
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    transform: [{ scale: 1.05 }],
+  captureButtonInner: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "white",
+  },
+  placeholder: {
+    width: 44,
+  },
+  previewHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  previewTitle: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  previewContainer: {
+    flex: 1,
+    margin: spacing.lg,
+    borderRadius: borderRadius.lg,
+    overflow: "hidden",
   },
   previewImage: {
     flex: 1,
     width: "100%",
     height: "100%",
-    backgroundColor: "#000",
   },
-  confirmRow: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
+  previewActions: {
     flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 32,
-    paddingBottom: 40,
-    paddingTop: 20,
-    backgroundColor: "rgba(0, 0, 0, 0.2)",
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.1)",
-    backdropFilter: "blur(20px)",
+    justifyContent: "space-around",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
   },
-  confirmButton: {
+  actionButton: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 24,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.15)",
-    backdropFilter: "blur(20px)",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
   },
-  retakeButton: {
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
-  },
-  useButton: {
-    backgroundColor: "rgba(16, 185, 129, 0.9)",
-  },
-  confirmText: {
+  actionButtonText: {
+    color: "white",
     fontSize: 16,
-    fontWeight: "500",
-    marginLeft: 8,
+    fontWeight: "600",
+    marginLeft: spacing.sm,
+  },
+  primaryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    backgroundColor: "#34C759",
+  },
+  primaryButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+    marginLeft: spacing.sm,
   },
 });
