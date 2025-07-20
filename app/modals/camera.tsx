@@ -222,13 +222,13 @@ export default function CameraScreen() {
     }
   };
 
-  // Start frame analysis when camera is ready
-  useEffect(() => {
-    if (hasPermission && !previewUri) {
-      const analysisInterval = setInterval(analyzeFrame, 2000); // Analyze every 2 seconds for mock OCR
-      return () => clearInterval(analysisInterval);
-    }
-  }, [hasPermission, previewUri, isCapturing]);
+  // Disable automatic frame analysis to prevent flashing
+  // useEffect(() => {
+  //   if (hasPermission && !previewUri) {
+  //     const analysisInterval = setInterval(analyzeFrame, 2000); // Analyze every 2 seconds for mock OCR
+  //     return () => clearInterval(analysisInterval);
+  //   }
+  // }, [hasPermission, previewUri, isCapturing]);
 
   const handleCapture = async () => {
     if (isCapturing || !cameraRef.current) return;
@@ -515,82 +515,23 @@ export default function CameraScreen() {
                 ]}
               />
 
-              {/* Receipt Detection Indicator */}
-              <Animated.View
-                style={[
-                  styles.detectionIndicator,
-                  {
-                    opacity: detectionAnim,
-                    transform: [
-                      {
-                        scale: detectionAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [0.8, 1],
-                        }),
-                      },
-                    ],
-                  },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.detectionDot,
-                    {
-                      backgroundColor: receiptDetected
-                        ? "rgba(255, 255, 255, 0.9)"
-                        : "rgba(255, 255, 255, 0.3)",
-                    },
-                  ]}
-                />
-                <Text
-                  style={[
-                    styles.detectionText,
-                    {
-                      color: receiptDetected
-                        ? "rgba(255, 255, 255, 0.9)"
-                        : "rgba(255, 255, 255, 0.5)",
-                    },
-                  ]}
-                >
-                  {isAnalyzing
-                    ? "Analyzing..."
-                    : receiptDetected
-                    ? "Receipt detected"
-                    : "Position receipt"}
+              {/* Simple Status Indicator */}
+              <View style={styles.detectionIndicator}>
+                <Text style={styles.detectionText}>
+                  Position receipt in frame
                 </Text>
-                {detectionDetails && (
-                  <Text style={styles.detectionDetails}>
-                    {`${Math.round(
-                      detectionDetails.confidence * 100
-                    )}% confidence`}
-                  </Text>
-                )}
-              </Animated.View>
+              </View>
 
-              {/* Elegant Status Text */}
-              <Animated.View
-                style={[
-                  styles.statusText,
-                  {
-                    opacity: focusAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.4, 0.7],
-                    }),
-                  },
-                ]}
-              >
-                <Text style={styles.statusTextContent}>
-                  {receiptDetected
-                    ? "Ready to capture"
-                    : "Align receipt in frame"}
-                </Text>
+              {/* Simple Status Text */}
+              <View style={styles.statusText}>
+                <Text style={styles.statusTextContent}>Ready to capture</Text>
                 {flashlightOn && (
                   <Text style={styles.flashIndicator}>Flashlight on</Text>
                 )}
                 {flashMode === "on" && !flashlightOn && (
                   <Text style={styles.flashIndicator}>Flash enabled</Text>
                 )}
-              </Animated.View>
+              </View>
             </View>
           </Animated.View>
         </View>

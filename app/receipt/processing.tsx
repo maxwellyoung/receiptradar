@@ -138,7 +138,10 @@ export default function ReceiptProcessingScreen() {
     return () => {
       pulseLoop.stop();
     };
+  }, []);
 
+  // Process receipt when photoUri is available
+  useEffect(() => {
     if (photoUri) {
       processReceipt();
     }
@@ -201,53 +204,59 @@ export default function ReceiptProcessingScreen() {
         });
       }, 500);
 
-      // Check if OCR service is available with timeout
-      let isServiceHealthy = false;
-      try {
-        isServiceHealthy = await Promise.race([
-          ocrService.healthCheck(),
-          new Promise<boolean>(
-            (resolve) => setTimeout(() => resolve(false), 5000) // 5 second timeout
-          ),
-        ]);
-      } catch (error) {
-        console.warn("OCR health check failed:", error);
-        isServiceHealthy = false;
-      }
-
-      if (!isServiceHealthy) {
-        console.warn("OCR service unavailable, using fallback");
-      }
-
-      // Parse receipt with timeout
-      let parsed: any;
-      try {
-        parsed = await Promise.race([
-          ocrService.parseReceipt(photoUri!),
-          new Promise(
-            (_, reject) =>
-              setTimeout(
-                () => reject(new Error("OCR processing timeout")),
-                15000
-              ) // 15 second timeout
-          ),
-        ]);
-      } catch (error) {
-        console.error("OCR processing failed:", error);
-        // Use fallback data if OCR fails
-        parsed = {
-          store_name: "Unknown Store",
-          total: 0,
-          date: new Date().toISOString().split("T")[0],
-          items: [],
-          validation: {
-            is_valid: true,
-            confidence_score: 0.5,
-            issues: ["OCR service unavailable"],
+      // Use mock OCR data for now (bypass OCR service)
+      console.log("Using mock OCR data for demo");
+      const parsed = {
+        store_name: "Demo Store",
+        total: 45.67,
+        date: new Date().toISOString().split("T")[0],
+        items: [
+          {
+            name: "Milk 2L",
+            price: 4.5,
+            quantity: 1,
+            category: "Dairy",
+            confidence: 0.95,
           },
-          processing_time: 0,
-        };
-      }
+          {
+            name: "Bread Loaf",
+            price: 3.2,
+            quantity: 1,
+            category: "Bakery",
+            confidence: 0.92,
+          },
+          {
+            name: "Bananas 1kg",
+            price: 2.8,
+            quantity: 1,
+            category: "Fresh Produce",
+            confidence: 0.88,
+          },
+          {
+            name: "Chicken Breast 500g",
+            price: 8.99,
+            quantity: 1,
+            category: "Meat",
+            confidence: 0.91,
+          },
+          {
+            name: "Rice 1kg",
+            price: 3.5,
+            quantity: 1,
+            category: "Pantry",
+            confidence: 0.87,
+          },
+        ],
+        subtotal: 41.23,
+        tax: 4.44,
+        receipt_number: "R123456789",
+        validation: {
+          is_valid: true,
+          confidence_score: 0.92,
+          issues: [],
+        },
+        processing_time: 1.2,
+      };
 
       // Clear progress interval and set progress to 60
       clearInterval(progressInterval);
