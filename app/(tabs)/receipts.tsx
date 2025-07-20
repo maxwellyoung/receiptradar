@@ -8,7 +8,7 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { ReceiptCard } from "@/components/ReceiptCard";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { EdgeCaseRenderer } from "@/components/EdgeCaseRenderer";
-import { useRadarMood } from "@/hooks/useRadarMood";
+
 import { MaterialIcons } from "@expo/vector-icons";
 
 const getReceiptHistoryMessage = (receiptCount: number, totalSpent: number) => {
@@ -25,10 +25,10 @@ const getReceiptHistoryMessage = (receiptCount: number, totalSpent: number) => {
   }
 
   if (receiptCount < 50) {
-    return "A seasoned receipt warrior. The worm is impressed.";
+    return "A seasoned receipt collector. Impressive dedication!";
   }
 
-  return "A master of the receipt arts. The worm bows to your dedication.";
+  return "A master of receipt tracking. Your organization skills are top-notch!";
 };
 
 const getSpendingPersonality = (totalSpent: number) => {
@@ -49,7 +49,6 @@ export default function ReceiptsScreen() {
     (acc, receipt) => acc + receipt.total,
     0
   );
-  const { mood } = useRadarMood({ totalSpend: totalSpending });
 
   const spendingPersonality = getSpendingPersonality(totalSpending);
   const historyMessage = getReceiptHistoryMessage(
@@ -155,9 +154,9 @@ export default function ReceiptsScreen() {
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={
           <EdgeCaseRenderer
-            mood={mood}
+            mood="calm"
             title="A Blank Slate"
-            message="No receipts scanned yet. The worm awaits its first taste of your financial soul."
+            message="No receipts scanned yet. Start scanning to build your spending history."
           />
         }
         contentContainerStyle={styles.listContentContainer}

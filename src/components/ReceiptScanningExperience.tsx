@@ -9,8 +9,9 @@ import {
   TouchableOpacity,
   Alert,
 } from "react-native";
+import { Share } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { RadarWorm } from "./RadarWorm";
+
 import { HolisticButton } from "./HolisticDesignSystem";
 import { HolisticText } from "./HolisticDesignSystem";
 import { HolisticContainer } from "./HolisticDesignSystem";
@@ -22,6 +23,16 @@ import { useRadarMood } from "@/hooks/useRadarMood";
 import * as Haptics from "expo-haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useTheme } from "react-native-paper";
+import { useToneMode } from "@/hooks/useToneMode";
+import {
+  spacing,
+  typography,
+  shadows,
+  borderRadius,
+  animation,
+} from "@/constants/theme";
+import { AppTheme } from "@/constants/theme";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -35,324 +46,202 @@ interface ReceiptItem {
 }
 
 interface ReceiptInsight {
-  type: "savings" | "trend" | "comparison" | "tip";
+  type: "savings" | "warning" | "tip" | "achievement";
   title: string;
   message: string;
-  value?: number;
   icon: string;
   color: string;
+  savings?: number;
 }
 
-export const ReceiptScanningExperience: React.FC<{
-  receiptData: any;
-  photoUri: string;
-  onViewReceipt: () => void;
-  onScanAnother: () => void;
-  onBackToHome: () => void;
-}> = ({
+interface ReceiptScanningExperienceProps {
+  receiptData: {
+    total: number;
+    store: string;
+    items: ReceiptItem[];
+    timestamp: string;
+  };
+  onSave: () => void;
+  onShare?: () => void;
+}
+
+const getInstantInsight = (
+  total: number,
+  items: ReceiptItem[],
+  toneMode: "gentle" | "hard" | "silly" | "wise"
+): ReceiptInsight => {
+  const avgItemPrice = total / items.length;
+  const expensiveItems = items.filter(
+    (item) => item.price > avgItemPrice * 1.5
+  );
+  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  // Spending analysis
+  if (total < 30) {
+    return {
+      type: "achievement",
+      title: "Modest Spender",
+      message:
+        toneMode === "gentle"
+          ? "A restrained shopping trip! The worm is impressed with your discipline."
+          : "Not bad. Could be worse.",
+      icon: "🌱",
+      color: "#6FCF97",
+    };
+  }
+
+  if (total < 80) {
+    return {
+      type: "tip",
+      title: "Solid Grocery Game",
+      message:
+        toneMode === "gentle"
+          ? "Good balance of essentials. Nothing to see here!"
+          : "Acceptable spending. Moving on.",
+      icon: "✨",
+      color: "#2F80ED",
+    };
+  }
+
+  if (total < 150) {
+    return {
+      type: "warning",
+      title: "Big Shopping Day",
+      message:
+        toneMode === "gentle"
+          ? `You spent $${total.toFixed(2)} on ${totalItems} items. That's ${(
+              total / totalItems
+            ).toFixed(2)} per item!`
+          : "That's a lot of groceries. Hope you're feeding a family.",
+      icon: "🛒",
+      color: "#F2994A",
+    };
+  }
+
+  // High spending
+  if (expensiveItems.length > 0) {
+    const mostExpensive = expensiveItems[0];
+    return {
+      type: "warning",
+      title: "Premium Alert",
+      message:
+        toneMode === "gentle"
+          ? `${mostExpensive.name} cost $${mostExpensive.price.toFixed(
+              2
+            )}. Consider alternatives next time!`
+          : "Caviar? In this economy? 😱",
+      icon: "💎",
+      color: "#EB5757",
+      savings: mostExpensive.price * 0.3, // 30% potential savings
+    };
+  }
+
+  return {
+    type: "warning",
+    title: "Big Spender",
+    message:
+      toneMode === "gentle"
+        ? "The worm is taking notes on your spending habits!"
+        : "Caviar? In this economy? 😱",
+    icon: "📝",
+    color: "#EB5757",
+  };
+};
+
+const getShareMessage = (
+  receiptData: any,
+  insight: ReceiptInsight,
+  toneMode: "gentle" | "hard" | "silly" | "wise"
+): string => {
+  const baseMessage = `Just spent $${receiptData.total.toFixed(2)} at ${
+    receiptData.store
+  }`;
+
+  if (toneMode === "gentle") {
+    return `${baseMessage} - ${insight.message} 🐛✨`;
+  } else {
+    return `${baseMessage} - ${insight.message} 🐛`;
+  }
+};
+
+export function ReceiptScanningExperience({
   receiptData,
-  photoUri,
-  onViewReceipt,
-  onScanAnother,
-  onBackToHome,
-}) => {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [insights, setInsights] = useState<ReceiptInsight[]>([]);
-  const [wormMood, setWormMood] = useState<any>("insightful");
-  const [wormMessage, setWormMessage] = useState("");
-  const [toneMode, setToneMode] = useState<"gentle" | "hard">("gentle");
-  const [isSharing, setIsSharing] = useState(false);
-
+  onSave,
+  onShare,
+}: ReceiptScanningExperienceProps) {
+  const theme = useTheme<AppTheme>();
   const router = useRouter();
-  const { user } = useAuthContext();
-  const { createReceipt } = useReceipts(user?.id || "");
-  const { mood } = useRadarMood(receiptData?.total || 0);
+  const { toneMode } = useToneMode();
+  const [showInsight, setShowInsight] = useState(false);
+  const [saved, setSaved] = useState(false);
 
-  // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
-  const scaleAnim = useRef(new Animated.Value(0.95)).current;
-  const confettiAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+
+  const insight = getInstantInsight(
+    receiptData.total,
+    receiptData.items,
+    toneMode
+  );
 
   useEffect(() => {
-    loadToneMode();
-    generateInsights();
-    animateEntrance();
-  }, []);
-
-  const loadToneMode = async () => {
-    try {
-      const savedTone = await AsyncStorage.getItem("@toneMode");
-      if (savedTone) {
-        setToneMode(savedTone as "gentle" | "hard");
-      }
-    } catch (error) {
-      console.error("Failed to load tone mode:", error);
-    }
-  };
-
-  const generateInsights = () => {
-    const totalSpent = receiptData?.total || 0;
-    const items = receiptData?.items || [];
-
-    const newInsights: ReceiptInsight[] = [];
-
-    // Savings insight
-    const potentialSavings = calculatePotentialSavings(items);
-    if (potentialSavings > 0) {
-      newInsights.push({
-        type: "savings",
-        title: "Potential Savings",
-        message: `Could've saved $${potentialSavings.toFixed(
-          2
-        )} by switching stores`,
-        value: potentialSavings,
-        icon: "💰",
-        color: "#4CAF50",
-      });
-    }
-
-    // Price trend insight
-    const priceTrends = analyzePriceTrends(items);
-    if (priceTrends.length > 0) {
-      newInsights.push({
-        type: "trend",
-        title: "Price Alert",
-        message: `${priceTrends[0].name} is up ${priceTrends[0].increase}% this month`,
-        value: priceTrends[0].increase,
-        icon: "📈",
-        color: "#FF9800",
-      });
-    }
-
-    // Store comparison
-    const storeComparison = compareStores(items);
-    if (storeComparison) {
-      newInsights.push({
-        type: "comparison",
-        title: "Store Comparison",
-        message: `${
-          storeComparison.betterStore
-        } has better prices for ${storeComparison.items.join(", ")}`,
-        icon: "🏪",
-        color: "#2196F3",
-      });
-    }
-
-    // Smart tip
-    const tip = generateSmartTip(items, totalSpent);
-    if (tip) {
-      newInsights.push({
-        type: "tip",
-        title: "Smart Tip",
-        message: tip,
-        icon: "💡",
-        color: "#9C27B0",
-      });
-    }
-
-    setInsights(newInsights);
-    updateWormMood(totalSpent, newInsights);
-  };
-
-  const calculatePotentialSavings = (items: ReceiptItem[]): number => {
-    // Mock calculation - in real app, this would use price intelligence data
-    return items.reduce((total, item) => {
-      const savings = item.savings || 0;
-      return total + savings;
-    }, 0);
-  };
-
-  const analyzePriceTrends = (items: ReceiptItem[]): any[] => {
-    // Mock price trend analysis
-    return items.slice(0, 2).map((item) => ({
-      name: item.name,
-      increase: Math.floor(Math.random() * 15) + 5,
-    }));
-  };
-
-  const compareStores = (items: ReceiptItem[]): any => {
-    // Mock store comparison
-    const stores = ["Countdown", "Pak'nSave", "New World"];
-    return {
-      betterStore: stores[Math.floor(Math.random() * stores.length)],
-      items: items.slice(0, 2).map((item) => item.name),
-    };
-  };
-
-  const generateSmartTip = (
-    items: ReceiptItem[],
-    totalSpent: number
-  ): string => {
-    const tips = [
-      "Consider buying in bulk for items you use frequently",
-      "Try the store brand for similar quality at lower prices",
-      "Plan meals around weekly specials to maximize savings",
-      "Use the store's loyalty program for additional discounts",
-    ];
-    return tips[Math.floor(Math.random() * tips.length)];
-  };
-
-  const updateWormMood = (totalSpent: number, insights: ReceiptInsight[]) => {
-    let newMood = "calm";
-    let message = "";
-
-    if (totalSpent === 0) {
-      newMood = "insightful";
-      message = "Ready to start your spending story?";
-    } else if (totalSpent < 30) {
-      newMood = toneMode === "gentle" ? "zen" : "calm";
-      message =
-        toneMode === "gentle"
-          ? "A modest day of consumption. The worm approves! 🌱"
-          : "Not bad. Could be worse.";
-    } else if (totalSpent < 80) {
-      newMood = "calm";
-      message =
-        toneMode === "gentle"
-          ? "Solid grocery game. Nothing to see here! ✨"
-          : "Acceptable spending. Moving on.";
-    } else if (totalSpent < 150) {
-      newMood = toneMode === "gentle" ? "concerned" : "suspicious";
-      message =
-        toneMode === "gentle"
-          ? "Someone's been shopping. Let's see what you got! 🛒"
-          : "That's a lot of groceries. Hope you're feeding a family.";
-    } else {
-      newMood = toneMode === "gentle" ? "dramatic" : "dramatic";
-      message =
-        toneMode === "gentle"
-          ? "Big spender alert! The worm is taking notes! 📝"
-          : "Caviar? In this economy? 😱";
-    }
-
-    // Override with savings celebration
-    const savingsInsight = insights.find((i) => i.type === "savings");
-    if (savingsInsight && savingsInsight.value && savingsInsight.value > 5) {
-      newMood = "insightful";
-      message =
-        toneMode === "gentle"
-          ? `You saved $${savingsInsight.value.toFixed(
-              2
-            )} this week. Worm proud! 🎉`
-          : `At least you saved $${savingsInsight.value.toFixed(
-              2
-            )}. Not terrible.`;
-    }
-
-    setWormMood(newMood);
-    setWormMessage(message);
-  };
-
-  const animateEntrance = () => {
+    // Animate in
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 800,
+        duration: 600,
         useNativeDriver: true,
       }),
-      Animated.spring(slideAnim, {
+      Animated.timing(slideAnim, {
         toValue: 0,
-        tension: 100,
-        friction: 8,
+        duration: 600,
         useNativeDriver: true,
       }),
-      Animated.spring(scaleAnim, {
+      Animated.timing(scaleAnim, {
         toValue: 1,
-        tension: 100,
-        friction: 8,
+        duration: 600,
         useNativeDriver: true,
       }),
     ]).start();
-  };
 
-  const handleSaveReceipt = async () => {
-    try {
-      if (user?.id && receiptData) {
-        await createReceipt({
-          ...receiptData,
-          photo_uri: photoUri,
-          user_id: user.id,
-        });
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setCurrentStep(1);
-      }
-    } catch (error) {
-      console.error("Failed to save receipt:", error);
-      Alert.alert("Error", "Failed to save receipt. Please try again.");
-    }
-  };
+    // Show insight after a brief delay
+    const timer = setTimeout(() => {
+      setShowInsight(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }, 800);
 
-  const handleShare = async () => {
-    setIsSharing(true);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleSave = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setSaved(true);
+    onSave();
 
-    // Mock sharing - in real app, this would use native sharing
+    // Navigate back after a brief delay
     setTimeout(() => {
-      setIsSharing(false);
-      Alert.alert("Shared!", "Your receipt reality has been shared! 📱");
+      router.back();
     }, 1000);
   };
 
-  const renderInsightCard = (insight: ReceiptInsight, index: number) => (
-    <Animated.View
-      key={index}
-      style={[
-        styles.insightCard,
-        {
-          opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
-        },
-      ]}
-    >
-      <HolisticCard
-        title={insight.title}
-        content={insight.message}
-        variant="elevated"
-      >
-        <View style={styles.insightHeader}>
-          <Text style={styles.insightIcon}>{insight.icon}</Text>
-          {insight.value && (
-            <HolisticText
-              variant="title.medium"
-              style={{ color: insight.color }}
-            >
-              ${insight.value.toFixed(2)}
-            </HolisticText>
-          )}
-        </View>
-      </HolisticCard>
-    </Animated.View>
-  );
+  const handleShare = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-  const renderReceiptSummary = () => (
-    <View style={styles.summaryContainer}>
-      <HolisticText variant="headline.medium" style={styles.totalSpent}>
-        You spent ${receiptData?.total?.toFixed(2) || "0.00"}
-      </HolisticText>
+    try {
+      const message = getShareMessage(receiptData, insight, toneMode);
+      await Share.share({
+        message,
+        title: "ReceiptRadar",
+      });
+    } catch (error) {
+      console.log("Share failed:", error);
+    }
+  };
 
-      <View style={styles.receiptDetails}>
-        <View style={styles.detailItem}>
-          <MaterialIcons name="store" size={20} color="#666" />
-          <HolisticText variant="body.medium" color="secondary">
-            {receiptData?.store || "Unknown Store"}
-          </HolisticText>
-        </View>
-        <View style={styles.detailItem}>
-          <MaterialIcons name="shopping-cart" size={20} color="#666" />
-          <HolisticText variant="body.medium" color="secondary">
-            {receiptData?.items?.length || 0} items
-          </HolisticText>
-        </View>
-        <View style={styles.detailItem}>
-          <MaterialIcons name="event" size={20} color="#666" />
-          <HolisticText variant="body.medium" color="secondary">
-            {new Date().toLocaleDateString()}
-          </HolisticText>
-        </View>
-      </View>
-    </View>
-  );
+  const formatCurrency = (amount: number) => {
+    return `$${amount.toFixed(2)}`;
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -369,46 +258,114 @@ export const ReceiptScanningExperience: React.FC<{
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Worm Character */}
-          <View style={styles.wormContainer}>
-            <RadarWorm
-              mood={wormMood}
-              message={wormMessage}
-              visible={true}
-              size="large"
-              showSpeechBubble={true}
-              animated={true}
-            />
-          </View>
-
           <HolisticContainer padding="large">
             {/* Receipt Summary */}
-            {renderReceiptSummary()}
+            <View style={styles.receiptCard}>
+              <HolisticCard variant="elevated" padding="large">
+                <View style={styles.receiptHeader}>
+                  <HolisticText variant="title.large" style={styles.storeName}>
+                    {receiptData.store}
+                  </HolisticText>
+                  <HolisticText
+                    variant="headline.large"
+                    style={styles.totalAmount}
+                  >
+                    {formatCurrency(receiptData.total)}
+                  </HolisticText>
+                  <HolisticText variant="body.medium" color="secondary">
+                    {receiptData.items.length} items •{" "}
+                    {new Date(receiptData.timestamp).toLocaleDateString()}
+                  </HolisticText>
+                </View>
 
-            {/* Insights */}
-            {insights.length > 0 && (
-              <View style={styles.insightsContainer}>
-                <HolisticText
-                  variant="title.large"
-                  style={styles.insightsTitle}
-                >
-                  Smart Insights
-                </HolisticText>
-                {insights.map((insight, index) =>
-                  renderInsightCard(insight, index)
+                {/* Instant Insight */}
+                {showInsight && (
+                  <Animated.View
+                    style={[
+                      styles.insightContainer,
+                      {
+                        opacity: fadeAnim,
+                        transform: [{ scale: scaleAnim }],
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.insightBadge,
+                        { backgroundColor: insight.color + "20" },
+                      ]}
+                    >
+                      <Text style={styles.insightIcon}>{insight.icon}</Text>
+                      <View style={styles.insightContent}>
+                        <HolisticText
+                          variant="title.medium"
+                          style={[
+                            styles.insightTitle,
+                            { color: insight.color },
+                          ]}
+                        >
+                          {insight.title}
+                        </HolisticText>
+                        {insight.savings && (
+                          <HolisticText
+                            variant="body.medium"
+                            style={styles.savingsText}
+                          >
+                            Potential savings: {formatCurrency(insight.savings)}
+                          </HolisticText>
+                        )}
+                      </View>
+                    </View>
+                  </Animated.View>
                 )}
-              </View>
-            )}
+
+                {/* Top Items */}
+                <View style={styles.itemsContainer}>
+                  <HolisticText
+                    variant="title.medium"
+                    style={styles.itemsTitle}
+                  >
+                    Top Items
+                  </HolisticText>
+                  {receiptData.items.slice(0, 3).map((item, index) => (
+                    <View key={index} style={styles.itemRow}>
+                      <HolisticText
+                        variant="body.medium"
+                        style={styles.itemName}
+                      >
+                        {item.name}
+                      </HolisticText>
+                      <HolisticText
+                        variant="body.medium"
+                        style={styles.itemPrice}
+                      >
+                        {formatCurrency(item.price)}
+                      </HolisticText>
+                    </View>
+                  ))}
+                  {receiptData.items.length > 3 && (
+                    <HolisticText
+                      variant="body.small"
+                      color="secondary"
+                      style={styles.moreItems}
+                    >
+                      +{receiptData.items.length - 3} more items
+                    </HolisticText>
+                  )}
+                </View>
+              </HolisticCard>
+            </View>
 
             {/* Action Buttons */}
             <View style={styles.actionContainer}>
               <HolisticButton
-                title="Save to Week"
-                onPress={handleSaveReceipt}
+                title={saved ? "Saved! 🎉" : "Save Receipt"}
+                onPress={handleSave}
                 variant="primary"
                 size="large"
                 fullWidth
-                icon={<MaterialIcons name="save" size={20} color="white" />}
+                icon={saved ? "✅" : "💾"}
+                disabled={saved}
               />
 
               <View style={styles.secondaryActions}>
@@ -417,37 +374,27 @@ export const ReceiptScanningExperience: React.FC<{
                   onPress={handleShare}
                   variant="outline"
                   size="medium"
-                  loading={isSharing}
-                  icon={
-                    <MaterialIcons name="share" size={18} color="#007AFF" />
-                  }
+                  icon="📤"
                 />
 
                 <HolisticButton
-                  title="View Details"
-                  onPress={onViewReceipt}
+                  title="Compare Prices"
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push("/(tabs)/price-compare");
+                  }}
                   variant="ghost"
                   size="medium"
-                  icon={<MaterialIcons name="receipt" size={18} color="#666" />}
+                  icon="📊"
                 />
               </View>
-
-              <HolisticButton
-                title="Scan Another Receipt"
-                onPress={onScanAnother}
-                variant="minimal"
-                size="medium"
-                icon={
-                  <MaterialIcons name="camera-alt" size={18} color="#666" />
-                }
-              />
             </View>
           </HolisticContainer>
         </ScrollView>
       </Animated.View>
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -460,46 +407,68 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
   },
-  wormContainer: {
-    alignItems: "center",
-    paddingVertical: 20,
-  },
-  summaryContainer: {
-    alignItems: "center",
+
+  receiptCard: {
     marginBottom: 32,
   },
-  totalSpent: {
-    textAlign: "center",
+  receiptHeader: {
+    alignItems: "center",
     marginBottom: 16,
   },
-  receiptDetails: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    width: "100%",
-    paddingHorizontal: 20,
+  storeName: {
+    marginBottom: 8,
   },
-  detailItem: {
-    alignItems: "center",
-    gap: 4,
+  totalAmount: {
+    marginBottom: 8,
+    color: "#2F80ED",
   },
-  insightsContainer: {
-    marginBottom: 32,
-  },
-  insightsTitle: {
-    textAlign: "center",
+  insightContainer: {
     marginBottom: 16,
   },
-  insightCard: {
-    marginBottom: 12,
-  },
-  insightHeader: {
+  insightBadge: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 8,
+    padding: 12,
+    borderRadius: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: "#2F80ED",
   },
   insightIcon: {
     fontSize: 24,
+    marginRight: 12,
+  },
+  insightContent: {
+    flex: 1,
+  },
+  insightTitle: {
+    marginBottom: 4,
+  },
+  savingsText: {
+    color: "#34C759",
+    fontWeight: "600",
+  },
+  itemsContainer: {
+    marginTop: 16,
+  },
+  itemsTitle: {
+    marginBottom: 16,
+  },
+  itemRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  itemName: {
+    flex: 1,
+  },
+  itemPrice: {
+    fontWeight: "600",
+  },
+  moreItems: {
+    textAlign: "center",
+    marginTop: 8,
+    fontStyle: "italic",
   },
   actionContainer: {
     gap: 16,

@@ -19,8 +19,7 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import { useRadarMood } from "@/hooks/useRadarMood";
-import { RadarWorm } from "@/components/RadarWorm";
+
 import { EdgeCaseRenderer } from "@/components/EdgeCaseRenderer";
 import { WeeklyWormDigest } from "@/components/WeeklyWormDigest";
 import { useToneMode } from "@/hooks/useToneMode";
@@ -28,6 +27,20 @@ import { HolisticButton } from "@/components/HolisticDesignSystem";
 import { HolisticText } from "@/components/HolisticDesignSystem";
 import { HolisticCard } from "@/components/HolisticDesignSystem";
 import * as Haptics from "expo-haptics";
+
+// Helper function to format time ago
+const formatTimeAgo = (dateString: string): string => {
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffInMs = now.getTime() - date.getTime();
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  if (diffInDays === 0) return "Today";
+  if (diffInDays === 1) return "1d ago";
+  if (diffInDays < 7) return `${diffInDays}d ago`;
+  if (diffInDays < 30) return `${Math.floor(diffInDays / 7)}w ago`;
+  return `${Math.floor(diffInDays / 30)}mo ago`;
+};
 
 import {
   spacing,
@@ -55,7 +68,7 @@ const WORM_GREETINGS = [
 const getPersonalityGreeting = (
   totalSpending: number,
   mood: string,
-  toneMode: "gentle" | "hard"
+  toneMode: "gentle" | "hard" | "silly" | "wise"
 ) => {
   if (totalSpending === 0) {
     return toneMode === "gentle"
@@ -102,7 +115,6 @@ export default function DashboardScreen() {
     0
   );
 
-  const { mood } = useRadarMood({ totalSpend: totalSpending });
   const [greeting, setGreeting] = useState(
     "Ready to start your spending story?"
   );
@@ -132,8 +144,8 @@ export default function DashboardScreen() {
   }, [fadeAnim]);
 
   useEffect(() => {
-    setGreeting(getPersonalityGreeting(totalSpending, mood, toneMode));
-  }, [totalSpending, mood, toneMode]);
+    setGreeting(getPersonalityGreeting(totalSpending, "calm", toneMode));
+  }, [totalSpending, toneMode]);
 
   const onChangeSearch = (query: string) => setSearchQuery(query);
 
@@ -144,16 +156,6 @@ export default function DashboardScreen() {
         <HolisticText variant="headline.large" style={styles.mainTitle}>
           ReceiptRadar
         </HolisticText>
-
-        <View style={styles.wormContainer}>
-          <RadarWorm
-            mood={mood}
-            size="medium"
-            visible={true}
-            showSpeechBubble={true}
-            animated={true}
-          />
-        </View>
 
         <HolisticText
           variant="body.large"
@@ -204,6 +206,21 @@ export default function DashboardScreen() {
                 </HolisticText>
               </View>
             </View>
+
+            {/* Last Receipt Context */}
+            {receipts.length > 0 && (
+              <View style={styles.lastReceiptContainer}>
+                <View style={styles.statDivider} />
+                <View style={styles.lastReceiptInfo}>
+                  <HolisticText variant="body.small" color="secondary">
+                    Last receipt: {receipts[0].store?.name || "Unknown store"}
+                  </HolisticText>
+                  <HolisticText variant="body.small" color="secondary">
+                    {formatTimeAgo(receipts[0].created_at)}
+                  </HolisticText>
+                </View>
+              </View>
+            )}
           </HolisticCard>
         </View>
       )}
@@ -275,14 +292,18 @@ export default function DashboardScreen() {
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <HolisticText variant="title.large" style={styles.emptyTitle}>
-                No receipts yet
+                {toneMode === "gentle"
+                  ? "Ready to start your spending story? ✨"
+                  : "No receipts yet. Let's see what you're made of."}
               </HolisticText>
               <HolisticText
                 variant="body.medium"
                 color="secondary"
                 style={styles.emptyMessage}
               >
-                Scan your first receipt to start tracking your spending
+                {toneMode === "gentle"
+                  ? "Start by scanning your first receipt"
+                  : "Scan a receipt to get started"}
               </HolisticText>
             </View>
           }
@@ -327,9 +348,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: spacing.lg,
   },
-  wormContainer: {
-    marginBottom: spacing.lg,
-  },
+
   greeting: {
     textAlign: "center",
     fontStyle: "italic",
@@ -379,6 +398,13 @@ const styles = StyleSheet.create({
   },
   emptyMessage: {
     textAlign: "center",
+  },
+  lastReceiptContainer: {
+    marginTop: spacing.md,
+  },
+  lastReceiptInfo: {
+    alignItems: "center",
+    marginTop: spacing.sm,
   },
   primaryButton: {
     borderRadius: borderRadius.lg,

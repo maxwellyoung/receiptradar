@@ -19,13 +19,13 @@ import { spacing, typography, borderRadius, shadows } from "@/constants/theme";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useReceipts } from "@/hooks/useReceipts";
 import { ViralFeaturesManager } from "@/components/ViralFeaturesManager";
-import { RadarWorm } from "@/components/RadarWorm";
+
 import { NotReceiptScreen } from "@/components/NotReceiptScreen";
 import { ReceiptSuccessScreen } from "@/components/ReceiptSuccessScreen";
 import { ReceiptScanningExperience } from "@/components/ReceiptScanningExperience";
 import { CorrectionModal, ReceiptItem } from "@/components/CorrectionModal";
 import { WeeklyInsights, InsightData } from "@/components/WeeklyInsights";
-import { useRadarMood } from "@/hooks/useRadarMood";
+
 import { useThemeContext } from "@/contexts/ThemeContext";
 // @ts-ignore: No types for confetti cannon
 import ConfettiCannon from "react-native-confetti-cannon";
@@ -101,22 +101,6 @@ export default function ReceiptProcessingScreen() {
   const progressAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const stepAnim = useRef(new Animated.Value(0)).current;
-
-  // Radar mood calculation
-  const radarMood = useRadarMood({
-    receiptData,
-    categoryBreakdown: receiptData?.ocr_data?.items?.reduce(
-      (acc: any, item: any) => {
-        acc[item.category] = (acc[item.category] || 0) + (item.price || 0);
-        return acc;
-      },
-      {}
-    ),
-    totalSpend: receiptData?.total_amount,
-    isProcessing: !processingComplete,
-    isError: !!error,
-    isDuplicate: false,
-  });
 
   useEffect(() => {
     // Start entrance animations
@@ -713,10 +697,7 @@ export default function ReceiptProcessingScreen() {
         {processingComplete && receiptData && !notAReceipt && (
           <ReceiptScanningExperience
             receiptData={receiptData}
-            photoUri={photoUri}
-            onViewReceipt={handleViewReceipt}
-            onScanAnother={handleScanAnother}
-            onBackToHome={handleBackToHome}
+            onSave={handleViewReceipt}
           />
         )}
       </Animated.View>

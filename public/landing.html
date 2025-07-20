@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ReceiptRadar</title>
+    <title>ReceiptRadar - Smart Receipt Tracking</title>
     <style>
       /* Reset and Base - Inspired by Ive's precision */
       * {
@@ -18,11 +18,12 @@
       }
 
       body {
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
-          "Helvetica Neue", Arial, sans-serif;
-        line-height: 1.618;
-        color: #1d1d1f;
-        background-color: #ffffff;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         font-weight: 400;
@@ -42,53 +43,14 @@
       }
 
       h1 {
-        font-size: clamp(4rem, 15vw, 12rem);
-        font-weight: 900;
-        letter-spacing: -0.08em;
-        background: linear-gradient(
-          135deg,
-          #1d1d1f 0%,
-          #434344 25%,
-          #6e6e73 50%,
-          #434344 75%,
-          #1d1d1f 100%
-        );
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        position: relative;
-      }
-
-      h1::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(
-          135deg,
-          rgba(0, 122, 255, 0.1) 0%,
-          rgba(88, 86, 214, 0.1) 100%
-        );
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        animation: shimmer 3s ease-in-out infinite;
-      }
-
-      @keyframes shimmer {
-        0%,
-        100% {
-          opacity: 0;
-        }
-        50% {
-          opacity: 1;
-        }
+        font-size: 3.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
       }
 
       h2 {
-        font-size: clamp(2.5rem, 8vw, 6rem);
+        font-size: 2.5rem;
         font-weight: 800;
         letter-spacing: -0.04em;
       }
@@ -99,16 +61,16 @@
       }
 
       p {
-        font-size: 1.375rem;
-        line-height: 1.7;
-        color: #6e6e73;
+        font-size: 1.5rem;
+        margin-bottom: 2rem;
+        opacity: 0.9;
       }
 
       /* Layout System - Inspired by Rams' systematic approach */
       .container {
-        max-width: 1600px;
+        max-width: 1200px;
         margin: 0 auto;
-        padding: 0 3rem;
+        padding: 2rem;
       }
 
       .section {
@@ -287,21 +249,19 @@
       /* Hero Section - Inspired by Ive's focus on the essential */
       .hero {
         text-align: center;
-        max-width: 1200px;
-        margin: 0 auto;
-        position: relative;
-        z-index: 2;
+        color: white;
+        padding: 4rem 0;
       }
 
       .hero__title {
-        margin-bottom: 3rem;
-        position: relative;
+        margin-bottom: 1rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
       }
 
       .hero__subtitle {
         font-size: 1.75rem;
         color: #6e6e73;
-        margin-bottom: 5rem;
+        margin-bottom: 2rem;
         max-width: 800px;
         margin-left: auto;
         margin-right: auto;
@@ -323,133 +283,45 @@
       }
 
       .hero__cta {
-        display: inline-flex;
-        align-items: center;
-        gap: 1.5rem;
-        background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
-        color: #ffffff;
-        padding: 2rem 4rem;
+        display: inline-block;
+        background: #667eea;
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 8px;
         text-decoration: none;
-        border-radius: 20px;
-        font-weight: 700;
-        font-size: 1.25rem;
-        letter-spacing: 0.01em;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        border: none;
-        box-shadow: 0 12px 40px rgba(0, 122, 255, 0.3);
-        position: relative;
-        overflow: hidden;
-      }
-
-      .hero__cta::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(
-          90deg,
-          transparent,
-          rgba(255, 255, 255, 0.3),
-          transparent
-        );
-        transition: left 0.6s ease;
-      }
-
-      .hero__cta:hover::before {
-        left: 100%;
+        font-size: 1.2rem;
+        font-weight: 600;
+        transition: transform 0.2s;
       }
 
       .hero__cta:hover {
-        transform: translateY(-6px) scale(1.05);
-        box-shadow: 0 20px 60px rgba(0, 122, 255, 0.4);
+        transform: translateY(-2px);
       }
 
       /* Features Grid - Inspired by Rams' systematic approach */
       .features {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-        gap: 4rem;
-        margin-top: 6rem;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin: 4rem 0;
       }
 
       .feature {
-        padding: 4rem;
-        background: #ffffff;
-        border: 2px solid #e5e5e7;
-        border-radius: 32px;
-        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        text-align: center;
       }
 
-      .feature::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 6px;
-        background: linear-gradient(90deg, #007aff, #5856d6, #ff2d55, #34c759);
-        transform: scaleX(0);
-        transition: transform 0.4s ease;
+      .feature h3 {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        color: #667eea;
       }
 
-      .feature:hover::before {
-        transform: scaleX(1);
-      }
-
-      .feature:hover {
-        border-color: #007aff;
-        transform: translateY(-12px) scale(1.03);
-        box-shadow: 0 24px 80px rgba(0, 122, 255, 0.15);
-      }
-
-      .feature__icon {
-        width: 100px;
-        height: 100px;
-        background: linear-gradient(135deg, #f5f5f7 0%, #e5e5e7 100%);
-        border-radius: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 2.5rem;
-        font-size: 2.5rem;
-        transition: all 0.4s ease;
-        position: relative;
-      }
-
-      .feature__icon::after {
-        content: "";
-        position: absolute;
-        inset: -3px;
-        background: linear-gradient(135deg, #007aff, #5856d6);
-        border-radius: 27px;
-        opacity: 0;
-        transition: opacity 0.4s ease;
-        z-index: -1;
-      }
-
-      .feature:hover .feature__icon {
-        transform: rotate(15deg) scale(1.15);
-      }
-
-      .feature:hover .feature__icon::after {
-        opacity: 1;
-      }
-
-      .feature__title {
-        margin-bottom: 1.5rem;
-        color: #1d1d1f;
-        font-size: 1.75rem;
-      }
-
-      .feature__description {
-        color: #6e6e73;
-        line-height: 1.7;
-        font-size: 1.25rem;
+      .feature p {
+        color: #666;
       }
 
       /* Process Section - Inspired by Castilho's data visualization */
@@ -534,43 +406,29 @@
       /* Stats Section - Inspired by Yuan's bold typography */
       .stats {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 5rem;
-        text-align: center;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 2rem;
+        margin: 4rem 0;
       }
 
       .stat {
-        padding: 4rem 3rem;
-        position: relative;
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       }
 
-      .stat::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 80px;
-        height: 6px;
-        background: linear-gradient(90deg, #007aff, #5856d6, #ff2d55);
-        border-radius: 3px;
-      }
-
-      .stat__value {
-        font-size: 5rem;
-        font-weight: 900;
-        color: #ffffff;
-        margin-bottom: 1.5rem;
-        letter-spacing: -0.03em;
-        text-shadow: 0 6px 30px rgba(0, 122, 255, 0.4);
-      }
-
-      .stat__label {
-        color: #a1a1a6;
+      .stat-number {
+        font-size: 2.5rem;
         font-weight: 700;
-        font-size: 1.125rem;
-        letter-spacing: 0.03em;
-        text-transform: uppercase;
+        color: #667eea;
+        margin-bottom: 0.5rem;
+      }
+
+      .stat-label {
+        color: #666;
+        font-size: 1.1rem;
       }
 
       /* Section Headers - Inspired by Bierut's typography */
@@ -608,45 +466,10 @@
 
       /* Footer - Inspired by Freiberg's attention to detail */
       .footer {
-        padding: 5rem 0;
-        background: linear-gradient(135deg, #f5f5f7 0%, #e5e5e7 100%);
-        border-top: 2px solid #e5e5e7;
-      }
-
-      .footer__content {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 3rem;
-      }
-
-      .footer__text {
-        color: #6e6e73;
-        font-size: 1.125rem;
-        font-weight: 600;
-      }
-
-      .footer__links {
-        display: flex;
-        gap: 3rem;
-        list-style: none;
-      }
-
-      .footer__link {
-        text-decoration: none;
-        color: #6e6e73;
-        font-weight: 600;
-        font-size: 1.125rem;
-        transition: all 0.3s ease;
-        padding: 0.75rem 1.5rem;
-        border-radius: 12px;
-      }
-
-      .footer__link:hover {
-        color: #1d1d1f;
-        background: rgba(0, 122, 255, 0.08);
-        transform: translateY(-3px);
+        text-align: center;
+        color: white;
+        padding: 2rem 0;
+        opacity: 0.8;
       }
 
       /* Animations - Inspired by Singer's micro-interactions */
@@ -740,7 +563,7 @@
       /* Responsive Design - Inspired by Taylor's mobile-first approach */
       @media (max-width: 768px) {
         .container {
-          padding: 0 2rem;
+          padding: 1rem;
         }
 
         .section {
@@ -753,11 +576,6 @@
 
         .nav__links {
           display: none;
-        }
-
-        .features {
-          grid-template-columns: 1fr;
-          gap: 3rem;
         }
 
         .process {
@@ -786,6 +604,14 @@
 
         .floating-element {
           display: none;
+        }
+
+        .hero h1 {
+          font-size: 2.5rem;
+        }
+
+        .hero p {
+          font-size: 1.2rem;
         }
       }
 
@@ -833,22 +659,10 @@
         <div class="hero">
           <h1 class="hero__title">ReceiptRadar</h1>
           <p class="hero__subtitle">
-            Transform receipt tracking into comprehensive grocery intelligence.
-            Snap receipts, track spending, and discover savings with 95%
-            accuracy.
+            Transform your receipts into insights. Track spending, find savings,
+            and take control of your finances.
           </p>
-          <a href="#download" class="hero__cta">
-            Download App
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M12 3v14m0 0l-5-5m5 5l5-5"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </a>
+          <a href="#download" class="hero__cta"> Try ReceiptRadar </a>
         </div>
       </div>
     </section>
@@ -978,7 +792,7 @@
       <div class="container">
         <div class="footer__content">
           <p class="footer__text">
-            &copy; 2024 ReceiptRadar. Designed with intention.
+            &copy; 2024 ReceiptRadar. Built with ❤️ for smarter spending.
           </p>
           <ul class="footer__links">
             <li><a href="#privacy" class="footer__link">Privacy</a></li>

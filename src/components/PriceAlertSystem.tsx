@@ -14,7 +14,7 @@ import { MotiView } from "moti";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useStoreTracking } from "@/hooks/useStoreTracking";
 import { AppTheme, borderRadius, spacing } from "@/constants/theme";
-import { RadarWorm } from "@/components/RadarWorm";
+
 import { API_CONFIG } from "@/constants/api";
 
 interface PriceAlert {
@@ -196,7 +196,6 @@ export const PriceAlertSystem: React.FC = () => {
   if (loading && alerts.length === 0) {
     return (
       <View style={styles.loadingContainer}>
-        <RadarWorm mood="insightful" size="large" visible />
         <Text variant="bodyLarge" style={styles.loadingText}>
           Loading your price alerts...
         </Text>

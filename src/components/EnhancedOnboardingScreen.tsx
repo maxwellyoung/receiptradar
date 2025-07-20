@@ -10,7 +10,7 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { RadarWorm } from "./RadarWorm";
+
 import { HolisticButton } from "./HolisticDesignSystem";
 import { HolisticText } from "./HolisticDesignSystem";
 import { HolisticContainer } from "./HolisticDesignSystem";

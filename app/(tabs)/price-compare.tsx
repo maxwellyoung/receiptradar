@@ -118,20 +118,36 @@ export default function PriceCompareScreen() {
     setShowSuggestions(false);
 
     try {
-      // Simulate API call - replace with actual endpoint
-      const response = await fetch(
-        `${API_CONFIG.honoApiUrl}/api/v1/price-search?q=${encodeURIComponent(
-          query
-        )}`
-      );
+      // Check if we're in development and API is available
+      if (API_CONFIG.isDevelopment) {
+        // Try to connect to local API with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
 
-      if (response.ok) {
-        const data: QuickSearchResult[] = await response.json();
-        setSearchResults(data);
-      } else {
-        // Fallback to mock data for demo
-        setSearchResults(generateMockSearchResults(query));
+        try {
+          const response = await fetch(
+            `${
+              API_CONFIG.honoApiUrl
+            }/api/v1/price-search?q=${encodeURIComponent(query)}`,
+            { signal: controller.signal }
+          );
+
+          clearTimeout(timeoutId);
+
+          if (response.ok) {
+            const data: QuickSearchResult[] = await response.json();
+            setSearchResults(data);
+            return;
+          }
+        } catch (apiError) {
+          clearTimeout(timeoutId);
+          // API is not available, fall through to mock data
+          console.log("Local API not available, using mock data");
+        }
       }
+
+      // Fallback to mock data for demo
+      setSearchResults(generateMockSearchResults(query));
     } catch (error) {
       console.error("Search failed:", error);
       setSearchResults(generateMockSearchResults(query));
@@ -185,19 +201,38 @@ export default function PriceCompareScreen() {
 
   const fetchPriceComparison = async (itemName: string) => {
     try {
-      const response = await fetch(
-        `${
-          API_CONFIG.honoApiUrl
-        }/api/v1/receipts/price-comparison/${encodeURIComponent(itemName)}`
-      );
+      // Check if we're in development and API is available
+      if (API_CONFIG.isDevelopment) {
+        // Try to connect to local API with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
 
-      if (response.ok) {
-        const data: PriceComparison[] = await response.json();
-        setPriceComparisons(data);
-      } else {
-        // Generate mock comparison data
-        setPriceComparisons(generateMockPriceComparisons(itemName));
+        try {
+          const response = await fetch(
+            `${
+              API_CONFIG.honoApiUrl
+            }/api/v1/receipts/price-comparison/${encodeURIComponent(itemName)}`,
+            { signal: controller.signal }
+          );
+
+          clearTimeout(timeoutId);
+
+          if (response.ok) {
+            const data: PriceComparison[] = await response.json();
+            setPriceComparisons(data);
+            return;
+          }
+        } catch (apiError) {
+          clearTimeout(timeoutId);
+          // API is not available, fall through to mock data
+          console.log(
+            "Local API not available, using mock data for price comparison"
+          );
+        }
       }
+
+      // Generate mock comparison data
+      setPriceComparisons(generateMockPriceComparisons(itemName));
     } catch (error) {
       console.error("Price comparison failed:", error);
       setPriceComparisons(generateMockPriceComparisons(itemName));

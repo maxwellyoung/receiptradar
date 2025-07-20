@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export type ToneMode = "gentle" | "hard";
+export type ToneMode = "gentle" | "hard" | "silly" | "wise";
 
 interface UseToneModeReturn {
   toneMode: ToneMode;
@@ -20,7 +20,10 @@ export const useToneMode = (): UseToneModeReturn => {
   const loadToneMode = async () => {
     try {
       const savedTone = await AsyncStorage.getItem("@toneMode");
-      if (savedTone && (savedTone === "gentle" || savedTone === "hard")) {
+      if (
+        savedTone &&
+        ["gentle", "hard", "silly", "wise"].includes(savedTone)
+      ) {
         setToneModeState(savedTone as ToneMode);
       }
     } catch (error) {

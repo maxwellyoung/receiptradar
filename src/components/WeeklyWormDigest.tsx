@@ -9,14 +9,14 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { RadarWorm } from "./RadarWorm";
+
 import { HolisticButton } from "./HolisticDesignSystem";
 import { HolisticText } from "./HolisticDesignSystem";
 import { HolisticContainer } from "./HolisticDesignSystem";
 import { HolisticCard } from "./HolisticDesignSystem";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useReceipts } from "@/hooks/useReceipts";
-import { useRadarMood } from "@/hooks/useRadarMood";
+
 import * as Haptics from "expo-haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -50,14 +50,12 @@ export const WeeklyWormDigest: React.FC<{
 }> = ({ isVisible, onDismiss, onScanReceipt }) => {
   const [insights, setInsights] = useState<WeeklyInsight[]>([]);
   const [stats, setStats] = useState<WeeklyStats | null>(null);
-  const [wormMood, setWormMood] = useState<any>("insightful");
-  const [wormMessage, setWormMessage] = useState("");
+
   const [toneMode, setToneMode] = useState<"gentle" | "hard">("gentle");
   const [currentChallenge, setCurrentChallenge] = useState<string | null>(null);
 
   const { user } = useAuthContext();
   const { receipts, loading } = useReceipts(user?.id || "");
-  const { mood } = useRadarMood({ totalSpend: 0 });
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -238,38 +236,6 @@ export const WeeklyWormDigest: React.FC<{
     }
 
     setInsights(newInsights);
-    updateWormMood(stats);
-  };
-
-  const updateWormMood = (stats: WeeklyStats) => {
-    let newMood = "calm";
-    let message = "";
-
-    if (stats.totalSpent === 0) {
-      newMood = "insightful";
-      message = "No receipts this week. Ready to start tracking?";
-    } else if (stats.weekOverWeekChange < -10) {
-      newMood = "insightful";
-      message =
-        toneMode === "gentle"
-          ? "Impressive savings this week! The worm is proud! 🎉"
-          : "Not bad. You're actually getting better at this.";
-    } else if (stats.weekOverWeekChange > 10) {
-      newMood = toneMode === "gentle" ? "concerned" : "suspicious";
-      message =
-        toneMode === "gentle"
-          ? "Spending is up this week. Everything okay? 🤔"
-          : "Spending spike detected. What happened?";
-    } else {
-      newMood = "calm";
-      message =
-        toneMode === "gentle"
-          ? "Steady spending this week. Keep up the good work! ✨"
-          : "Stable spending. At least you're consistent.";
-    }
-
-    setWormMood(newMood);
-    setWormMessage(message);
   };
 
   const animateEntrance = () => {
@@ -391,18 +357,6 @@ export const WeeklyWormDigest: React.FC<{
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Worm Character */}
-          <View style={styles.wormContainer}>
-            <RadarWorm
-              mood={wormMood}
-              message={wormMessage}
-              visible={true}
-              size="large"
-              showSpeechBubble={true}
-              animated={true}
-            />
-          </View>
-
           <HolisticContainer padding="large">
             {/* Weekly Stats */}
             {renderStatsSummary()}
@@ -461,10 +415,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
   },
-  wormContainer: {
-    alignItems: "center",
-    paddingVertical: 20,
-  },
+
   statsContainer: {
     alignItems: "center",
     marginBottom: 32,

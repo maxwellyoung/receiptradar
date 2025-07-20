@@ -3,7 +3,7 @@ import { View, StyleSheet } from "react-native";
 import { Text, Button, useTheme } from "react-native-paper";
 import Modal from "react-native-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { RadarWorm } from "./RadarWorm";
+
 import { AppTheme } from "@/constants/theme";
 
 type OnboardingScreenProps = {
@@ -29,7 +29,6 @@ export const OnboardingScreen = ({
         style={[styles.container, { backgroundColor: theme.colors.background }]}
       >
         <View style={styles.content}>
-          <RadarWorm mood="insightful" size="large" visible={true} />
           <Text
             variant="headlineMedium"
             style={[styles.title, { color: theme.colors.onBackground }]}

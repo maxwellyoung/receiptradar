@@ -13,7 +13,6 @@ import {
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useReceipts } from "@/hooks/useReceipts";
 import { AppTheme, borderRadius, spacing } from "@/constants/theme";
-import { RadarWorm } from "@/components/RadarWorm";
 
 interface StoreAnalytics {
   storeName: string;
@@ -126,7 +125,6 @@ export const StoreAnalytics: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <RadarWorm mood="insightful" size="large" visible />
         <Text variant="bodyLarge" style={styles.loadingText}>
           Analyzing your shopping patterns...
         </Text>
@@ -137,7 +135,6 @@ export const StoreAnalytics: React.FC = () => {
   if (analytics.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <RadarWorm mood="suspicious" size="large" visible />
         <Text variant="headlineSmall" style={styles.emptyTitle}>
           No store data yet
         </Text>

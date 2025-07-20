@@ -20,6 +20,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import * as FileSystem from "expo-file-system";
 import * as Device from "expo-device";
+import { mockOCRService } from "../../src/services/mockOCRService";
 
 // TensorFlow Lite imports (you'll need to install these packages)
 // import * as tf from '@tensorflow/tfjs';
@@ -165,8 +166,8 @@ export default function CameraScreen() {
         skipProcessing: true,
       });
 
-      // Simplified detection for stability
-      const detectionResult = await performSimplifiedDetection(photo.uri);
+      // Real receipt detection
+      const detectionResult = await performReceiptDetection(photo.uri);
 
       setReceiptDetected(detectionResult.detected);
       setDetectionConfidence(detectionResult.confidence);
@@ -178,8 +179,8 @@ export default function CameraScreen() {
     }
   };
 
-  // Simplified detection for stability
-  const performSimplifiedDetection = async (
+  // Real receipt detection using OCR service
+  const performReceiptDetection = async (
     imageUri: string
   ): Promise<{
     detected: boolean;
@@ -192,32 +193,39 @@ export default function CameraScreen() {
       confidence: number;
     };
   }> => {
-    // Simple, stable detection logic
-    await new Promise((resolve) => setTimeout(resolve, 50)); // Reduced delay
+    try {
+      // Use the mock receipt detection service
+      const detectionResult = await mockOCRService.detectReceipt(imageUri);
 
-    // Simulate detection with more stable results
-    const baseConfidence = 0.3 + Math.random() * 0.4; // 30-70% base confidence
-    const timeFactor = (Date.now() % 3000) / 3000; // 3-second cycle
-    const confidence = Math.min(baseConfidence + timeFactor * 0.3, 1.0);
-    const detected = confidence > 0.6;
+      console.log("Receipt detection result:", {
+        detected: detectionResult.detected,
+        confidence: detectionResult.confidence,
+        details: detectionResult.details,
+      });
 
-    return {
-      detected,
-      confidence,
-      details: {
-        hasText: detected,
-        isRectangular: detected,
-        aspectRatio: detected ? 3.2 : 1.5,
-        edgeDensity: detected ? 0.7 : 0.3,
-        confidence,
-      },
-    };
+      return detectionResult;
+    } catch (error) {
+      console.error("Receipt detection error:", error);
+
+      // Fallback to basic detection
+      return {
+        detected: false,
+        confidence: 0.2,
+        details: {
+          hasText: false,
+          isRectangular: false,
+          aspectRatio: 1.0,
+          edgeDensity: 0.1,
+          confidence: 0.2,
+        },
+      };
+    }
   };
 
   // Start frame analysis when camera is ready
   useEffect(() => {
     if (hasPermission && !previewUri) {
-      const analysisInterval = setInterval(analyzeFrame, 2000); // Analyze every 2 seconds for stability
+      const analysisInterval = setInterval(analyzeFrame, 2000); // Analyze every 2 seconds for mock OCR
       return () => clearInterval(analysisInterval);
     }
   }, [hasPermission, previewUri, isCapturing]);

@@ -12,7 +12,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { MotiView } from "moti";
 import { useThemeContext } from "@/contexts/ThemeContext";
 import { spacing, borderRadius, shadows, typography } from "@/constants/theme";
-import { RadarWorm } from "./RadarWorm";
+
 import { useRouter } from "expo-router";
 import { SimpleEffects } from "./SimpleEffects";
 import { Card, Button, useTheme } from "react-native-paper";
@@ -234,29 +234,6 @@ export const ReceiptSuccessScreen: React.FC<ReceiptSuccessScreenProps> = ({
           </MotiView>
 
           {/* Radar's Reaction */}
-          <MotiView
-            from={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: "spring", delay: 500 }}
-            style={styles.radarContainer}
-          >
-            <RadarWorm
-              mood={radarMood.mood}
-              message={radarMood.message}
-              totalSpend={receiptData.total_amount}
-              categoryBreakdown={receiptData.ocr_data?.items?.reduce(
-                (acc: any, item: any) => {
-                  acc[item.category] =
-                    (acc[item.category] || 0) + (item.price || 0);
-                  return acc;
-                },
-                {}
-              )}
-              visible={true}
-              size="medium"
-              showSpeechBubble={radarMood.showSpeechBubble}
-            />
-          </MotiView>
 
           {/* Success Message */}
           <MotiView

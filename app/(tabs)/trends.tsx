@@ -6,7 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useReceipts } from "@/hooks/useReceipts";
 import { AppTheme, borderRadius, spacing } from "@/constants/theme";
-import { RadarWorm } from "@/components/RadarWorm";
+
 import { StoreAnalytics } from "@/components/StoreAnalytics";
 import { PriceAlertSystem } from "@/components/PriceAlertSystem";
 import {
@@ -147,7 +147,6 @@ export default function TrendsScreen() {
     return (
       <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
         <View style={styles.emptyContainer}>
-          <RadarWorm mood="suspicious" size="large" visible />
           <Text variant="headlineSmall" style={styles.emptyTitle}>
             The worm sees nothing... yet 👁
           </Text>

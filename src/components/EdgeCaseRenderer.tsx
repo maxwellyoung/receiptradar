@@ -1,11 +1,11 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import { Text, useTheme } from "react-native-paper";
-import { RadarWorm, RadarMood } from "./RadarWorm";
+
 import { AppTheme } from "@/constants/theme";
 
 type EdgeCaseRendererProps = {
-  mood?: RadarMood;
+  mood?: string;
   title: string;
   message: string;
 };
@@ -19,7 +19,6 @@ export const EdgeCaseRenderer = ({
 
   return (
     <View style={styles.container}>
-      <RadarWorm mood={mood} size="large" visible={true} />
       <Text
         variant="headlineSmall"
         style={[styles.title, { color: theme.colors.onBackground }]}
