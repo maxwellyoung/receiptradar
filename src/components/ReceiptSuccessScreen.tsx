@@ -22,16 +22,19 @@ import { AppTheme } from "@/constants/theme";
 const { width: screenWidth } = Dimensions.get("window");
 
 interface ReceiptSuccessScreenProps {
-  receiptData: any;
-  photoUri: string;
-  radarMood: any;
-  onViewReceipt: () => void;
-  onScanAnother: () => void;
-  onBackToHome: () => void;
-  onViewTrends: () => void;
+  receipt?: any;
+  receiptData?: any;
+  photoUri?: string;
+  radarMood?: any;
+  onViewReceipt?: () => void;
+  onScanAnother?: () => void;
+  onBackToHome?: () => void;
+  onViewTrends?: () => void;
+  onCorrection?: () => void;
 }
 
 export const ReceiptSuccessScreen: React.FC<ReceiptSuccessScreenProps> = ({
+  receipt,
   receiptData,
   photoUri,
   radarMood,
@@ -39,6 +42,7 @@ export const ReceiptSuccessScreen: React.FC<ReceiptSuccessScreenProps> = ({
   onScanAnother,
   onBackToHome,
   onViewTrends,
+  onCorrection,
 }) => {
   const { theme } = useThemeContext();
   const router = useRouter();
@@ -81,8 +85,9 @@ export const ReceiptSuccessScreen: React.FC<ReceiptSuccessScreenProps> = ({
   }, []);
 
   const handleViewReceipt = () => {
-    if (receiptData?.id) {
-      router.push(`/receipt/${receiptData.id}`);
+    const data = receipt || receiptData;
+    if (data?.id) {
+      router.push(`/receipt/${data.id}`);
     }
   };
 
@@ -198,7 +203,7 @@ export const ReceiptSuccessScreen: React.FC<ReceiptSuccessScreenProps> = ({
               <Text
                 style={[styles.detailValue, { color: theme.colors.onSurface }]}
               >
-                {receiptData.store_name}
+                {(receipt || receiptData)?.store_name}
               </Text>
             </View>
             <View style={styles.detailRow}>
@@ -213,7 +218,7 @@ export const ReceiptSuccessScreen: React.FC<ReceiptSuccessScreenProps> = ({
               <Text
                 style={[styles.detailValue, { color: theme.colors.positive }]}
               >
-                ${receiptData.total_amount.toFixed(2)}
+                ${(receipt || receiptData)?.total_amount?.toFixed(2) || "0.00"}
               </Text>
             </View>
             <View style={styles.detailRow}>
@@ -228,7 +233,7 @@ export const ReceiptSuccessScreen: React.FC<ReceiptSuccessScreenProps> = ({
               <Text
                 style={[styles.detailValue, { color: theme.colors.onSurface }]}
               >
-                {receiptData.date}
+                {(receipt || receiptData)?.date}
               </Text>
             </View>
           </MotiView>

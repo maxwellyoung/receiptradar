@@ -19,10 +19,6 @@ import { MaterialIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { spacing, typography, shadows, borderRadius } from "@/constants/theme";
 import { AppTheme } from "@/constants/theme";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
 
 interface Achievement {
   id: string;
@@ -135,7 +131,6 @@ export default function SettingsScreen() {
   const { user, signOut } = useAuthContext();
   const { toneMode, setToneMode } = useToneMode();
   const { receipts } = useReceipts(user?.id ?? "");
-  const insets = useSafeAreaInsets();
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [weeklyDigestEnabled, setWeeklyDigestEnabled] = useState(true);
@@ -159,7 +154,7 @@ export default function SettingsScreen() {
   const formatCurrency = (amount: number) => `$${amount.toFixed(2)}`;
 
   return (
-    <SafeAreaView style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -392,7 +387,7 @@ export default function SettingsScreen() {
           />
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

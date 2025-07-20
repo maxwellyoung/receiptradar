@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Dimensions,
+  Modal,
 } from "react-native";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { AnimatePresence, MotiView } from "moti";
@@ -31,8 +32,11 @@ export default function SignInScreen() {
   const [localLoading, setLocalLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
 
-  const { signIn, signUp } = useAuthContext();
+  const { signIn, signUp, resetPassword } = useAuthContext();
 
   const handleSubmit = async () => {
     if (!email || !password) {
@@ -74,6 +78,30 @@ export default function SignInScreen() {
 
   const handleAppleError = (error: any) => {
     console.error("Apple Sign-In error:", error);
+  };
+
+  const handleForgotPassword = async () => {
+    if (!forgotPasswordEmail.trim()) {
+      Alert.alert("Error", "Please enter your email address");
+      return;
+    }
+
+    setForgotPasswordLoading(true);
+    try {
+      await resetPassword(forgotPasswordEmail);
+      Alert.alert(
+        "Password Reset Sent",
+        "Check your email for a password reset link. You can close this dialog and try signing in again once you've reset your password."
+      );
+      setShowForgotPassword(false);
+      setForgotPasswordEmail("");
+    } catch (err: any) {
+      const errorMessage =
+        err?.message || "Failed to send password reset email";
+      Alert.alert("Error", errorMessage);
+    } finally {
+      setForgotPasswordLoading(false);
+    }
   };
 
   return (
@@ -146,6 +174,14 @@ export default function SignInScreen() {
               autoCorrect={false}
               autoComplete="password"
             />
+            {!isSignUp && (
+              <TouchableOpacity
+                style={styles.forgotPasswordButton}
+                onPress={() => setShowForgotPassword(true)}
+              >
+                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Confirm Password Input */}
@@ -257,6 +293,77 @@ export default function SignInScreen() {
             </Text>
           </TouchableOpacity>
         </MotiView>
+
+        {/* Forgot Password Modal */}
+        <Modal
+          visible={showForgotPassword}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => {
+            setShowForgotPassword(false);
+            setForgotPasswordEmail("");
+          }}
+        >
+          <View style={styles.modalOverlay}>
+            <TouchableOpacity
+              style={styles.modalBackdrop}
+              activeOpacity={1}
+              onPress={() => {
+                setShowForgotPassword(false);
+                setForgotPasswordEmail("");
+              }}
+            />
+            <MotiView
+              from={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: "spring", damping: 15 }}
+              style={styles.modalContent}
+            >
+              <Text style={styles.modalTitle}>Reset Password</Text>
+              <Text style={styles.modalSubtitle}>
+                Enter your email address and we'll send you a password reset
+                link.
+              </Text>
+
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Enter your email"
+                placeholderTextColor={theme.colors.onSurfaceVariant}
+                value={forgotPasswordEmail}
+                onChangeText={setForgotPasswordEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={styles.modalButtonSecondary}
+                  onPress={() => {
+                    setShowForgotPassword(false);
+                    setForgotPasswordEmail("");
+                  }}
+                  disabled={forgotPasswordLoading}
+                >
+                  <Text style={styles.modalButtonSecondaryText}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.modalButtonPrimary,
+                    forgotPasswordLoading && styles.buttonDisabled,
+                  ]}
+                  onPress={handleForgotPassword}
+                  disabled={forgotPasswordLoading}
+                >
+                  <Text style={styles.modalButtonPrimaryText}>
+                    {forgotPasswordLoading ? "Sending..." : "Send Reset Link"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </MotiView>
+          </View>
+        </Modal>
       </View>
     </KeyboardAvoidingView>
   );
@@ -375,5 +482,96 @@ const styles = StyleSheet.create({
   errorText: {
     color: theme.colors.onErrorContainer,
     textAlign: "center",
+  },
+  forgotPasswordButton: {
+    alignSelf: "flex-end",
+    marginTop: spacing.sm,
+  },
+  forgotPasswordText: {
+    color: theme.colors.primary,
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  modalOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+  },
+  modalBackdrop: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    width: "90%",
+    maxWidth: 400,
+    margin: spacing.lg,
+    ...shadows.large,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: theme.colors.onSurface,
+    marginBottom: spacing.sm,
+    textAlign: "center",
+  },
+  modalSubtitle: {
+    fontSize: 16,
+    color: theme.colors.onSurfaceVariant,
+    marginBottom: spacing.lg,
+    textAlign: "center",
+  },
+  modalInput: {
+    backgroundColor: theme.colors.surfaceVariant,
+    color: theme.colors.onSurface,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: "transparent",
+    fontSize: 16,
+    marginBottom: spacing.lg,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    gap: spacing.md,
+  },
+  modalButtonSecondary: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    borderColor: theme.colors.outline,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalButtonSecondaryText: {
+    color: theme.colors.onSurface,
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  modalButtonPrimary: {
+    flex: 1,
+    backgroundColor: theme.colors.primary,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.full,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalButtonPrimaryText: {
+    color: theme.colors.onPrimary,
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });

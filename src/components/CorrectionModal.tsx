@@ -33,7 +33,8 @@ export interface ReceiptItem {
 
 interface CorrectionModalProps {
   visible: boolean;
-  onDismiss: () => void;
+  onDismiss?: () => void;
+  onCancel?: () => void;
   onSave: (items: ReceiptItem[]) => void;
   items: ReceiptItem[];
   storeName?: string;
@@ -43,6 +44,7 @@ interface CorrectionModalProps {
 export function CorrectionModal({
   visible,
   onDismiss,
+  onCancel,
   onSave,
   items: initialItems,
   storeName,
@@ -113,7 +115,7 @@ export function CorrectionModal({
       }
 
       await onSave(validItems);
-      onDismiss();
+      onDismiss?.();
     } catch (error) {
       Alert.alert("Error", "Failed to save changes. Please try again.");
     } finally {

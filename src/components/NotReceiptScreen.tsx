@@ -15,14 +15,18 @@ import { spacing, borderRadius, shadows, typography } from "@/constants/theme";
 const { width: screenWidth } = Dimensions.get("window");
 
 interface NotReceiptScreenProps {
-  onRetry: () => void;
-  onViewReceipt: () => void;
-  onScanAnother: () => void;
-  onBackToHome: () => void;
-  onViewTrends: () => void;
+  onTryAgain?: () => void;
+  onGoBack?: () => void;
+  onRetry?: () => void;
+  onViewReceipt?: () => void;
+  onScanAnother?: () => void;
+  onBackToHome?: () => void;
+  onViewTrends?: () => void;
 }
 
 export const NotReceiptScreen: React.FC<NotReceiptScreenProps> = ({
+  onTryAgain,
+  onGoBack,
   onRetry,
   onViewReceipt,
   onScanAnother,
@@ -141,7 +145,7 @@ export const NotReceiptScreen: React.FC<NotReceiptScreenProps> = ({
               styles.primaryButton,
               { backgroundColor: theme.colors.primary },
             ]}
-            onPress={onRetry}
+            onPress={onTryAgain || onRetry}
             activeOpacity={0.8}
           >
             <MaterialIcons

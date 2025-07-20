@@ -16,10 +16,13 @@ import * as Haptics from "expo-haptics";
 import { MaterialIcons } from "@expo/vector-icons";
 
 interface ViralFeaturesManagerProps {
-  totalSpend: number;
-  categoryBreakdown: Record<string, number>;
+  totalSpend?: number;
+  categoryBreakdown?: Record<string, number>;
   savingsAmount?: number;
   weekNumber?: number;
+  receiptData?: any;
+  onContinue?: () => void;
+  onViewReceipt?: () => void;
 }
 
 const BUTTON_BOUNCE_DURATION = 200;
@@ -28,10 +31,13 @@ const MASCOT_SLIDE_DISTANCE = 60;
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 export const ViralFeaturesManager: React.FC<ViralFeaturesManagerProps> = ({
-  totalSpend,
-  categoryBreakdown,
+  totalSpend = 0,
+  categoryBreakdown = {},
   savingsAmount = 0,
   weekNumber = 1,
+  receiptData,
+  onContinue,
+  onViewReceipt,
 }) => {
   const [showCritter, setShowCritter] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);

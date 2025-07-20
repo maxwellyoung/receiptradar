@@ -45,6 +45,31 @@ export const authService = {
       email,
       password,
     });
+
+    // Provide more descriptive error messages
+    if (error) {
+      let userFriendlyMessage = error.message;
+
+      if (error.message.includes("Invalid login credentials")) {
+        userFriendlyMessage =
+          "Invalid email or password. Please check your credentials and try again.";
+      } else if (error.message.includes("Email not confirmed")) {
+        userFriendlyMessage =
+          "Please check your email and click the confirmation link before signing in.";
+      } else if (error.message.includes("Too many requests")) {
+        userFriendlyMessage =
+          "Too many login attempts. Please wait a few minutes before trying again.";
+      } else if (error.message.includes("User not found")) {
+        userFriendlyMessage =
+          "No account found with this email address. Please check your email or create a new account.";
+      }
+
+      return {
+        data,
+        error: { ...error, message: userFriendlyMessage } as typeof error,
+      };
+    }
+
     return { data, error };
   },
 
@@ -52,6 +77,14 @@ export const authService = {
   async signOut() {
     const { error } = await supabase.auth.signOut();
     return { error };
+  },
+
+  // Reset password
+  async resetPassword(email: string) {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: "receiptradar://reset-password",
+    });
+    return { data, error };
   },
 
   async updateUser(updates: { name?: string; password?: string }) {

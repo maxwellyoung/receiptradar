@@ -34,6 +34,7 @@ async function runMigration() {
     // Read the migration file
     const migrationPath = path.join(
       __dirname,
+      "..",
       "database",
       "02-household-tables.sql"
     );

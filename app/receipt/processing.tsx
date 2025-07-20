@@ -401,7 +401,7 @@ export default function ReceiptProcessingScreen() {
         receipt={receiptData}
         onViewReceipt={handleViewReceipt}
         onScanAnother={handleScanAnother}
-        onGoToTrends={handleGoToTrends}
+        onViewTrends={handleGoToTrends}
         onCorrection={() => setShowCorrectionModal(true)}
       />
     );
@@ -420,6 +420,7 @@ export default function ReceiptProcessingScreen() {
   if (showCorrectionModal) {
     return (
       <CorrectionModal
+        visible={showCorrectionModal}
         items={receiptData?.items || []}
         onSave={handleCorrectionSave}
         onCancel={() => setShowCorrectionModal(false)}

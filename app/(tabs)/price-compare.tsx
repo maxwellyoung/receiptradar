@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   FlatList,
   Alert,
+  Animated,
 } from "react-native";
 import {
   Text,
@@ -99,6 +100,8 @@ export default function PriceCompareScreen() {
   const [loading, setLoading] = useState(false);
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [dataUpdateAnimation] = useState(new Animated.Value(1));
 
   const formatCurrency = (amount: number) => {
     return `$${amount.toFixed(2)}`;
@@ -108,6 +111,21 @@ export default function PriceCompareScreen() {
     if (confidence >= 0.8) return "#10B981";
     if (confidence >= 0.6) return "#F59E0B";
     return "#EF4444";
+  };
+
+  const animateDataUpdate = () => {
+    Animated.sequence([
+      Animated.timing(dataUpdateAnimation, {
+        toValue: 1.02,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(dataUpdateAnimation, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
   const handleQuickSearch = async (query: string) => {
@@ -137,6 +155,7 @@ export default function PriceCompareScreen() {
           if (response.ok) {
             const data: QuickSearchResult[] = await response.json();
             setSearchResults(data);
+            animateDataUpdate();
             return;
           }
         } catch (apiError) {
@@ -148,9 +167,11 @@ export default function PriceCompareScreen() {
 
       // Fallback to mock data for demo
       setSearchResults(generateMockSearchResults(query));
+      animateDataUpdate();
     } catch (error) {
       console.error("Search failed:", error);
       setSearchResults(generateMockSearchResults(query));
+      animateDataUpdate();
     } finally {
       setLoading(false);
     }
@@ -266,6 +287,42 @@ export default function PriceCompareScreen() {
     });
   };
 
+  const getStoreIcon = (storeName: string) => {
+    const storeIcons: { [key: string]: string } = {
+      Countdown: "🛒",
+      "Pak'nSave": "🧃",
+      "New World": "🛍️",
+      "Fresh Choice": "🥬",
+    };
+    return storeIcons[storeName] || "🏪";
+  };
+
+  const getDataFreshnessStatus = (lastChecked: string) => {
+    const hoursAgo =
+      (Date.now() - new Date(lastChecked).getTime()) / (1000 * 60 * 60);
+    if (hoursAgo < 1) return { status: "🟢", text: "Updated recently" };
+    if (hoursAgo < 24) return { status: "🟡", text: "Updated today" };
+    return { status: "🔴", text: "Updated yesterday" };
+  };
+
+  const getSmartSummary = (item: QuickSearchResult) => {
+    const inStockStores = item.stores.filter((s) => s.inStock);
+    if (inStockStores.length < 2) return null;
+
+    const sortedStores = [...inStockStores].sort((a, b) => a.price - b.price);
+    const cheapest = sortedStores[0];
+    const mostExpensive = sortedStores[sortedStores.length - 1];
+    const savings = mostExpensive.price - cheapest.price;
+
+    if (savings < 0.5) return null; // Only show if savings are meaningful
+
+    return {
+      cheapest: cheapest.storeName,
+      mostExpensive: mostExpensive.storeName,
+      savings: savings,
+    };
+  };
+
   const renderQuickSearchSuggestion = ({ item }: { item: string }) => (
     <TouchableOpacity
       style={styles.suggestionItem}
@@ -273,7 +330,7 @@ export default function PriceCompareScreen() {
     >
       <MaterialIcons
         name="search"
-        size={20}
+        size={16}
         color={theme.colors.onSurfaceVariant}
       />
       <Text style={styles.suggestionText}>{item}</Text>
@@ -286,75 +343,96 @@ export default function PriceCompareScreen() {
       animate={{ opacity: 1, translateY: 0 }}
       transition={{ type: "timing", duration: 300 }}
     >
-      <Card style={styles.searchResultCard}>
-        <Card.Content>
-          <View style={styles.resultHeader}>
-            <View style={styles.resultInfo}>
-              <Text style={styles.resultItemName}>{item.itemName}</Text>
-              <Chip
-                style={styles.categoryChip}
-                textStyle={styles.categoryChipText}
-              >
-                {item.category}
-              </Chip>
-            </View>
-            <TouchableOpacity
-              style={styles.compareButton}
-              onPress={() => handleItemSelect(item.itemName)}
-            >
-              <MaterialIcons
-                name="compare"
-                size={20}
-                color={theme.colors.primary}
-              />
-              <Text style={styles.compareButtonText}>Compare</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.priceOverview}>
-            <View style={styles.priceStat}>
-              <Text style={styles.priceLabel}>Average</Text>
-              <Text style={styles.priceValue}>
-                {formatCurrency(item.averagePrice)}
-              </Text>
-            </View>
-            <View style={styles.priceStat}>
-              <Text style={styles.priceLabel}>Range</Text>
-              <Text style={styles.priceValue}>
-                {formatCurrency(item.priceRange.min)} -{" "}
-                {formatCurrency(item.priceRange.max)}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.storePrices}>
-            <Text style={styles.storePricesTitle}>Store Prices</Text>
-            {item.stores.map((store, index) => (
-              <View key={index} style={styles.storePriceRow}>
-                <View style={styles.storeInfo}>
-                  <Text style={styles.storeName}>{store.storeName}</Text>
-                  <Text style={styles.lastChecked}>
-                    Updated {new Date(store.lastChecked).toLocaleTimeString()}
+      <Animated.View style={{ transform: [{ scale: dataUpdateAnimation }] }}>
+        <Card style={styles.searchResultCard}>
+          <Card.Content>
+            {/* Smart Summary Card */}
+            {(() => {
+              const summary = getSmartSummary(item);
+              return summary ? (
+                <View style={styles.smartSummaryCard}>
+                  <MaterialIcons
+                    name="lightbulb-outline"
+                    size={16}
+                    color="#10B981"
+                  />
+                  <Text style={styles.smartSummaryText}>
+                    You could save up to {formatCurrency(summary.savings)} by
+                    buying at {summary.cheapest} instead of{" "}
+                    {summary.mostExpensive}.
                   </Text>
                 </View>
-                <View style={styles.storePrice}>
-                  <Text style={styles.storePriceValue}>
-                    {formatCurrency(store.price)}
-                  </Text>
-                  {!store.inStock && (
-                    <Chip
-                      style={styles.outOfStockChip}
-                      textStyle={styles.outOfStockText}
-                    >
-                      Out of Stock
-                    </Chip>
-                  )}
-                </View>
+              ) : null;
+            })()}
+
+            <View style={styles.resultHeader}>
+              <View style={styles.resultInfo}>
+                <Text style={styles.resultItemName}>{item.itemName}</Text>
+                <Text style={styles.priceSummary}>
+                  {formatCurrency(item.averagePrice)} avg •{" "}
+                  {formatCurrency(item.priceRange.min)}–
+                  {formatCurrency(item.priceRange.max)}
+                </Text>
+                <Text style={styles.storeSummary}>
+                  Across {item.stores.map((s) => s.storeName).join(", ")}
+                </Text>
               </View>
-            ))}
-          </View>
-        </Card.Content>
-      </Card>
+              <TouchableOpacity
+                style={styles.compareButton}
+                onPress={() => handleItemSelect(item.itemName)}
+              >
+                <MaterialIcons
+                  name="compare-arrows"
+                  size={18}
+                  color={theme.colors.primary}
+                />
+                <Text style={styles.compareButtonText}>Compare</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.storePrices}>
+              {item.stores.map((store, index) => {
+                const freshness = getDataFreshnessStatus(store.lastChecked);
+                return (
+                  <View key={index} style={styles.storePriceRow}>
+                    <View style={styles.storeInfo}>
+                      <View style={styles.storeHeader}>
+                        <Text style={styles.storeIcon}>
+                          {getStoreIcon(store.storeName)}
+                        </Text>
+                        <Text style={styles.storeName}>{store.storeName}</Text>
+                        <Text style={styles.freshnessStatus}>
+                          {freshness.status}
+                        </Text>
+                      </View>
+                      <Text style={styles.lastChecked}>
+                        {freshness.text} •{" "}
+                        {new Date(store.lastChecked).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </Text>
+                    </View>
+                    <View style={styles.storePrice}>
+                      <Text
+                        style={[
+                          styles.storePriceValue,
+                          !store.inStock && styles.outOfStockPrice,
+                        ]}
+                      >
+                        {formatCurrency(store.price)}
+                      </Text>
+                      {!store.inStock && (
+                        <Text style={styles.outOfStockText}>Out of stock</Text>
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          </Card.Content>
+        </Card>
+      </Animated.View>
     </MotiView>
   );
 
@@ -431,7 +509,6 @@ export default function PriceCompareScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
         <MotiView
           from={{ opacity: 0, translateY: -20 }}
           animate={{ opacity: 1, translateY: 0 }}
@@ -444,7 +521,6 @@ export default function PriceCompareScreen() {
           </Text>
         </MotiView>
 
-        {/* Search Section */}
         <MotiView
           from={{ opacity: 0, translateY: 20 }}
           animate={{ opacity: 1, translateY: 0 }}
@@ -452,19 +528,30 @@ export default function PriceCompareScreen() {
           style={styles.searchSection}
         >
           <Searchbar
-            placeholder="Search for items like 'washing powder'..."
+            placeholder="Search milk, bread, apples..."
             onChangeText={setSearchQuery}
             value={searchQuery}
             onSubmitEditing={() => handleQuickSearch(searchQuery)}
-            onFocus={() => setShowSuggestions(true)}
-            style={styles.searchBar}
+            onFocus={() => {
+              setShowSuggestions(true);
+              setSearchFocused(true);
+            }}
+            onBlur={() => setSearchFocused(false)}
+            style={[styles.searchBar, searchFocused && styles.searchBarFocused]}
             icon="magnify"
             iconColor={theme.colors.onSurfaceVariant}
             placeholderTextColor={theme.colors.onSurfaceVariant}
             inputStyle={{ color: theme.colors.onSurface }}
           />
 
-          {showSuggestions && (
+          {loading && (
+            <View style={styles.searchLoadingContainer}>
+              <ActivityIndicator size="small" color={theme.colors.primary} />
+              <Text style={styles.searchLoadingText}>Searching...</Text>
+            </View>
+          )}
+
+          {showSuggestions && !loading && (
             <MotiView
               from={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
@@ -483,15 +570,13 @@ export default function PriceCompareScreen() {
           )}
         </MotiView>
 
-        {/* Loading State */}
-        {loading && (
+        {loading && !searchFocused && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
             <Text style={styles.loadingText}>Searching for prices...</Text>
           </View>
         )}
 
-        {/* Search Results */}
         {!loading && searchResults.length > 0 && (
           <MotiView
             from={{ opacity: 0, translateY: 20 }}
@@ -510,7 +595,6 @@ export default function PriceCompareScreen() {
           </MotiView>
         )}
 
-        {/* Price Comparisons */}
         {selectedItem && priceComparisons.length > 0 && (
           <MotiView
             from={{ opacity: 0, translateY: 20 }}
@@ -539,7 +623,6 @@ export default function PriceCompareScreen() {
           </MotiView>
         )}
 
-        {/* Empty State */}
         {!loading && searchResults.length === 0 && searchQuery && (
           <MotiView
             from={{ opacity: 0, scale: 0.9 }}
@@ -592,6 +675,24 @@ const styles = StyleSheet.create({
   searchBar: {
     ...shadows.sm,
     borderRadius: borderRadius.lg,
+    elevation: 2,
+  },
+  searchBarFocused: {
+    borderColor: "#007AFF",
+    borderWidth: 1,
+    elevation: 4,
+  },
+  searchLoadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  searchLoadingText: {
+    ...typography.body2,
+    marginLeft: spacing.sm,
+    color: "#666",
   },
   suggestionsContainer: {
     marginTop: spacing.md,
@@ -645,6 +746,22 @@ const styles = StyleSheet.create({
     ...shadows.sm,
     borderRadius: borderRadius.lg,
   },
+  smartSummaryCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0FDF4",
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.md,
+    borderLeftWidth: 3,
+    borderLeftColor: "#10B981",
+  },
+  smartSummaryText: {
+    ...typography.body2,
+    color: "#065F46",
+    marginLeft: spacing.sm,
+    flex: 1,
+  },
   resultHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -658,21 +775,23 @@ const styles = StyleSheet.create({
     ...typography.headline2,
     marginBottom: spacing.xs,
   },
-  categoryChip: {
-    alignSelf: "flex-start",
-    backgroundColor: "#F3F4F6",
+  priceSummary: {
+    ...typography.body2,
+    color: "#6B7280",
   },
-  categoryChipText: {
-    color: "#374151",
-    fontSize: 12,
+  storeSummary: {
+    ...typography.caption1,
+    color: "#6B7280",
   },
   compareButton: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "transparent",
     borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: "#007AFF",
   },
   compareButtonText: {
     ...typography.body2,
@@ -680,49 +799,39 @@ const styles = StyleSheet.create({
     marginLeft: spacing.xs,
     color: "#007AFF",
   },
-  priceOverview: {
-    flexDirection: "row",
-    marginBottom: spacing.md,
-  },
-  priceStat: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: spacing.sm,
-    backgroundColor: "#F9FAFB",
-    borderRadius: borderRadius.sm,
-    marginHorizontal: spacing.xs,
-  },
-  priceLabel: {
-    ...typography.caption1,
-    color: "#6B7280",
-    marginBottom: spacing.xs,
-  },
-  priceValue: {
-    ...typography.headline3,
-    fontWeight: "600",
-  },
   storePrices: {
     marginTop: spacing.md,
-  },
-  storePricesTitle: {
-    ...typography.body2,
-    fontWeight: "600",
-    marginBottom: spacing.sm,
   },
   storePriceRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
+    marginBottom: spacing.xs,
   },
   storeInfo: {
     flex: 1,
   },
+  storeHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  storeIcon: {
+    ...typography.body2,
+    fontSize: 18,
+    marginRight: spacing.xs,
+  },
   storeName: {
     ...typography.body2,
     fontWeight: "500",
+    marginLeft: spacing.xs,
+  },
+  freshnessStatus: {
+    ...typography.caption1,
+    color: "#6B7280",
+    marginLeft: "auto",
   },
   lastChecked: {
     ...typography.caption1,
@@ -736,9 +845,8 @@ const styles = StyleSheet.create({
     ...typography.body2,
     fontWeight: "600",
   },
-  outOfStockChip: {
-    marginTop: spacing.xs,
-    backgroundColor: "#FEE2E2",
+  outOfStockPrice: {
+    color: "#DC2626",
   },
   outOfStockText: {
     color: "#DC2626",

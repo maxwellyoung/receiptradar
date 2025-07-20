@@ -47,7 +47,9 @@ interface ReceiptDetail {
   created_at: string;
 }
 
-function ReceiptDetailContent({ id }: { id: string }) {
+export default function ReceiptDetailScreen() {
+  const params = useLocalSearchParams();
+  const id = params?.id as string;
   const theme = useTheme<AppTheme>();
   const { user } = useAuthContext();
   const { getReceiptById, deleteReceipt } = useReceipts(user?.id || "");
@@ -57,10 +59,17 @@ function ReceiptDetailContent({ id }: { id: string }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadReceipt();
+    if (id) {
+      loadReceipt();
+    }
   }, [id]);
 
   const loadReceipt = async () => {
+    if (!id) {
+      setError("Invalid receipt ID");
+      return;
+    }
+
     try {
       setLoading(true);
       const { data, error } = await getReceiptById(id);
@@ -83,6 +92,11 @@ function ReceiptDetailContent({ id }: { id: string }) {
   };
 
   const handleDelete = () => {
+    if (!id) {
+      Alert.alert("Error", "Invalid receipt ID");
+      return;
+    }
+
     Alert.alert(
       "Delete Receipt",
       "Are you sure you want to delete this receipt? This action cannot be undone.",
@@ -118,6 +132,31 @@ function ReceiptDetailContent({ id }: { id: string }) {
     };
     return colors[category || ""] || "#9E9E9E";
   };
+
+  if (!id) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 32,
+          }}
+        >
+          <Text
+            variant="headlineSmall"
+            style={{ color: "#f44336", marginBottom: 16 }}
+          >
+            Invalid receipt ID
+          </Text>
+          <Button mode="contained" onPress={() => router.back()}>
+            Go Back
+          </Button>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (loading) {
     return (
@@ -553,35 +592,3 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
 });
-
-export default function ReceiptDetailScreen() {
-  const params = useLocalSearchParams<{ id: string }>();
-  const id = params?.id;
-
-  if (!id || typeof id !== "string") {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
-        <View
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            alignItems: "center",
-            padding: 32,
-          }}
-        >
-          <Text
-            variant="headlineSmall"
-            style={{ color: "#f44336", marginBottom: 16 }}
-          >
-            Invalid receipt ID
-          </Text>
-          <Button mode="contained" onPress={() => router.back()}>
-            Go Back
-          </Button>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  return <ReceiptDetailContent id={id} />;
-}

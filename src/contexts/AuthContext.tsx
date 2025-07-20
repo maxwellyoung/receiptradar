@@ -26,6 +26,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, name: string) => Promise<void>;
   signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   updateUser: (updates: { name?: string }) => Promise<void>;
   checkEmailConfirmation: () => Promise<boolean>;
   setEmailConfirmationPending: (pending: boolean, email?: string) => void;
@@ -296,6 +297,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const resetPassword = async (email: string) => {
+    try {
+      setLoading(true);
+      const { error } = await authService.resetPassword(email);
+
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      console.error("Reset password error:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const checkEmailConfirmation = async (): Promise<boolean> => {
     try {
       const { user, error } = await authService.getCurrentUser();
@@ -367,6 +384,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signUp,
     signInWithApple,
     signOut,
+    resetPassword,
     updateUser,
     checkEmailConfirmation,
     setEmailConfirmationPending: handleSetEmailConfirmationPending,
