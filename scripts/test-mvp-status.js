@@ -76,21 +76,18 @@ async function testMVPStatus() {
     // Test 5: Storage Bucket
     console.log("\n5. Storage Bucket:");
     try {
-      const { data: buckets, error: bucketError } =
-        await supabase.storage.listBuckets();
+      const { data: files, error } = await supabase.storage
+        .from("receipt-images")
+        .list();
 
-      if (bucketError) {
-        console.log(`   ❌ Storage access failed: ${bucketError.message}`);
+      if (error) {
+        console.log("   ❌ receipt-images bucket missing or inaccessible");
       } else {
-        const receiptBucket = buckets.find((b) => b.name === "receipt-images");
-        if (receiptBucket) {
-          console.log("   ✅ receipt-images bucket exists");
-        } else {
-          console.log("   ❌ receipt-images bucket missing");
-        }
+        console.log("   ✅ receipt-images bucket accessible");
+        console.log("   Files in bucket:", files.length);
       }
     } catch (err) {
-      console.log(`   ❌ Storage test failed: ${err.message}`);
+      console.log("   ❌ receipt-images bucket missing or inaccessible");
     }
 
     // Test 6: Current Data
