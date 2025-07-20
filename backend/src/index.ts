@@ -1,93 +1,159 @@
-import { Hono } from "hono";
-import { cors } from "hono/cors";
-import { logger } from "hono/logger";
+import express, { Request, Response } from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import cron from "node-cron";
+import { spawn } from "child_process";
+import path from "path";
 
-import { auth } from "./middleware/auth";
-import { receipts } from "./routes/receipts";
-import { households } from "./routes/households";
-import { analytics } from "./routes/analytics";
-// import { users } from "./routes/users";
-// import { webhooks } from "./routes/webhooks";
+dotenv.config();
 
-const app = new Hono();
-
-// Initialize Redis client (commented out for Cloudflare Workers compatibility)
-// export const redis = new Redis({
-//   host: "redis-13324.c232.us-east-1-2.ec2.redns.redis-cloud.com",
-//   port: 13324,
-//   username: "default", // change if you have a custom user
-//   password: "", // TODO: Set your actual Redis password here
-//   db: 0, // default database
-// });
+const app = express();
+const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use("*", logger());
-app.use(
-  "*",
-  cors({
-    origin: "*", // In production, you should restrict this to your frontend's domain
-    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization"],
-  })
-);
+app.use(cors());
+app.use(express.json());
 
-// Rate Limiting (commented out for Cloudflare Workers compatibility)
-// const limiter = rateLimiter({
-//   windowMs: 15 * 60 * 1000, // 15 minutes
-//   limit: 100, // Limit each IP to 100 requests per `window`
-//   standardHeaders: "draft-6",
-//   keyGenerator: (c) => {
-//     // A more robust key generator would be needed in a real app
-//     return (
-//       c.req.header("x-forwarded-for") ||
-//       c.req.header("cf-connecting-ip") ||
-//       "unknown"
-//     );
-//   },
-// });
-// app.use(limiter);
-
-// Health check
-app.get("/", (c) => {
-  return c.text("Welcome to the ReceiptRadar API!");
+// Health check endpoint
+app.get("/health", (req: Request, res: Response) => {
+  res.json({
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+    service: "ReceiptRadar Backend",
+  });
 });
 
-// Authenticated routes
-const v1 = new Hono();
+// Manual scrape trigger endpoint
+app.post("/api/scrape", async (req: Request, res: Response) => {
+  try {
+    console.log("🔄 Manual scrape triggered");
 
-v1.use("*", auth);
+    const scraperProcess = spawn(
+      "python3",
+      [
+        path.join(__dirname, "../ocr/start_production_scraper.py"),
+        "--mode",
+        "single",
+      ],
+      {
+        env: {
+          ...process.env,
+          DATABASE_URL: process.env.DATABASE_URL,
+        },
+      }
+    );
 
-v1.route("/receipts", receipts);
-v1.route("/households", households);
-v1.route("/analytics", analytics);
-// v1.route("/api/v1/users", auth, users);
-// v1.route("/api/v1/webhooks", webhooks);
+    let output = "";
+    let errorOutput = "";
 
-app.route("/api/v1", v1);
+    scraperProcess.stdout.on("data", (data) => {
+      output += data.toString();
+      console.log("Scraper output:", data.toString());
+    });
 
-// Error handling
-app.onError((err, c) => {
-  console.error("Error:", err);
-  return c.json(
-    {
-      error: "Internal server error",
-      message: err.message,
+    scraperProcess.stderr.on("data", (data) => {
+      errorOutput += data.toString();
+      console.error("Scraper error:", data.toString());
+    });
+
+    scraperProcess.on("close", (code) => {
+      if (code === 0) {
+        res.json({
+          success: true,
+          message: "Scraping completed successfully",
+          output: output,
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          message: "Scraping failed",
+          error: errorOutput,
+        });
+      }
+    });
+  } catch (error) {
+    console.error("Scrape endpoint error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
+
+// Get scraping status
+app.get("/api/scrape/status", (req: Request, res: Response) => {
+  res.json({
+    scheduler: "running",
+    lastRun: new Date().toISOString(),
+    nextRun: "Every 6 hours",
+  });
+});
+
+// Start the server
+app.listen(PORT, () => {
+  console.log(`🚀 ReceiptRadar Backend running on port ${PORT}`);
+  console.log(`📊 Health check: http://localhost:${PORT}/health`);
+
+  // Start the scraper scheduler
+  startScraperScheduler();
+});
+
+// Scraper Scheduler
+function startScraperScheduler() {
+  console.log("⏰ Starting scraper scheduler...");
+
+  // Run scraper every 6 hours
+  cron.schedule(
+    "0 */6 * * *",
+    async () => {
+      console.log("🔄 Scheduled scraping job started");
+
+      try {
+        const scraperProcess = spawn(
+          "python3",
+          [
+            path.join(__dirname, "../ocr/start_production_scraper.py"),
+            "--mode",
+            "single",
+          ],
+          {
+            env: {
+              ...process.env,
+              DATABASE_URL: process.env.DATABASE_URL,
+            },
+          }
+        );
+
+        let output = "";
+        let errorOutput = "";
+
+        scraperProcess.stdout.on("data", (data) => {
+          output += data.toString();
+          console.log("Scheduled scraper output:", data.toString());
+        });
+
+        scraperProcess.stderr.on("data", (data) => {
+          errorOutput += data.toString();
+          console.error("Scheduled scraper error:", data.toString());
+        });
+
+        scraperProcess.on("close", (code) => {
+          if (code === 0) {
+            console.log("✅ Scheduled scraping completed successfully");
+          } else {
+            console.error("❌ Scheduled scraping failed:", errorOutput);
+          }
+        });
+      } catch (error) {
+        console.error("❌ Scheduled scraping error:", error);
+      }
     },
-    500
-  );
-});
-
-// 404 handler
-app.notFound((c) => {
-  return c.json(
     {
-      error: "Not found",
-      message: "The requested resource was not found",
-    },
-    404
+      scheduled: true,
+      timezone: "Pacific/Auckland",
+    }
   );
-});
 
-// --- Cloudflare Workers Export ---
-
-export default app;
+  console.log("✅ Scraper scheduler started - running every 6 hours");
+}

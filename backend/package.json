@@ -1,37 +1,35 @@
 {
   "name": "receiptradar-backend",
   "version": "1.0.0",
-  "description": "ReceiptRadar Cloudflare Workers API",
+  "description": "ReceiptRadar Backend - Price Scraper and API",
   "main": "src/index.ts",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
-    "test": "vitest",
-    "test:watch": "vitest --watch",
-    "type-check": "tsc --noEmit",
-    "lint": "eslint src --ext .ts",
-    "lint:fix": "eslint src --ext .ts --fix"
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "dev": "ts-node src/index.ts",
+    "scrape": "python3 ../ocr/start_production_scraper.py --mode single",
+    "scrape-scheduler": "python3 ../ocr/start_production_scraper.py --mode scheduler"
   },
   "dependencies": {
-    "@hono/node-server": "^1.8.0",
-    "@hono/zod-validator": "^0.7.1",
-    "@supabase/supabase-js": "^2.39.0",
-    "hono": "^4.8.5",
-    "hono-rate-limiter": "^0.4.2",
-    "ioredis": "^5.3.2",
-    "jose": "^5.2.0",
-    "nanoid": "^5.0.0",
-    "zod": "^3.22.0"
+    "hono": "^3.12.0",
+    "@hono/zod-validator": "^0.2.0",
+    "zod": "^3.22.4",
+    "@supabase/supabase-js": "^2.38.0",
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "node-cron": "^3.0.3",
+    "axios": "^1.6.0",
+    "pg": "^8.11.3",
+    "@types/pg": "^8.10.7"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20231218.0",
-    "@types/node": "^20.0.0",
-    "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0",
-    "eslint": "^8.0.0",
-    "typescript": "^5.3.0",
-    "vitest": "^1.0.0",
-    "wrangler": "^3.22.0"
+    "@types/express": "^4.17.21",
+    "@types/cors": "^2.8.17",
+    "@types/node": "^20.8.0",
+    "@types/node-cron": "^3.0.11",
+    "typescript": "^5.2.2",
+    "ts-node": "^10.9.1"
   },
   "engines": {
     "node": ">=18.0.0"

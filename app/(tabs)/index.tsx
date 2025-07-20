@@ -287,6 +287,24 @@ export default function DashboardScreen() {
               <View>
                 {listHeader}
                 <QuickSearchWidget compact />
+
+                {/* Real Prices Section */}
+                <View style={styles.realPricesSection}>
+                  <HolisticText
+                    variant="title.medium"
+                    style={styles.sectionTitle}
+                  >
+                    Live Countdown Prices
+                  </HolisticText>
+                  <HolisticText
+                    variant="body.small"
+                    color="secondary"
+                    style={styles.sectionSubtitle}
+                  >
+                    Real-time prices from your local Countdown store
+                  </HolisticText>
+                  <RealPricesShowcase />
+                </View>
               </View>
             }
             ListEmptyComponent={
@@ -388,5 +406,17 @@ const styles = StyleSheet.create({
   },
   secondaryActionsContainer: {
     marginBottom: spacing.medium,
+  },
+  realPricesSection: {
+    marginTop: spacing.large,
+    marginBottom: spacing.medium,
+  },
+  sectionTitle: {
+    marginBottom: spacing.small,
+    paddingHorizontal: spacing.large,
+  },
+  sectionSubtitle: {
+    marginBottom: spacing.medium,
+    paddingHorizontal: spacing.large,
   },
 });

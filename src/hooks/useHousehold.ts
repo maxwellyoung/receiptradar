@@ -152,8 +152,19 @@ export const useHousehold = () => {
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       logError(err, "useHousehold.createHousehold");
-      setState((prev) => ({ ...prev, loading: false, error: err.message }));
-      return { error: err.message };
+
+      // Provide more helpful error messages
+      let errorMessage = err.message;
+      if (err.message.includes("Failed to create user profile")) {
+        errorMessage =
+          "Backend server is not running. Please start the backend server first.";
+      } else if (err.message.includes("Network request failed")) {
+        errorMessage =
+          "Cannot connect to backend server. Please check if the server is running.";
+      }
+
+      setState((prev) => ({ ...prev, loading: false, error: errorMessage }));
+      return { error: errorMessage };
     }
   };
 

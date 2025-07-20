@@ -1,0 +1,161 @@
+{
+  "countdown": {
+    "store_id": "countdown_001",
+    "store_name": "Countdown",
+    "base_url": "https://shop.countdown.co.nz",
+    "api_endpoints": {
+      "products": "/api/v1/products"
+    },
+    "departments": [
+      "meat-seafood",
+      "fruit-veg",
+      "fridge-deli",
+      "bakery",
+      "frozen",
+      "pantry",
+      "beer-wine",
+      "drinks",
+      "health-beauty",
+      "household",
+      "baby-child",
+      "pet"
+    ],
+    "headers": {
+      "authority": "shop.countdown.co.nz",
+      "pragma": "no-cache",
+      "user-agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Mobile Safari/537.36",
+      "content-type": "application/json",
+      "accept": "application/json, text/plain, */*",
+      "cache-control": "no-cache",
+      "x-requested-with": "OnlineShopping.WebApp",
+      "request-id": "|d99a667157664139bb2435b190eda682.c30ccf4caa5e4c86",
+      "expires": "Sat, 01 Jan 2000 00:00:00 GMT",
+      "sec-fetch-site": "same-origin",
+      "sec-fetch-mode": "cors",
+      "sec-fetch-dest": "empty",
+      "referer": "https://shop.countdown.co.nz/shop/browse/pantry",
+      "accept-language": "en-US,en;q=0.9"
+    },
+    "scraping_config": {
+      "items_per_page": 48,
+      "max_pages_per_dept": 50,
+      "delay_between_requests": [1, 3],
+      "delay_between_departments": [3, 6]
+    }
+  },
+  "paknsave": {
+    "store_id": "paknsave_001",
+    "store_name": "Pak'nSave",
+    "base_url": "https://www.paknsaveonline.co.nz",
+    "departments": [
+      "pantry",
+      "fresh-foods-and-bakery",
+      "baby-toddler-and-kids",
+      "beer-cider-and-wine",
+      "chilled-frozen-and-desserts",
+      "drinks",
+      "personal-care",
+      "kitchen-dining-and-household"
+    ],
+    "headers": {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Accept-Encoding": "gzip, deflate",
+      "Connection": "keep-alive",
+      "Upgrade-Insecure-Requests": "1"
+    },
+    "scraping_config": {
+      "items_per_page": 20,
+      "max_pages_per_dept": 100,
+      "delay_between_requests": [2, 4],
+      "delay_between_departments": [3, 6],
+      "selectors": {
+        "product_container": "div.fs-product-card",
+        "product_footer": "div.js-product-card-footer.fs-product-card__footer-container",
+        "volume_size": "p.u-color-half-dark-grey.u-p3",
+        "product_image": "div.fs-product-card__product-image",
+        "page_count": "div.fs-product-filter__item.u-color-half-dark-grey.u-hide-down-l"
+      }
+    }
+  },
+  "new_world": {
+    "store_id": "new_world_001",
+    "store_name": "New World",
+    "base_url": "https://shop.newworld.co.nz",
+    "departments": [
+      "fresh-foods",
+      "pantry",
+      "frozen",
+      "drinks",
+      "household",
+      "health-beauty",
+      "baby",
+      "pet"
+    ],
+    "headers": {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Accept-Encoding": "gzip, deflate",
+      "Connection": "keep-alive",
+      "Upgrade-Insecure-Requests": "1"
+    },
+    "scraping_config": {
+      "items_per_page": 24,
+      "max_pages_per_dept": 50,
+      "delay_between_requests": [2, 4],
+      "delay_between_departments": [3, 6]
+    }
+  },
+  "fresh_choice": {
+    "store_id": "fresh_choice_001",
+    "store_name": "Fresh Choice",
+    "base_url": "https://nelsoncity.store.freshchoice.co.nz",
+    "departments": ["fresh-foods", "pantry", "frozen", "drinks", "household"],
+    "headers": {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Accept-Encoding": "gzip, deflate",
+      "Connection": "keep-alive",
+      "Upgrade-Insecure-Requests": "1"
+    },
+    "scraping_config": {
+      "items_per_page": 20,
+      "max_pages_per_dept": 30,
+      "delay_between_requests": [2, 4],
+      "delay_between_departments": [3, 6],
+      "selectors": {
+        "product_container": ".shopping-list.search_results",
+        "price": ".talker__controls__layout span",
+        "product_name": ".talker__name.talker__section"
+      }
+    }
+  },
+  "super_value": {
+    "store_id": "super_value_001",
+    "store_name": "Super Value",
+    "base_url": "https://stanmore.store.supervalue.co.nz",
+    "departments": ["fresh-foods", "pantry", "frozen", "drinks", "household"],
+    "headers": {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Accept-Encoding": "gzip, deflate",
+      "Connection": "keep-alive",
+      "Upgrade-Insecure-Requests": "1"
+    },
+    "scraping_config": {
+      "items_per_page": 20,
+      "max_pages_per_dept": 30,
+      "delay_between_requests": [2, 4],
+      "delay_between_departments": [3, 6],
+      "selectors": {
+        "product_container": ".shopping-list.search_results",
+        "price": ".talker__controls__layout span",
+        "product_name": ".talker__name.talker__section"
+      }
+    }
+  }
+}
