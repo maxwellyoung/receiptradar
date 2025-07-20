@@ -35,6 +35,7 @@ import { useToneMode } from "@/hooks/useToneMode";
 import { HolisticButton } from "@/components/HolisticDesignSystem";
 import { HolisticText } from "@/components/HolisticDesignSystem";
 import { HolisticCard } from "@/components/HolisticDesignSystem";
+import { RealPricesShowcase } from "@/components/RealPricesShowcase";
 import * as Haptics from "expo-haptics";
 import {
   spacing,

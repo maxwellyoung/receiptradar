@@ -370,12 +370,6 @@ class EnhancedPriceScraperService:
                 cursor.execute("""
                     INSERT INTO price_history (store_id, item_name, price, date, source, confidence_score, volume_size, image_url)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (store_id, item_name, date, source) 
-                    DO UPDATE SET 
-                        price = EXCLUDED.price,
-                        confidence_score = EXCLUDED.confidence_score,
-                        volume_size = EXCLUDED.volume_size,
-                        image_url = EXCLUDED.image_url
                 """, (
                     price.store_id,
                     price.item_name,

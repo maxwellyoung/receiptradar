@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import {
   Text,
-  Searchbar,
   Card,
   Button,
   Chip,
@@ -27,21 +26,15 @@ import { MotiView } from "moti";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useStoreTracking } from "@/hooks/useStoreTracking";
 import { StoreLogo } from "@/components/StoreLogo";
-import { CompetitiveAdvantage } from "@/components/CompetitiveAdvantage";
-import { CompleteSavingsEcosystem } from "@/components/CompleteSavingsEcosystem";
-import { AdvancedProductMatching } from "@/components/AdvancedProductMatching";
-import { VoiceAssistant } from "@/components/VoiceAssistant";
-import { SmartShoppingList } from "@/components/SmartShoppingList";
-import { CommunityFeatures } from "@/components/CommunityFeatures";
-import { AdvancedAnalytics } from "@/components/AdvancedAnalytics";
-import { MonetizationFeatures } from "@/components/MonetizationFeatures";
+import { PriceCompareAutocomplete } from "@/components/PriceCompareAutocomplete";
+import { AppTheme } from "@/constants/theme";
 import {
-  AppTheme,
   spacing,
   typography,
   borderRadius,
   shadows,
-} from "@/constants/theme";
+  colors,
+} from "@/constants/holisticDesignSystem";
 import { API_CONFIG } from "@/constants/api";
 
 interface PriceComparison {
@@ -134,19 +127,17 @@ export default function PriceCompareScreen() {
   );
   const [loading, setLoading] = useState(false);
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [searchFocused, setSearchFocused] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [dataUpdateAnimation] = useState(new Animated.Value(1));
-  const [showAdvantages, setShowAdvantages] = useState(true);
 
   const formatCurrency = (amount: number) => {
     return `$${amount.toFixed(2)}`;
   };
 
   const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 0.8) return "#10B981";
-    if (confidence >= 0.6) return "#F59E0B";
-    return "#EF4444";
+    if (confidence >= 0.8) return colors.content.primary;
+    if (confidence >= 0.6) return colors.content.secondary;
+    return colors.content.tertiary;
   };
 
   const animateDataUpdate = () => {
@@ -164,12 +155,17 @@ export default function PriceCompareScreen() {
     ]).start();
   };
 
-  const handleQuickSearch = async (query: string) => {
+  const handleProductSelect = (product: any) => {
+    setSelectedProduct(product);
+    setSearchQuery(product.name);
+    handleQuickSearch(product.name);
+  };
+
+  const handleSearchSubmit = async (query: string) => {
     if (!query.trim()) return;
 
     setLoading(true);
     setSearchQuery(query);
-    setShowSuggestions(false);
 
     try {
       // Check if we're in development and API is available
@@ -213,203 +209,108 @@ export default function PriceCompareScreen() {
     }
   };
 
+  const handleQuickSearch = async (query: string) => {
+    handleSearchSubmit(query);
+  };
+
   const generateMockSearchResults = (query: string): QuickSearchResult[] => {
-    const stores = ["Countdown", "Pak'nSave", "New World", "Fresh Choice"];
-    const categories = [
-      "Household",
-      "Dairy",
-      "Bakery",
-      "Produce",
-      "Meat",
-      "Pantry",
-    ];
-
-    // Generate realistic product varieties based on query
+    const basePrice = 10 + Math.random() * 20;
     const getProductVarieties = (itemName: string) => {
-      const varieties = {
-        apples: [
-          {
-            name: "Royal Gala Apples",
-            brand: "FreshCo",
-            size: "1kg",
-            unit: "kg",
-            averagePrice: 4.99,
-          },
-          {
-            name: "Braeburn Apples",
-            brand: "Countdown",
-            size: "1kg",
-            unit: "kg",
-            averagePrice: 5.49,
-          },
-          {
-            name: "Organic Fuji Apples",
-            brand: "Organic Valley",
-            size: "500g",
-            unit: "kg",
-            averagePrice: 8.99,
-          },
-        ],
-        milk: [
-          {
-            name: "Full Cream Milk",
-            brand: "Anchor",
-            size: "2L",
-            unit: "L",
-            averagePrice: 4.5,
-          },
-          {
-            name: "Light Blue Milk",
-            brand: "Anchor",
-            size: "2L",
-            unit: "L",
-            averagePrice: 4.5,
-          },
-          {
-            name: "Organic Milk",
-            brand: "Lewis Road",
-            size: "1L",
-            unit: "L",
-            averagePrice: 6.99,
-          },
-        ],
-        bread: [
-          {
-            name: "White Sandwich Bread",
-            brand: "Tip Top",
-            size: "700g",
-            unit: "loaf",
-            averagePrice: 3.5,
-          },
-          {
-            name: "Whole Grain Bread",
-            brand: "Vogel's",
-            size: "700g",
-            unit: "loaf",
-            averagePrice: 5.99,
-          },
-          {
-            name: "Sourdough Bread",
-            brand: "Baker's Delight",
-            size: "500g",
-            unit: "loaf",
-            averagePrice: 4.5,
-          },
-        ],
-      };
-
-      const itemKey = itemName.toLowerCase().replace(/[^a-z]/g, "");
-      return (
-        varieties[itemKey as keyof typeof varieties] || [
-          {
-            name: itemName,
-            size: "1 unit",
-            unit: "unit",
-            averagePrice: 8.5 + Math.random() * 12,
-          },
-        ]
-      );
+      const varieties = [
+        {
+          name: `${itemName} 500g`,
+          brand: "Generic",
+          size: "500g",
+          unit: "g",
+          averagePrice: basePrice * 0.8,
+        },
+        {
+          name: `${itemName} 1kg`,
+          brand: "Premium",
+          size: "1kg",
+          unit: "kg",
+          averagePrice: basePrice * 1.2,
+        },
+        {
+          name: `${itemName} 2kg`,
+          brand: "Value",
+          size: "2kg",
+          unit: "kg",
+          averagePrice: basePrice * 1.8,
+        },
+      ];
+      return varieties.slice(0, 2 + Math.floor(Math.random() * 2));
     };
 
-    const varieties = getProductVarieties(query);
-    const selectedVariety =
-      varieties[Math.floor(Math.random() * varieties.length)];
+    const stores = ["Countdown", "New World", "Pak'nSave", "Fresh Choice"];
+    const mockStores = stores.map((store, index) => ({
+      storeName: store,
+      price: basePrice + (Math.random() - 0.5) * 5,
+      inStock: Math.random() > 0.1,
+      lastChecked: new Date(
+        Date.now() - Math.random() * 24 * 60 * 60 * 1000
+      ).toISOString(),
+      productDetails: {
+        brand: Math.random() > 0.5 ? "Generic" : "Premium",
+        size: "1kg",
+        unit: "kg",
+        unitPrice: basePrice + (Math.random() - 0.5) * 2,
+      },
+    }));
+
+    const priceHistory = Array.from({ length: 7 }, (_, i) => ({
+      date: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
+      price: basePrice + (Math.random() - 0.5) * 3,
+      store: stores[Math.floor(Math.random() * stores.length)],
+    }));
 
     return [
       {
         itemName: query,
-        category: categories[Math.floor(Math.random() * categories.length)],
-        averagePrice: selectedVariety.averagePrice,
+        category: "Groceries",
+        averagePrice: basePrice,
         priceRange: {
-          min: selectedVariety.averagePrice * 0.8,
-          max: selectedVariety.averagePrice * 1.4,
+          min: Math.min(...mockStores.map((s) => s.price)),
+          max: Math.max(...mockStores.map((s) => s.price)),
         },
-        stores: stores.map((store, index) => ({
-          storeName: store,
-          price:
-            selectedVariety.averagePrice * (0.9 + index * 0.1) +
-            Math.random() * 2,
-          inStock: Math.random() > 0.1,
-          lastChecked: new Date(
-            Date.now() - Math.random() * 86400000
-          ).toISOString(),
-          productDetails: {
-            brand: selectedVariety.brand,
-            size: selectedVariety.size,
-            unit: selectedVariety.unit,
-            unitPrice: selectedVariety.averagePrice,
-          },
-        })),
-        priceHistory: Array.from({ length: 5 }, (_, i) => ({
-          date: new Date(Date.now() - i * 86400000).toISOString(),
-          price: selectedVariety.averagePrice + Math.random() * 2,
-          store: stores[Math.floor(Math.random() * stores.length)],
-        })),
-        productVarieties: varieties,
+        stores: mockStores,
+        priceHistory,
+        productVarieties: getProductVarieties(query),
       },
     ];
   };
 
   const handleItemSelect = (itemName: string) => {
     setSelectedItem(itemName);
-    // Fetch detailed price comparison for this item
     fetchPriceComparison(itemName);
   };
 
   const fetchPriceComparison = async (itemName: string) => {
+    setLoading(true);
     try {
-      // Check if we're in development and API is available
-      if (API_CONFIG.isDevelopment) {
-        // Try to connect to local API with timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
-
-        try {
-          const response = await fetch(
-            `${
-              API_CONFIG.honoApiUrl
-            }/api/v1/receipts/price-comparison/${encodeURIComponent(itemName)}`,
-            { signal: controller.signal }
-          );
-
-          clearTimeout(timeoutId);
-
-          if (response.ok) {
-            const data: PriceComparison[] = await response.json();
-            setPriceComparisons(data);
-            return;
-          }
-        } catch (apiError) {
-          clearTimeout(timeoutId);
-          // API is not available, fall through to mock data
-          console.log(
-            "Local API not available, using mock data for price comparison"
-          );
-        }
-      }
-
-      // Generate mock comparison data
-      setPriceComparisons(generateMockPriceComparisons(itemName));
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const comparisons = generateMockPriceComparisons(itemName);
+      setPriceComparisons(comparisons);
     } catch (error) {
-      console.error("Price comparison failed:", error);
+      console.error("Failed to fetch price comparison:", error);
       setPriceComparisons(generateMockPriceComparisons(itemName));
+    } finally {
+      setLoading(false);
     }
   };
 
   const generateMockPriceComparisons = (
     itemName: string
   ): PriceComparison[] => {
-    const stores = ["Countdown", "Pak'nSave", "New World", "Fresh Choice"];
-
-    // Generate realistic product details based on item name
     const getProductDetails = (name: string) => {
       const details = {
-        apples: {
-          brand: "FreshCo",
-          variety: "Royal Gala",
+        "chicken breast": {
+          brand: "Free Range",
+          variety: "Skinless",
           size: "1kg",
           unit: "kg",
-          unitPrice: 4.99,
+          unitPrice: 12.98,
           packageType: "prepackaged" as const,
         },
         milk: {
@@ -417,93 +318,105 @@ export default function PriceCompareScreen() {
           variety: "Full Cream",
           size: "2L",
           unit: "L",
-          unitPrice: 2.25,
+          unitPrice: 4.5,
           packageType: "prepackaged" as const,
         },
         bread: {
-          brand: "Tip Top",
-          variety: "White Sandwich",
+          brand: "Vogel's",
+          variety: "Wholegrain",
           size: "700g",
-          unit: "loaf",
-          unitPrice: 3.5,
+          unit: "g",
+          unitPrice: 3.2,
           packageType: "prepackaged" as const,
         },
+        bananas: {
+          brand: undefined,
+          variety: "Cavendish",
+          size: "1kg",
+          unit: "kg",
+          unitPrice: 3.5,
+          packageType: "loose" as const,
+        },
       };
-
-      const itemKey = name.toLowerCase().replace(/[^a-z]/g, "");
       return (
-        details[itemKey as keyof typeof details] || {
+        details[name.toLowerCase()] || {
           brand: "Generic",
-          variety: name,
-          size: "1 unit",
-          unit: "unit",
-          unitPrice: 8.5 + Math.random() * 12,
+          variety: "Standard",
+          size: "1kg",
+          unit: "kg",
+          unitPrice: 10.0,
           packageType: "prepackaged" as const,
         }
       );
     };
 
-    const productDetails = getProductDetails(itemName);
-    const basePrice = productDetails.unitPrice * (1 + Math.random() * 0.3);
+    const stores = [
+      { name: "Countdown", basePrice: 12.98 },
+      { name: "New World", basePrice: 15.84 },
+      { name: "Pak'nSave", basePrice: 13.58 },
+      { name: "Fresh Choice", basePrice: 17.19 },
+    ];
 
     return stores.map((store, index) => {
-      const price = basePrice * (0.9 + index * 0.15) + Math.random() * 0.5;
-      const bestPrice = basePrice * 0.85; // Best price is typically 15% below average
+      const basePrice = store.basePrice;
+      const currentPrice = basePrice + (Math.random() - 0.5) * 2;
+      const bestPrice = Math.min(...stores.map((s) => s.basePrice));
+      const savings = currentPrice - bestPrice;
 
       return {
         itemName,
-        productDetails,
-        currentPrice: price,
+        productDetails: getProductDetails(itemName),
+        currentPrice,
         bestPrice,
-        savings: Math.max(0, price - bestPrice),
-        storeName: store,
-        confidence: 0.7 + Math.random() * 0.3,
-        priceHistoryPoints: 5 + Math.floor(Math.random() * 10),
+        savings: savings > 0 ? savings : 0,
+        storeName: store.name,
+        confidence: 0.85 + Math.random() * 0.1,
+        priceHistoryPoints: 15 + Math.floor(Math.random() * 20),
         lastUpdated: new Date(
-          Date.now() - Math.random() * 3600000
+          Date.now() - Math.random() * 24 * 60 * 60 * 1000
         ).toISOString(),
         dataQuality: {
-          matchConfidence: 0.8 + Math.random() * 0.2,
+          matchConfidence: 0.9 + Math.random() * 0.08,
           lastVerified: new Date(
-            Date.now() - Math.random() * 86400000
+            Date.now() - Math.random() * 12 * 60 * 60 * 1000
           ).toISOString(),
-          source: (["receipt", "api", "manual"] as const)[
-            Math.floor(Math.random() * 3)
-          ],
+          source:
+            Math.random() > 0.5 ? "receipt" : ("api" as "receipt" | "api"),
         },
       };
     });
   };
 
   const getStoreIcon = (storeName: string) => {
-    // This function is no longer needed since we're using StoreLogo component
-    return null;
+    const icons = {
+      Countdown: "store",
+      "New World": "store",
+      "Pak'nSave": "shopping-cart",
+      "Fresh Choice": "store",
+    };
+    return icons[storeName as keyof typeof icons] || "store";
   };
 
   const getDataFreshnessStatus = (lastChecked: string) => {
-    const hoursAgo =
+    const hours =
       (Date.now() - new Date(lastChecked).getTime()) / (1000 * 60 * 60);
-    if (hoursAgo < 1) return { status: "🟢", text: "Updated recently" };
-    if (hoursAgo < 24) return { status: "🟡", text: "Updated today" };
-    return { status: "🔴", text: "Updated yesterday" };
+    if (hours < 1) return "Just now";
+    if (hours < 24) return `${Math.floor(hours)}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
   };
 
   const getSmartSummary = (item: QuickSearchResult) => {
-    const inStockStores = item.stores.filter((s) => s.inStock);
-    if (inStockStores.length < 2) return null;
+    const bestPrice = Math.min(...item.stores.map((s) => s.price));
+    const worstPrice = Math.max(...item.stores.map((s) => s.price));
+    const savings = worstPrice - bestPrice;
 
-    const sortedStores = [...inStockStores].sort((a, b) => a.price - b.price);
-    const cheapest = sortedStores[0];
-    const mostExpensive = sortedStores[sortedStores.length - 1];
-    const savings = mostExpensive.price - cheapest.price;
-
-    if (savings < 0.5) return null; // Only show if savings are meaningful
-
-    return {
-      cheapest: cheapest.storeName,
-      mostExpensive: mostExpensive.storeName,
-      savings: savings,
-    };
+    if (savings > 5) {
+      return `Save up to ${formatCurrency(savings)} by shopping smart`;
+    } else if (savings > 2) {
+      return `Prices vary by ${formatCurrency(savings)} across stores`;
+    } else {
+      return "Prices are consistent across stores";
+    }
   };
 
   const renderQuickSearchSuggestion = ({ item }: { item: string }) => (
@@ -511,11 +424,7 @@ export default function PriceCompareScreen() {
       style={styles.suggestionItem}
       onPress={() => handleQuickSearch(item)}
     >
-      <MaterialIcons
-        name="search"
-        size={16}
-        color={theme.colors.onSurfaceVariant}
-      />
+      <MaterialIcons name="search" size={20} color={colors.content.tertiary} />
       <Text style={styles.suggestionText}>{item}</Text>
     </TouchableOpacity>
   );
@@ -525,179 +434,98 @@ export default function PriceCompareScreen() {
       from={{ opacity: 0, translateY: 20 }}
       animate={{ opacity: 1, translateY: 0 }}
       transition={{ type: "timing", duration: 300 }}
+      style={styles.searchResultCard}
     >
-      <Animated.View style={{ transform: [{ scale: dataUpdateAnimation }] }}>
-        <Card style={styles.searchResultCard}>
-          <Card.Content>
-            {/* Smart Summary Card */}
-            {(() => {
-              const summary = getSmartSummary(item);
-              return summary ? (
-                <View style={styles.smartSummaryCard}>
-                  <MaterialIcons
-                    name="lightbulb-outline"
-                    size={16}
-                    color="#10B981"
-                  />
-                  <Text style={styles.smartSummaryText}>
-                    You could save up to {formatCurrency(summary.savings)} by
-                    buying at {summary.cheapest} instead of{" "}
-                    {summary.mostExpensive}.
+      <Card style={styles.card}>
+        <Card.Content>
+          <View style={styles.resultHeader}>
+            <View style={styles.resultInfo}>
+              <Text style={styles.resultItemName}>{item.itemName}</Text>
+              <Text style={styles.priceSummary}>
+                {formatCurrency(item.averagePrice)} avg •{" "}
+                {formatCurrency(item.priceRange.min)}-
+                {formatCurrency(item.priceRange.max)}
+              </Text>
+              <Text style={styles.storeSummary}>
+                Across {item.stores.map((s) => s.storeName).join(", ")}
+              </Text>
+            </View>
+            <TouchableOpacity
+              style={styles.compareButton}
+              onPress={() => handleItemSelect(item.itemName)}
+            >
+              <MaterialIcons
+                name="compare-arrows"
+                size={16}
+                color={colors.brand.primary}
+              />
+              <Text style={styles.compareButtonText}>Compare</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.smartSummaryCard}>
+            <MaterialIcons
+              name="lightbulb"
+              size={20}
+              color={colors.content.primary}
+            />
+            <Text style={styles.smartSummaryText}>{getSmartSummary(item)}</Text>
+          </View>
+
+          <View style={styles.storePrices}>
+            {item.stores.slice(0, 3).map((store, index) => (
+              <View key={store.storeName} style={styles.storePriceRow}>
+                <View style={styles.storeInfo}>
+                  <View style={styles.storeHeader}>
+                    <StoreLogo storeName={store.storeName} size="small" />
+                    <Text style={styles.storeName}>{store.storeName}</Text>
+                    <Text style={styles.freshnessStatus}>
+                      {getDataFreshnessStatus(store.lastChecked)}
+                    </Text>
+                  </View>
+                  <Text style={styles.lastChecked}>
+                    {store.productDetails?.brand &&
+                      `${store.productDetails.brand} • `}
+                    {store.productDetails?.size}
                   </Text>
                 </View>
-              ) : null;
-            })()}
-
-            <View style={styles.resultHeader}>
-              <View style={styles.resultInfo}>
-                <Text style={styles.resultItemName}>{item.itemName}</Text>
-                <Text style={styles.priceSummary}>
-                  {formatCurrency(item.averagePrice)} avg •{" "}
-                  {formatCurrency(item.priceRange.min)}–
-                  {formatCurrency(item.priceRange.max)}
-                </Text>
-                <Text style={styles.storeSummary}>
-                  Across {item.stores.map((s) => s.storeName).join(", ")}
-                </Text>
-
-                {/* Product Varieties */}
-                {item.productVarieties.length > 1 && (
-                  <View style={styles.varietiesContainer}>
-                    <Text style={styles.varietiesTitle}>
-                      Available varieties:
-                    </Text>
-                    <View style={styles.varietiesList}>
-                      {item.productVarieties
-                        .slice(0, 3)
-                        .map((variety, index) => (
-                          <Chip
-                            key={index}
-                            style={styles.varietyChip}
-                            textStyle={styles.varietyChipText}
-                          >
-                            {variety.brand ? `${variety.brand} ` : ""}
-                            {variety.size} •{" "}
-                            {formatCurrency(variety.averagePrice)}
-                          </Chip>
-                        ))}
-                    </View>
-                  </View>
-                )}
+                <View style={styles.storePrice}>
+                  <Text style={styles.priceText}>
+                    {formatCurrency(store.price)}
+                  </Text>
+                  <Text style={styles.unitText}>
+                    per {store.productDetails?.unit}
+                  </Text>
+                </View>
               </View>
-              <TouchableOpacity
-                style={styles.compareButton}
-                onPress={() => handleItemSelect(item.itemName)}
-              >
-                <MaterialIcons
-                  name="compare-arrows"
-                  size={18}
-                  color={theme.colors.primary}
-                />
-                <Text style={styles.compareButtonText}>Compare</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.storePrices}>
-              {item.stores.map((store, index) => {
-                const freshness = getDataFreshnessStatus(store.lastChecked);
-                return (
-                  <View key={index} style={styles.storePriceRow}>
-                    <View style={styles.storeInfo}>
-                      <View style={styles.storeHeader}>
-                        <StoreLogo
-                          storeName={store.storeName}
-                          size="small"
-                          variant="icon"
-                        />
-                        <Text style={styles.storeName}>{store.storeName}</Text>
-                        <Text style={styles.freshnessStatus}>
-                          {freshness.status}
-                        </Text>
-                      </View>
-                      <Text style={styles.lastChecked}>
-                        {freshness.text} •{" "}
-                        {new Date(store.lastChecked).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </Text>
-                    </View>
-                    <View style={styles.storePrice}>
-                      <Text
-                        style={[
-                          styles.storePriceValue,
-                          !store.inStock && styles.outOfStockPrice,
-                        ]}
-                      >
-                        {formatCurrency(store.price)}
-                      </Text>
-                      {store.productDetails && (
-                        <Text style={styles.storeProductDetails}>
-                          {store.productDetails.brand &&
-                            `${store.productDetails.brand} `}
-                          {store.productDetails.size}
-                        </Text>
-                      )}
-                      {!store.inStock && (
-                        <Text style={styles.outOfStockText}>Out of stock</Text>
-                      )}
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          </Card.Content>
-        </Card>
-      </Animated.View>
+            ))}
+          </View>
+        </Card.Content>
+      </Card>
     </MotiView>
   );
 
   const renderPriceComparison = ({ item }: { item: PriceComparison }) => (
     <MotiView
-      from={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: "spring", damping: 15 }}
+      from={{ opacity: 0, translateY: 20 }}
+      animate={{ opacity: 1, translateY: 0 }}
+      transition={{ type: "timing", duration: 300 }}
+      style={styles.comparisonCard}
     >
-      <Card style={styles.comparisonCard}>
+      <Card style={styles.card}>
         <Card.Content>
-          <View style={styles.comparisonCardHeader}>
-            <View style={styles.comparisonStoreInfo}>
-              <Text style={styles.storeName}>{item.storeName}</Text>
-
-              {/* Product Details */}
-              <View style={styles.productDetailsContainer}>
-                <Text style={styles.productDetailsText}>
-                  {item.productDetails.brand && `${item.productDetails.brand} `}
-                  {item.productDetails.variety &&
-                    `${item.productDetails.variety} `}
-                  {item.productDetails.size} {item.productDetails.unit}
-                </Text>
-                <Text style={styles.unitPriceText}>
-                  {formatCurrency(item.productDetails.unitPrice)} per{" "}
-                  {item.productDetails.unit}
-                </Text>
+          <View style={styles.comparisonHeader}>
+            <View style={styles.storeInfo}>
+              <View style={styles.storeHeader}>
+                <StoreLogo storeName={item.storeName} size="medium" />
+                <Text style={styles.storeName}>{item.storeName}</Text>
               </View>
-
-              <View style={styles.confidenceContainer}>
-                <View
-                  style={[
-                    styles.confidenceIndicator,
-                    { backgroundColor: getConfidenceColor(item.confidence) },
-                  ]}
-                />
-                <Text style={styles.confidenceText}>
-                  {Math.round(item.confidence * 100)}% confidence
-                </Text>
-              </View>
-
-              {/* Data Quality Info */}
-              <View style={styles.dataQualityContainer}>
-                <Text style={styles.dataQualityText}>
-                  Match: {Math.round(item.dataQuality.matchConfidence * 100)}% •
-                  Source: {item.dataQuality.source} • Updated:{" "}
-                  {new Date(item.dataQuality.lastVerified).toLocaleDateString()}
-                </Text>
-              </View>
+              <Text style={styles.productDetails}>
+                {item.productDetails.brand && `${item.productDetails.brand} • `}
+                {item.productDetails.variety &&
+                  `${item.productDetails.variety} • `}
+                {item.productDetails.size}
+              </Text>
             </View>
             <View style={styles.priceComparison}>
               <Text style={styles.currentPrice}>
@@ -741,14 +569,17 @@ export default function PriceCompareScreen() {
 
   return (
     <SafeAreaView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      style={[styles.container, { backgroundColor: colors.surface.primary }]}
       edges={["top", "left", "right"]}
     >
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: insets.bottom },
+          {
+            paddingBottom: Math.max(insets.bottom, spacing.large),
+            paddingTop: spacing.medium,
+          },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -770,52 +601,25 @@ export default function PriceCompareScreen() {
           transition={{ type: "timing", duration: 500, delay: 200 }}
           style={styles.searchSection}
         >
-          <Searchbar
+          <PriceCompareAutocomplete
+            onProductSelect={handleProductSelect}
+            onSearchSubmit={handleSearchSubmit}
             placeholder="Search milk, bread, apples..."
-            onChangeText={setSearchQuery}
-            value={searchQuery}
-            onSubmitEditing={() => handleQuickSearch(searchQuery)}
-            onFocus={() => {
-              setShowSuggestions(true);
-              setSearchFocused(true);
-            }}
-            onBlur={() => setSearchFocused(false)}
-            style={[styles.searchBar, searchFocused && styles.searchBarFocused]}
-            icon="magnify"
-            iconColor={theme.colors.onSurfaceVariant}
-            placeholderTextColor={theme.colors.onSurfaceVariant}
-            inputStyle={{ color: theme.colors.onSurface }}
+            initialValue={searchQuery}
+            variant="default"
           />
 
           {loading && (
             <View style={styles.searchLoadingContainer}>
-              <ActivityIndicator size="small" color={theme.colors.primary} />
+              <ActivityIndicator size="small" color={colors.content.primary} />
               <Text style={styles.searchLoadingText}>Searching...</Text>
             </View>
           )}
-
-          {showSuggestions && !loading && (
-            <MotiView
-              from={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              transition={{ type: "timing", duration: 300 }}
-              style={styles.suggestionsContainer}
-            >
-              <Text style={styles.suggestionsTitle}>Quick Search</Text>
-              <FlatList
-                data={QUICK_SEARCH_SUGGESTIONS}
-                renderItem={renderQuickSearchSuggestion}
-                keyExtractor={(item) => item}
-                scrollEnabled={false}
-                style={styles.suggestionsList}
-              />
-            </MotiView>
-          )}
         </MotiView>
 
-        {loading && !searchFocused && (
+        {loading && (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <ActivityIndicator size="large" color={colors.content.primary} />
             <Text style={styles.loadingText}>Searching for prices...</Text>
           </View>
         )}
@@ -876,7 +680,7 @@ export default function PriceCompareScreen() {
             <MaterialIcons
               name="search-off"
               size={64}
-              color={theme.colors.onSurfaceVariant}
+              color={colors.content.tertiary}
             />
             <Text style={styles.emptyStateTitle}>No results found</Text>
             <Text style={styles.emptyStateMessage}>
@@ -886,126 +690,22 @@ export default function PriceCompareScreen() {
           </MotiView>
         )}
 
-        {/* Competitive Advantage - Show when no search is active */}
+        {/* Quick Search Suggestions - Show when no search is active */}
         {!loading && searchResults.length === 0 && !searchQuery && (
           <MotiView
             from={{ opacity: 0, translateY: 20 }}
             animate={{ opacity: 1, translateY: 0 }}
             transition={{ type: "timing", duration: 500, delay: 300 }}
-            style={styles.advantageSection}
+            style={styles.quickSearchSection}
           >
-            <View style={styles.advantageHeader}>
-              <Text style={styles.sectionTitle}>
-                Why Our Prices Are More Accurate
-              </Text>
-              <IconButton
-                icon={showAdvantages ? "expand-less" : "expand-more"}
-                size={20}
-                onPress={() => setShowAdvantages(!showAdvantages)}
-                style={styles.expandButton}
-              />
-            </View>
-            {showAdvantages && (
-              <View style={styles.advantagesContent}>
-                <CompleteSavingsEcosystem variant="detailed" />
-
-                <View style={styles.competitiveAdvantageSection}>
-                  <CompetitiveAdvantage
-                    title="ReceiptRadar vs Competitors"
-                    showDetails={true}
-                    variant="comparison"
-                  />
-                </View>
-
-                <View style={styles.advancedFeaturesSection}>
-                  <AdvancedProductMatching variant="demo" />
-                </View>
-
-                <View style={styles.voiceAssistantSection}>
-                  <VoiceAssistant variant="demo" />
-                </View>
-
-                <View style={styles.smartShoppingListSection}>
-                  <SmartShoppingList />
-                </View>
-
-                <View style={styles.communityFeaturesSection}>
-                  <CommunityFeatures variant="demo" />
-                </View>
-
-                <View style={styles.advancedAnalyticsSection}>
-                  <AdvancedAnalytics variant="demo" />
-                </View>
-
-                <View style={styles.monetizationFeaturesSection}>
-                  <MonetizationFeatures variant="demo" />
-                </View>
-
-                {/* Additional compelling content */}
-                <View style={styles.advantageCards}>
-                  <View style={styles.advantageCard}>
-                    <MaterialIcons name="receipt" size={24} color="#10B981" />
-                    <Text style={styles.advantageCardTitle}>
-                      Real Receipt Data
-                    </Text>
-                    <Text style={styles.advantageCardText}>
-                      Prices from actual customer receipts, not estimated web
-                      prices
-                    </Text>
-                  </View>
-
-                  <View style={styles.advantageCard}>
-                    <MaterialIcons name="update" size={24} color="#3B82F6" />
-                    <Text style={styles.advantageCardTitle}>Live Updates</Text>
-                    <Text style={styles.advantageCardText}>
-                      Prices updated in real-time as customers scan receipts
-                    </Text>
-                  </View>
-
-                  <View style={styles.advantageCard}>
-                    <MaterialIcons name="verified" size={24} color="#F59E0B" />
-                    <Text style={styles.advantageCardTitle}>
-                      Verified Accuracy
-                    </Text>
-                    <Text style={styles.advantageCardText}>
-                      Every price verified against actual store receipts
-                    </Text>
-                  </View>
-
-                  <View style={styles.advantageCard}>
-                    <MaterialIcons
-                      name="trending-up"
-                      size={24}
-                      color="#8B5CF6"
-                    />
-                    <Text style={styles.advantageCardTitle}>Price History</Text>
-                    <Text style={styles.advantageCardText}>
-                      Track price changes over time with historical data
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.accuracyStats}>
-                  <Text style={styles.accuracyTitle}>
-                    Our Accuracy Advantage
-                  </Text>
-                  <View style={styles.statRow}>
-                    <View style={styles.statItem}>
-                      <Text style={styles.statNumber}>99.2%</Text>
-                      <Text style={styles.statLabel}>Price Accuracy</Text>
-                    </View>
-                    <View style={styles.statItem}>
-                      <Text style={styles.statNumber}>2.3x</Text>
-                      <Text style={styles.statLabel}>More Accurate</Text>
-                    </View>
-                    <View style={styles.statItem}>
-                      <Text style={styles.statNumber}>24/7</Text>
-                      <Text style={styles.statLabel}>Live Updates</Text>
-                    </View>
-                  </View>
-                </View>
-              </View>
-            )}
+            <Text style={styles.sectionTitle}>Quick Search</Text>
+            <FlatList
+              data={QUICK_SEARCH_SUGGESTIONS}
+              renderItem={renderQuickSearchSuggestion}
+              keyExtractor={(item) => item}
+              scrollEnabled={false}
+              style={styles.suggestionsList}
+            />
           </MotiView>
         )}
       </ScrollView>
@@ -1021,161 +721,128 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.large,
   },
   header: {
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
+    paddingTop: spacing.xlarge,
+    paddingBottom: spacing.large,
   },
   title: {
-    ...typography.headline1,
-    marginBottom: spacing.xs,
+    ...typography.headline.large,
+    marginBottom: spacing.tiny,
+    color: colors.content.primary,
   },
   subtitle: {
-    ...typography.body2,
-    color: "#666",
+    ...typography.body.medium,
+    color: colors.content.secondary,
   },
   searchSection: {
-    marginBottom: spacing.lg,
-  },
-  searchBar: {
-    ...shadows.sm,
-    borderRadius: borderRadius.lg,
-    elevation: 2,
-  },
-  searchBarFocused: {
-    borderColor: "#007AFF",
-    borderWidth: 1,
-    elevation: 4,
+    marginBottom: spacing.large,
   },
   searchLoadingContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: spacing.sm,
-    marginTop: spacing.sm,
+    paddingVertical: spacing.small,
+    marginTop: spacing.small,
   },
   searchLoadingText: {
-    ...typography.body2,
-    marginLeft: spacing.sm,
-    color: "#666",
-  },
-  suggestionsContainer: {
-    marginTop: spacing.md,
-    backgroundColor: "white",
-    borderRadius: borderRadius.md,
-    ...shadows.sm,
-    overflow: "hidden",
-  },
-  suggestionsTitle: {
-    ...typography.body2,
-    fontWeight: "600",
-    padding: spacing.md,
-    paddingBottom: spacing.sm,
-    color: "#666",
-  },
-  suggestionsList: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
-  },
-  suggestionItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.sm,
-  },
-  suggestionText: {
-    ...typography.body2,
-    marginLeft: spacing.sm,
+    ...typography.body.medium,
+    marginLeft: spacing.small,
+    color: colors.content.secondary,
   },
   loadingContainer: {
     alignItems: "center",
-    paddingVertical: spacing.xl,
+    paddingVertical: spacing.xlarge,
   },
   loadingText: {
-    ...typography.body2,
-    marginTop: spacing.md,
-    color: "#666",
+    ...typography.body.medium,
+    marginTop: spacing.medium,
+    color: colors.content.secondary,
   },
   resultsSection: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.large,
   },
   sectionTitle: {
-    ...typography.headline3,
-    marginBottom: spacing.md,
+    ...typography.headline.medium,
+    marginBottom: spacing.medium,
+    color: colors.content.primary,
   },
   resultsList: {
-    gap: spacing.md,
+    gap: spacing.medium,
   },
   searchResultCard: {
-    ...shadows.sm,
-    borderRadius: borderRadius.lg,
+    marginBottom: spacing.medium,
+  },
+  card: {
+    ...shadows.small,
+    borderRadius: borderRadius.large,
+    backgroundColor: colors.surface.primary,
   },
   smartSummaryCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F0FDF4",
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
-    marginBottom: spacing.md,
+    backgroundColor: colors.neutral[100],
+    padding: spacing.medium,
+    borderRadius: borderRadius.medium,
+    marginBottom: spacing.medium,
     borderLeftWidth: 3,
-    borderLeftColor: "#10B981",
+    borderLeftColor: colors.content.primary,
   },
   smartSummaryText: {
-    ...typography.body2,
-    color: "#065F46",
-    marginLeft: spacing.sm,
+    ...typography.body.medium,
+    color: colors.content.primary,
+    marginLeft: spacing.small,
     flex: 1,
   },
   resultHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: spacing.md,
+    marginBottom: spacing.medium,
   },
   resultInfo: {
     flex: 1,
   },
   resultItemName: {
-    ...typography.headline2,
-    marginBottom: spacing.xs,
+    ...typography.title.large,
+    marginBottom: spacing.tiny,
+    color: colors.content.primary,
   },
   priceSummary: {
-    ...typography.body2,
-    color: "#6B7280",
+    ...typography.body.medium,
+    color: colors.content.secondary,
   },
   storeSummary: {
-    ...typography.caption1,
-    color: "#6B7280",
+    ...typography.body.small,
+    color: colors.content.secondary,
   },
   compareButton: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: "transparent",
-    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.medium,
+    paddingVertical: spacing.small,
+    backgroundColor: colors.neutral[100],
+    borderRadius: borderRadius.medium,
     borderWidth: 1,
-    borderColor: "#007AFF",
+    borderColor: colors.content.primary,
   },
   compareButtonText: {
-    ...typography.body2,
-    fontWeight: "600",
-    marginLeft: spacing.xs,
-    color: "#007AFF",
+    ...typography.label.medium,
+    marginLeft: spacing.tiny,
+    color: colors.content.primary,
   },
   storePrices: {
-    marginTop: spacing.md,
+    marginTop: spacing.medium,
   },
   storePriceRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.medium,
     borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-    marginBottom: spacing.xs,
+    borderBottomColor: colors.neutral[200],
+    marginBottom: spacing.tiny,
   },
   storeInfo: {
     flex: 1,
@@ -1185,272 +852,132 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   storeName: {
-    ...typography.body2,
+    ...typography.body.medium,
     fontWeight: "500",
-    marginLeft: spacing.sm,
+    marginLeft: spacing.small,
+    color: colors.content.primary,
   },
   freshnessStatus: {
-    ...typography.caption1,
-    color: "#6B7280",
+    ...typography.body.small,
+    color: colors.content.secondary,
     marginLeft: "auto",
   },
   lastChecked: {
-    ...typography.caption1,
-    color: "#6B7280",
-    marginTop: spacing.xs,
+    ...typography.body.small,
+    color: colors.content.secondary,
+    marginTop: spacing.tiny,
   },
   storePrice: {
     alignItems: "flex-end",
   },
-  storePriceValue: {
-    ...typography.body2,
+  priceText: {
+    ...typography.title.medium,
     fontWeight: "600",
+    color: colors.content.primary,
   },
-  outOfStockPrice: {
-    color: "#DC2626",
-  },
-  outOfStockText: {
-    color: "#DC2626",
-    fontSize: 10,
+  unitText: {
+    ...typography.body.small,
+    color: colors.content.secondary,
   },
   comparisonSection: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.large,
   },
   comparisonSectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: spacing.md,
+    marginBottom: spacing.medium,
   },
   closeButton: {
     margin: 0,
   },
   comparisonList: {
-    gap: spacing.md,
+    gap: spacing.medium,
   },
   comparisonCard: {
-    ...shadows.sm,
-    borderRadius: borderRadius.lg,
+    marginBottom: spacing.medium,
   },
-  comparisonCardHeader: {
+  comparisonHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: spacing.md,
-  },
-  comparisonStoreInfo: {
-    flex: 1,
-  },
-  confidenceContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: spacing.xs,
-  },
-  confidenceIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: spacing.xs,
-  },
-  confidenceText: {
-    ...typography.caption1,
-    color: "#6B7280",
-  },
-  priceComparison: {
-    alignItems: "flex-end",
-  },
-  currentPrice: {
-    ...typography.headline3,
-    fontWeight: "600",
-  },
-  savingsText: {
-    ...typography.body2,
-    color: "#10B981",
-    fontWeight: "600",
-    marginTop: spacing.xs,
+    marginBottom: spacing.medium,
   },
   comparisonDetails: {
-    marginTop: spacing.md,
+    marginTop: spacing.medium,
   },
   detailRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: spacing.xs,
+    paddingVertical: spacing.tiny,
   },
   detailLabel: {
-    ...typography.body2,
-    color: "#6B7280",
-  },
-  bestPrice: {
-    ...typography.body2,
-    fontWeight: "600",
-    color: "#10B981",
+    ...typography.body.medium,
+    color: colors.content.secondary,
   },
   detailValue: {
-    ...typography.body2,
+    ...typography.body.medium,
+    color: colors.content.primary,
+  },
+  currentPrice: {
+    ...typography.headline.small,
+    fontWeight: "600",
+    color: colors.content.primary,
+  },
+  savingsText: {
+    ...typography.body.medium,
+    color: colors.content.primary,
+    fontWeight: "600",
+    marginTop: spacing.tiny,
+  },
+  bestPriceText: {
+    ...typography.body.small,
+    color: colors.content.primary,
+    fontWeight: "600",
+    marginTop: spacing.tiny,
+  },
+  productDetails: {
+    ...typography.body.small,
+    color: colors.content.secondary,
+    marginTop: spacing.tiny,
   },
   emptyState: {
     alignItems: "center",
-    paddingVertical: spacing.xl * 2,
+    paddingVertical: spacing.xxlarge,
   },
   emptyStateTitle: {
-    ...typography.headline3,
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
+    ...typography.headline.small,
+    marginTop: spacing.medium,
+    marginBottom: spacing.small,
+    color: colors.content.primary,
   },
   emptyStateMessage: {
-    ...typography.body2,
-    color: "#666",
+    ...typography.body.medium,
+    color: colors.content.secondary,
     textAlign: "center",
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.large,
   },
-  varietiesContainer: {
-    marginTop: spacing.sm,
+  quickSearchSection: {
+    marginTop: spacing.large,
   },
-  varietiesTitle: {
-    ...typography.caption1,
-    color: "#6B7280",
-    marginBottom: spacing.xs,
+  suggestionsList: {
+    paddingHorizontal: spacing.medium,
+    paddingBottom: spacing.medium,
   },
-  varietiesList: {
+  suggestionItem: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.xs,
-  },
-  varietyChip: {
-    backgroundColor: "#F3F4F6",
-    marginRight: spacing.xs,
-    marginBottom: spacing.xs,
-  },
-  varietyChipText: {
-    ...typography.caption2,
-    color: "#374151",
-  },
-  productDetailsContainer: {
-    marginTop: spacing.xs,
-    marginBottom: spacing.xs,
-  },
-  productDetailsText: {
-    ...typography.body2,
-    fontWeight: "500",
-    color: "#374151",
-  },
-  unitPriceText: {
-    ...typography.caption1,
-    color: "#6B7280",
-    marginTop: spacing.xs,
-  },
-  dataQualityContainer: {
-    marginTop: spacing.xs,
-  },
-  dataQualityText: {
-    ...typography.caption2,
-    color: "#6B7280",
-  },
-  bestPriceText: {
-    ...typography.caption1,
-    color: "#10B981",
-    fontWeight: "600",
-    marginTop: spacing.xs,
-  },
-  storeProductDetails: {
-    ...typography.caption2,
-    color: "#6B7280",
-    marginTop: spacing.xs,
-  },
-  advantageSection: {
-    marginBottom: spacing.lg,
-  },
-  advantageHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: spacing.md,
+    paddingVertical: spacing.small,
+    paddingHorizontal: spacing.medium,
+    borderRadius: borderRadius.small,
   },
-  expandButton: {
-    margin: 0,
+  suggestionText: {
+    ...typography.body.medium,
+    marginLeft: spacing.small,
+    color: colors.content.primary,
   },
-  advantagesContent: {
-    marginTop: spacing.md,
-  },
-  advantageCards: {
-    marginTop: spacing.lg,
-    gap: spacing.md,
-  },
-  advantageCard: {
-    backgroundColor: "white",
-    padding: spacing.lg,
-    borderRadius: borderRadius.lg,
-    ...shadows.sm,
-    flexDirection: "row",
-    alignItems: "flex-start",
-  },
-  advantageCardTitle: {
-    ...typography.body1,
-    fontWeight: "600",
-    marginLeft: spacing.md,
-    marginBottom: spacing.xs,
-    flex: 1,
-  },
-  advantageCardText: {
-    ...typography.body2,
-    color: "#6B7280",
-    marginLeft: spacing.md,
-    flex: 1,
-    lineHeight: 20,
-  },
-  accuracyStats: {
-    marginTop: spacing.xl,
-    backgroundColor: "#F8FAFC",
-    padding: spacing.lg,
-    borderRadius: borderRadius.lg,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  accuracyTitle: {
-    ...typography.headline3,
-    textAlign: "center",
-    marginBottom: spacing.lg,
-    color: "#1E293B",
-  },
-  statRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-  },
-  statItem: {
-    alignItems: "center",
-  },
-  statNumber: {
-    ...typography.headline2,
-    fontWeight: "700",
-    color: "#10B981",
-    marginBottom: spacing.xs,
-  },
-  statLabel: {
-    ...typography.caption1,
-    color: "#6B7280",
-    textAlign: "center",
-  },
-  competitiveAdvantageSection: {
-    marginTop: spacing.lg,
-  },
-  advancedFeaturesSection: {
-    marginTop: spacing.lg,
-  },
-  voiceAssistantSection: {
-    marginTop: spacing.lg,
-  },
-  smartShoppingListSection: {
-    marginTop: spacing.lg,
-  },
-  communityFeaturesSection: {
-    marginTop: spacing.lg,
-  },
-  advancedAnalyticsSection: {
-    marginTop: spacing.lg,
-  },
-  monetizationFeaturesSection: {
-    marginTop: spacing.lg,
+  priceComparison: {
+    alignItems: "flex-end",
   },
 });

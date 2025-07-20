@@ -72,7 +72,7 @@ class OCRService {
       }
 
       // Try AI-enhanced parsing first (hybrid approach)
-      const response = await fetch(`${this.baseUrl}/parse-hybrid`, {
+      const response = await fetch(`${this.baseUrl}/parse`, {
         method: "POST",
         headers: {
           "Content-Type": "multipart/form-data",
@@ -125,7 +125,7 @@ class OCRService {
       }
 
       // Use pure AI parsing
-      const response = await fetch(`${this.baseUrl}/parse-ai`, {
+      const response = await fetch(`${this.baseUrl}/parse`, {
         method: "POST",
         headers: {
           "Content-Type": "multipart/form-data",

@@ -51,6 +51,8 @@ class ReceiptResponse(BaseModel):
     receipt_number: Optional[str]
     validation: Dict[str, Any]
     processing_time: float
+    ai_enhanced: bool = False
+    confidence: float = 0.0
     savings_analysis: Optional[Dict[str, Any]] = None
 
 class OCRResponse(BaseModel):
@@ -229,6 +231,114 @@ async def parse_receipt(file: UploadFile = File(...)):
             ]
         }
     )
+
+@app.post("/parse-hybrid", response_model=ReceiptResponse)
+async def parse_receipt_hybrid(file: UploadFile = File(...)):
+    """Mock hybrid receipt parsing endpoint (AI + OCR fallback)"""
+    start_time = time.time()
+    
+    # Simulate processing time
+    time.sleep(random.uniform(2, 4))
+    
+    # Generate mock receipt data
+    store_types = list(MOCK_STORES.keys())
+    store_type = random.choice(store_types)
+    receipt_data = generate_mock_receipt(store_type)
+    
+    # Convert to response format
+    items = [
+        ReceiptItemResponse(
+            name=item["name"],
+            price=item["price"],
+            quantity=item["quantity"],
+            category=item["category"],
+            confidence=item["confidence"]
+        )
+        for item in receipt_data["items"]
+    ]
+    
+    processing_time = time.time() - start_time
+    
+    return ReceiptResponse(
+        store_name=receipt_data["store_name"],
+        date=receipt_data["date"],
+        total=receipt_data["total"],
+        items=items,
+        subtotal=receipt_data["subtotal"],
+        tax=receipt_data["tax"],
+        receipt_number=receipt_data["receipt_number"],
+        validation=receipt_data["validation"],
+        processing_time=round(processing_time, 2),
+        ai_enhanced=True,
+        savings_analysis={
+            "total_savings": round(random.uniform(2, 8), 2),
+            "savings_percentage": round(random.uniform(5, 15), 1),
+            "suggestions": [
+                "Consider buying store brand for 20% savings",
+                "Bulk purchase could save $3.50",
+                "Check for coupons next time"
+            ]
+        }
+    )
+
+@app.post("/parse-ai", response_model=ReceiptResponse)
+async def parse_receipt_ai(file: UploadFile = File(...)):
+    """Mock AI receipt parsing endpoint"""
+    start_time = time.time()
+    
+    # Simulate processing time
+    time.sleep(random.uniform(2, 4))
+    
+    # Generate mock receipt data
+    store_types = list(MOCK_STORES.keys())
+    store_type = random.choice(store_types)
+    receipt_data = generate_mock_receipt(store_type)
+    
+    # Convert to response format
+    items = [
+        ReceiptItemResponse(
+            name=item["name"],
+            price=item["price"],
+            quantity=item["quantity"],
+            category=item["category"],
+            confidence=item["confidence"]
+        )
+        for item in receipt_data["items"]
+    ]
+    
+    processing_time = time.time() - start_time
+    
+    return ReceiptResponse(
+        store_name=receipt_data["store_name"],
+        date=receipt_data["date"],
+        total=receipt_data["total"],
+        items=items,
+        subtotal=receipt_data["subtotal"],
+        tax=receipt_data["tax"],
+        receipt_number=receipt_data["receipt_number"],
+        validation=receipt_data["validation"],
+        processing_time=round(processing_time, 2),
+        ai_enhanced=True,
+        confidence=0.95,
+        savings_analysis={
+            "total_savings": round(random.uniform(2, 8), 2),
+            "savings_percentage": round(random.uniform(5, 15), 1),
+            "suggestions": [
+                "Consider buying store brand for 20% savings",
+                "Bulk purchase could save $3.50",
+                "Check for coupons next time"
+            ]
+        }
+    )
+
+@app.get("/ai-health")
+async def ai_health_check():
+    """Mock AI health check endpoint"""
+    return {
+        "ai_available": True,
+        "status": "healthy",
+        "model": "gpt-4-vision-preview"
+    }
 
 @app.get("/categories")
 async def get_categories():

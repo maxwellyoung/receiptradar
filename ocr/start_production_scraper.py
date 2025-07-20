@@ -51,9 +51,9 @@ async def start_production_scraper():
         # Show initial stats
         stats = scraper.get_stats()
         logger.info("Initial scraper stats:")
-        logger.info(f"  - Countdown: {stats['countdown']['status']}")
-        logger.info(f"  - New World: {stats['new_world']['status']}")
-        logger.info(f"  - Pak'nSave: {stats['paknsave']['status']}")
+        for store_name, job_stats in stats['jobs'].items():
+            status = "enabled" if job_stats['enabled'] else "disabled"
+            logger.info(f"  - {job_stats['store_name']}: {status}")
         
         # Show proxy stats
         proxy_stats = scraper.proxy_manager.get_stats()

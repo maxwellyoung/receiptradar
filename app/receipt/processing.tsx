@@ -185,6 +185,17 @@ export default function ReceiptProcessingScreen() {
   const processReceipt = async () => {
     if (isProcessing) return;
 
+    // Check if user is authenticated
+    if (!user?.id) {
+      setError(
+        "Please sign in to save receipts. You can still view the scan results."
+      );
+      setProcessingComplete(true);
+      setIsProcessing(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+
     setIsProcessing(true);
     setError(null);
     setProgress(0);
@@ -224,7 +235,7 @@ export default function ReceiptProcessingScreen() {
       const uploadResult = await storageService.uploadReceiptImage(
         photoUri,
         "receipt.jpg",
-        user?.id || "anonymous"
+        user.id
       );
 
       if (uploadResult.error) {

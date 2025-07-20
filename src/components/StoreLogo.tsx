@@ -45,12 +45,13 @@ export function StoreLogo({
   // Use official logo if available
   if (hasOfficialLogo) {
     return (
-      <OfficialStoreLogo
-        storeName={storeName}
-        size={sizeValue}
-        style={style}
-        showFallback={showFallback}
-      />
+      <View style={[styles.officialLogoContainer, dimensions, style]}>
+        <OfficialStoreLogo
+          storeName={storeName}
+          size={sizeValue}
+          showFallback={showFallback}
+        />
+      </View>
     );
   }
 
@@ -122,6 +123,11 @@ export function StoreLogo({
 }
 
 const styles = StyleSheet.create({
+  officialLogoContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: borderRadius.md,
+  },
   container: {
     position: "relative",
     borderRadius: borderRadius.md,
