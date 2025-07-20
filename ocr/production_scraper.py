@@ -23,7 +23,7 @@ from psycopg2.extras import RealDictCursor
 from enhanced_price_scraper import EnhancedPriceScraperService
 from new_world_scraper import NewWorldScraper
 from cloudflare_scraper import CloudflareScraper
-from proxy_manager import ProxyManager
+from free_proxy_manager import FreeProxyManager
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ class ProductionScraper:
     def __init__(self, db_url: str, max_concurrent: int = 3):
         self.db_url = db_url
         self.max_concurrent = max_concurrent
-        self.proxy_manager = ProxyManager()
+        self.proxy_manager = FreeProxyManager()
         
         # Initialize scrapers
         self.jobs = {
@@ -73,8 +73,8 @@ class ProductionScraper:
         # Test database connection
         await self.test_database_connection()
         
-        # Initialize proxies
-        await self.proxy_manager.test_all_proxies()
+        # Initialize free proxy manager
+        await self.proxy_manager.initialize()
         
         # Set up initial schedules
         for store_name, job in self.jobs.items():

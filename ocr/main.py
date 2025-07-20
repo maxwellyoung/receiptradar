@@ -14,6 +14,7 @@ import logging
 from loguru import logger
 from receipt_parser import ReceiptParser, ReceiptData, ReceiptItem
 from price_intelligence import PriceIntelligenceService, BasketAnalysis
+from openai_service import OpenAIReceiptService, ReceiptParseResult
 import re
 
 # Configure logging
@@ -22,8 +23,8 @@ logger.add("ocr_service.log", rotation="10 MB", retention="7 days")
 
 app = FastAPI(
     title="ReceiptRadar OCR Service",
-    description="OCR microservice for parsing grocery receipts",
-    version="1.0.0"
+    description="OCR microservice for parsing grocery receipts with AI enhancement",
+    version="2.0.0"
 )
 
 # CORS middleware
@@ -44,41 +45,57 @@ try:
     db_url = os.getenv('DATABASE_URL', 'postgresql://localhost/receiptradar')
     price_intelligence = PriceIntelligenceService(db_url)
     
+    # Initialize OpenAI service
+    openai_service = OpenAIReceiptService()
+    
     logger.info("All services initialized successfully")
 except Exception as e:
     logger.error(f"Failed to initialize services: {e}")
     ocr = None
     receipt_parser = None
     price_intelligence = None
+    openai_service = None
 
 class OCRResult(BaseModel):
     text: str
     bbox: List[List[float]]
     confidence: float
 
+class OCRResponse(BaseModel):
+    results: List[OCRResult]
+    processing_time: float
+    image_size: Dict[str, int]
+
 class ReceiptItemResponse(BaseModel):
     name: str
     price: float
     quantity: int
-    category: Optional[str]
+    category: Optional[str] = None
     confidence: float
 
 class ReceiptResponse(BaseModel):
-    store_name: Optional[str]
-    date: Optional[str]
-    total: Optional[float]
+    store_name: str
+    date: str
+    total: float
     items: List[ReceiptItemResponse]
-    subtotal: Optional[float]
-    tax: Optional[float]
-    receipt_number: Optional[str]
+    subtotal: float
+    tax: float
+    receipt_number: Optional[str] = None
     validation: Dict[str, Any]
     processing_time: float
-    savings_analysis: Optional[Dict[str, Any]] = None
+    ai_enhanced: bool = False
 
-class OCRResponse(BaseModel):
-    results: List[OCRResult]
+class AIReceiptResponse(BaseModel):
+    store_name: str
+    date: str
+    total: float
+    items: List[ReceiptItemResponse]
+    subtotal: float
+    tax: float
+    receipt_number: Optional[str] = None
+    confidence: float
+    ai_enhanced: bool = True
     processing_time: float
-    image_size: dict
 
 def preprocess_image(image_bytes: bytes) -> np.ndarray:
     """Enhanced preprocessing for better OCR results"""
@@ -274,7 +291,7 @@ async def health_check():
         "status": "healthy",
         "ocr_available": ocr is not None,
         "parser_available": receipt_parser is not None,
-        "version": "1.0.0"
+        "version": "2.0.0"
     }
 
 @app.post("/ocr", response_model=OCRResponse)
@@ -599,6 +616,248 @@ async def store_receipt_prices(receipt_data: Dict, store_id: str, user_id: str):
     except Exception as e:
         logger.error(f"Error storing prices: {e}")
         raise HTTPException(status_code=500, detail=f"Error storing prices: {str(e)}")
+
+@app.post("/parse-ai", response_model=AIReceiptResponse)
+async def parse_receipt_with_ai(file: UploadFile = File(...)):
+    """Parse receipt using GPT-4V for maximum accuracy"""
+    start_time = time.time()
+    
+    if not openai_service:
+        raise HTTPException(status_code=503, detail="AI service not available")
+    
+    # Validate file type
+    if not file.content_type.startswith('image/'):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    
+    try:
+        # Read image
+        image_bytes = await file.read()
+        image = Image.open(io.BytesIO(image_bytes))
+        
+        # Parse with AI
+        ai_result = await openai_service.parse_receipt_with_ai(image_bytes)
+        
+        # Convert to response format
+        items = [
+            ReceiptItemResponse(
+                name=item.get('name', ''),
+                price=float(item.get('price', 0)),
+                quantity=int(item.get('quantity', 1)),
+                category=item.get('category'),
+                confidence=1.0
+            )
+            for item in ai_result.items
+        ]
+        
+        processing_time = time.time() - start_time
+        
+        logger.info(f"AI parsed receipt in {processing_time:.2f}s, found {len(items)} items")
+        
+        return AIReceiptResponse(
+            store_name=ai_result.store_name,
+            date=ai_result.date,
+            total=ai_result.total,
+            items=items,
+            subtotal=ai_result.subtotal,
+            tax=ai_result.tax,
+            receipt_number=ai_result.receipt_number,
+            confidence=ai_result.confidence,
+            ai_enhanced=True,
+            processing_time=processing_time
+        )
+        
+    except Exception as e:
+        logger.error(f"Error processing image with AI: {e}")
+        raise HTTPException(status_code=500, detail=f"Error processing image with AI: {str(e)}")
+
+@app.post("/parse-hybrid", response_model=ReceiptResponse)
+async def parse_receipt_hybrid(file: UploadFile = File(...)):
+    """Parse receipt using AI first, fallback to OCR if needed"""
+    start_time = time.time()
+    
+    if not openai_service or not ocr or not receipt_parser:
+        raise HTTPException(status_code=503, detail="Services not available")
+    
+    # Validate file type
+    if not file.content_type.startswith('image/'):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    
+    try:
+        # Read image
+        image_bytes = await file.read()
+        image = Image.open(io.BytesIO(image_bytes))
+        
+        # Try AI first
+        try:
+            ai_result = await openai_service.parse_receipt_with_ai(image_bytes)
+            
+            # Convert to response format
+            items = [
+                ReceiptItemResponse(
+                    name=item.get('name', ''),
+                    price=float(item.get('price', 0)),
+                    quantity=int(item.get('quantity', 1)),
+                    category=item.get('category'),
+                    confidence=1.0
+                )
+                for item in ai_result.items
+            ]
+            
+            processing_time = time.time() - start_time
+            
+            logger.info(f"AI parsing successful in {processing_time:.2f}s")
+            
+            return ReceiptResponse(
+                store_name=ai_result.store_name,
+                date=ai_result.date,
+                total=ai_result.total,
+                items=items,
+                subtotal=ai_result.subtotal,
+                tax=ai_result.tax,
+                receipt_number=ai_result.receipt_number,
+                validation={
+                    "is_valid": True,
+                    "confidence_score": ai_result.confidence,
+                    "warnings": [],
+                    "errors": []
+                },
+                processing_time=processing_time,
+                ai_enhanced=True
+            )
+            
+        except Exception as ai_error:
+            logger.warn(f"AI parsing failed, using OCR fallback: {ai_error}")
+            
+            # Fallback to OCR
+            processed_img = preprocess_image(image_bytes)
+            results = ocr.predict(processed_img)
+            
+            # Convert to list of dicts for parser
+            ocr_results = []
+            if results and len(results) > 0:
+                res = results[0]
+                texts = res['rec_texts']
+                scores = res['rec_scores']
+                boxes = res['rec_boxes']
+                for text, score, box in zip(texts, scores, boxes):
+                    ocr_results.append({
+                        'text': text,
+                        'bbox': box.tolist() if hasattr(box, 'tolist') else box,
+                        'confidence': score
+                    })
+            
+            # Filter and clean OCR results
+            filtered_results = filter_ocr_results(ocr_results, min_confidence=0.5)
+            
+            # Parse receipt data
+            receipt_data = receipt_parser.parse_ocr_results(ocr_results)
+            
+            # Validate receipt
+            validation = validate_receipt_data(receipt_data)
+            
+            processing_time = time.time() - start_time
+            
+            logger.info(f"OCR fallback successful in {processing_time:.2f}s")
+            
+            return ReceiptResponse(
+                store_name=receipt_data.store_name or "Unknown Store",
+                date=receipt_data.date.isoformat() if receipt_data.date else "",
+                total=float(receipt_data.total or 0),
+                items=[
+                    ReceiptItemResponse(
+                        name=item.name,
+                        price=float(item.price),
+                        quantity=item.quantity,
+                        category=item.category,
+                        confidence=item.confidence
+                    )
+                    for item in receipt_data.items
+                ],
+                subtotal=float(receipt_data.subtotal or 0),
+                tax=float(receipt_data.tax or 0),
+                receipt_number=receipt_data.receipt_number,
+                validation=validation,
+                processing_time=processing_time,
+                ai_enhanced=False
+            )
+        
+    except Exception as e:
+        logger.error(f"Error in hybrid parsing: {e}")
+        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
+
+@app.post("/normalize-products")
+async def normalize_products(products: List[str]):
+    """Normalize product names for cross-store comparison"""
+    if not openai_service:
+        raise HTTPException(status_code=503, detail="AI service not available")
+    
+    try:
+        normalized = await openai_service.normalize_products(products)
+        return {
+            "normalized_products": [
+                {
+                    "original": item.original,
+                    "normalized": item.normalized,
+                    "brand": item.brand,
+                    "size": item.size,
+                    "category": item.category,
+                    "confidence": item.confidence
+                }
+                for item in normalized
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Error normalizing products: {e}")
+        raise HTTPException(status_code=500, detail=f"Error normalizing products: {str(e)}")
+
+@app.post("/shopping-insights")
+async def generate_shopping_insights(user_history: List[Dict], current_basket: List[Dict]):
+    """Generate personalized shopping insights"""
+    if not openai_service:
+        raise HTTPException(status_code=503, detail="AI service not available")
+    
+    try:
+        insights = await openai_service.generate_shopping_insights(user_history, current_basket)
+        return insights
+    except Exception as e:
+        logger.error(f"Error generating shopping insights: {e}")
+        raise HTTPException(status_code=500, detail=f"Error generating insights: {str(e)}")
+
+@app.post("/budget-coaching")
+async def generate_budget_coaching(user_data: Dict, tone_mode: str = "gentle"):
+    """Generate personalized budget coaching"""
+    if not openai_service:
+        raise HTTPException(status_code=503, detail="AI service not available")
+    
+    try:
+        coaching = await openai_service.generate_budget_coaching(user_data, tone_mode)
+        return coaching
+    except Exception as e:
+        logger.error(f"Error generating budget coaching: {e}")
+        raise HTTPException(status_code=500, detail=f"Error generating coaching: {str(e)}")
+
+@app.get("/ai-health")
+async def ai_health_check():
+    """Check AI service health"""
+    if not openai_service:
+        return {
+            "ai_available": False,
+            "status": "AI service not initialized"
+        }
+    
+    try:
+        is_healthy = await openai_service.health_check()
+        return {
+            "ai_available": True,
+            "status": "healthy" if is_healthy else "unhealthy",
+            "model": openai_service.model
+        }
+    except Exception as e:
+        return {
+            "ai_available": True,
+            "status": "error",
+            "error": str(e)
+        }
 
 if __name__ == "__main__":
     import uvicorn

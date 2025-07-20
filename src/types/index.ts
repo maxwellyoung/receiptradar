@@ -14,6 +14,26 @@ export interface Store {
   created_at: string;
 }
 
+export interface Product {
+  id: string;
+  name: string;
+  price: number;
+  size?: string;
+  barcode?: string;
+  storeId: string;
+  category?: string;
+  brand?: string;
+  imageUrl?: string;
+  created_at: string;
+}
+
+export interface UnitPrice {
+  price: number;
+  unit: string;
+  perUnit: number;
+  unitType: "weight" | "volume" | "count";
+}
+
 export interface Receipt {
   id: string;
   user_id: string;

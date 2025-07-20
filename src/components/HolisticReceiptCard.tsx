@@ -12,6 +12,7 @@ import {
   shadows,
   animation,
 } from "@/constants/holisticDesignSystem";
+import { StoreLogo } from "./StoreLogo";
 
 interface Receipt {
   id: string;
@@ -142,9 +143,16 @@ export function HolisticReceiptCard({
         {/* Header Section - Editorial hierarchy (Michael Beirut) */}
         <View style={styles.header}>
           <View style={styles.storeInfo}>
-            <HolisticText variant="title.large" style={styles.storeName}>
-              {receipt.store}
-            </HolisticText>
+            <View style={styles.storeHeader}>
+              <StoreLogo
+                storeName={receipt.store}
+                size="medium"
+                variant="icon"
+              />
+              <HolisticText variant="title.large" style={styles.storeName}>
+                {receipt.store}
+              </HolisticText>
+            </View>
             <HolisticText variant="body.medium" color="secondary">
               {formatDate(receipt.date)}
             </HolisticText>

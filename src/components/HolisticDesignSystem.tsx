@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Animated,
   Dimensions,
   TextInput,
+  TouchableOpacity,
 } from "react-native";
 import {
   designTokens,
@@ -23,6 +24,15 @@ import {
   interactions,
 } from "@/constants/holisticDesignSystem";
 import * as Haptics from "expo-haptics";
+import { useTheme } from "react-native-paper";
+import { AppTheme } from "@/constants/theme";
+import { MaterialIcons } from "@expo/vector-icons";
+import {
+  accessibilityUtils,
+  announcementUtils,
+  useScreenReader,
+  useReducedMotion,
+} from "@/utils/accessibility";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -39,6 +49,8 @@ interface HolisticButtonProps {
   fullWidth?: boolean;
   icon?: React.ReactNode;
   loading?: boolean;
+  accessibilityHint?: string;
+  testID?: string;
 }
 
 export function HolisticButton({
@@ -50,55 +62,40 @@ export function HolisticButton({
   fullWidth = false,
   icon,
   loading = false,
+  accessibilityHint,
+  testID,
 }: HolisticButtonProps) {
-  const [scaleValue] = useState(new Animated.Value(1));
-
-  const handlePressIn = () => {
-    if (!disabled && !loading) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      Animated.timing(scaleValue, {
-        toValue: interactions.press.scale,
-        duration: interactions.press.duration,
-        useNativeDriver: true,
-      }).start();
-    }
-  };
-
-  const handlePressOut = () => {
-    if (!disabled && !loading) {
-      Animated.timing(scaleValue, {
-        toValue: 1,
-        duration: interactions.transitions.fast,
-        useNativeDriver: true,
-      }).start();
-    }
-  };
+  const theme = useTheme<AppTheme>();
+  const { isScreenReaderEnabled } = useScreenReader();
+  const { isReduceMotionEnabled } = useReducedMotion();
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const opacityAnim = useRef(new Animated.Value(1)).current;
 
   const getButtonStyle = () => {
     const baseStyle = {
-      height: components.button.height[size],
-      paddingHorizontal: components.button.paddingHorizontal[size],
-      borderRadius: components.button.borderRadius,
-      justifyContent: "center" as const,
+      borderRadius: 8,
       alignItems: "center" as const,
+      justifyContent: "center" as const,
       flexDirection: "row" as const,
-      gap: spacing.small,
-      ...materialShadows.subtle,
     };
 
     switch (variant) {
+      case "primary":
+        return {
+          ...baseStyle,
+          backgroundColor: theme.colors.primary,
+        };
       case "secondary":
         return {
           ...baseStyle,
-          backgroundColor: colors.brand.secondary,
+          backgroundColor: theme.colors.secondary,
         };
       case "outline":
         return {
           ...baseStyle,
           backgroundColor: "transparent",
           borderWidth: 1,
-          borderColor: colors.brand.primary,
-          ...materialShadows.none,
+          borderColor: theme.colors.primary,
         };
       case "ghost":
         return {
@@ -109,74 +106,149 @@ export function HolisticButton({
       case "minimal":
         return {
           ...baseStyle,
-          backgroundColor: colors.surface.secondary,
+          backgroundColor: theme.colors.surfaceVariant,
           ...materialShadows.none,
         };
       default:
-        return {
-          ...baseStyle,
-          backgroundColor: colors.brand.primary,
-        };
-    }
-  };
-
-  const getTextColor = () => {
-    switch (variant) {
-      case "outline":
-      case "ghost":
-        return colors.brand.primary;
-      case "minimal":
-        return colors.content.primary;
-      case "secondary":
-        return colors.surface.primary;
-      default:
-        return colors.surface.primary;
+        return baseStyle;
     }
   };
 
   const getTextStyle = () => {
+    const baseTextStyle = {
+      color:
+        variant === "primary" || variant === "secondary"
+          ? theme.colors.onPrimary
+          : theme.colors.primary,
+    };
+
     switch (size) {
       case "small":
-        return typography.label.medium;
+        return { ...typography.label.medium, ...baseTextStyle };
       case "large":
-        return typography.title.small;
+        return { ...typography.title.medium, ...baseTextStyle };
       default:
-        return typography.label.large;
+        return { ...typography.body.medium, ...baseTextStyle };
     }
   };
 
+  const getPaddingStyle = () => {
+    switch (size) {
+      case "small":
+        return {
+          paddingHorizontal: spacing.medium,
+          paddingVertical: spacing.small,
+        };
+      case "large":
+        return {
+          paddingHorizontal: spacing.xlarge,
+          paddingVertical: spacing.large,
+        };
+      default:
+        return {
+          paddingHorizontal: spacing.large,
+          paddingVertical: spacing.medium,
+        };
+    }
+  };
+
+  const handlePressIn = () => {
+    if (disabled || loading) return;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    if (!isReduceMotionEnabled) {
+      Animated.parallel([
+        Animated.timing(scaleAnim, {
+          toValue: 0.95,
+          duration: interactions.transitions.fast,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 0.8,
+          duration: interactions.transitions.fast,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+
+    if (isScreenReaderEnabled) {
+      announcementUtils.announceAction(title);
+    }
+  };
+
+  const handlePressOut = () => {
+    if (disabled || loading) return;
+
+    if (!isReduceMotionEnabled) {
+      Animated.parallel([
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: interactions.transitions.fast,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: interactions.transitions.fast,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  };
+
+  const handlePress = () => {
+    if (disabled || loading) return;
+    onPress();
+  };
+
+  const isDisabled = disabled || loading;
+
   return (
-    <Animated.View
+    <TouchableOpacity
       style={[
-        fullWidth && { width: "100%" },
-        { transform: [{ scale: scaleValue }] },
+        styles.button,
+        getButtonStyle(),
+        getPaddingStyle(),
+        fullWidth && styles.fullWidth,
+        {
+          transform: [{ scale: scaleAnim }],
+          opacity: opacityAnim,
+        },
+        isDisabled && styles.disabled,
       ]}
+      onPress={handlePress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      activeOpacity={0.9}
+      disabled={isDisabled}
+      testID={testID}
+      accessible={true}
+      accessibilityLabel={loading ? `${title} loading` : title}
+      accessibilityHint={accessibilityHint}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: isDisabled }}
     >
-      <Pressable
-        style={[getButtonStyle(), disabled && { opacity: 0.5 }]}
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        disabled={disabled || loading}
-      >
-        {icon &&
-          !loading &&
-          (typeof icon === "string" ? (
-            <Text style={[getTextStyle(), { color: getTextColor() }]}>
-              {icon}
-            </Text>
-          ) : (
-            icon
-          ))}
-        {loading ? (
-          <View style={styles.loadingSpinner} />
-        ) : (
-          <Text style={[getTextStyle(), { color: getTextColor() }]}>
-            {title}
-          </Text>
-        )}
-      </Pressable>
-    </Animated.View>
+      {loading ? (
+        <MaterialIcons
+          name="hourglass-empty"
+          size={20}
+          color={getTextStyle().color}
+          style={styles.loadingIcon}
+        />
+      ) : (
+        <>
+          {icon && (
+            <MaterialIcons
+              name={icon as any}
+              size={20}
+              color={getTextStyle().color}
+              style={styles.leftIcon}
+            />
+          )}
+          <Text style={[styles.buttonText, getTextStyle()]}>{title}</Text>
+        </>
+      )}
+    </TouchableOpacity>
   );
 }
 
@@ -194,6 +266,9 @@ interface HolisticCardProps {
   padding?: "small" | "medium" | "large";
   image?: React.ReactNode;
   actions?: React.ReactNode;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
+  testID?: string;
 }
 
 export function HolisticCard({
@@ -206,7 +281,13 @@ export function HolisticCard({
   padding = "medium",
   image,
   actions,
+  accessibilityLabel,
+  accessibilityHint,
+  testID,
 }: HolisticCardProps) {
+  const theme = useTheme<AppTheme>();
+  const { isScreenReaderEnabled } = useScreenReader();
+  const { isReduceMotionEnabled } = useReducedMotion();
   const [elevation] = useState(new Animated.Value(0));
   const [scaleValue] = useState(new Animated.Value(1));
 
@@ -225,6 +306,10 @@ export function HolisticCard({
           useNativeDriver: true,
         }),
       ]).start();
+    }
+
+    if (isScreenReaderEnabled && accessibilityLabel) {
+      announcementUtils.announceAction(accessibilityLabel);
     }
   };
 
@@ -247,7 +332,7 @@ export function HolisticCard({
 
   const getCardStyle = () => {
     const baseStyle = {
-      backgroundColor: colors.surface.primary,
+      backgroundColor: theme.colors.surface,
       borderRadius: components.card.borderRadius,
       padding: components.card.padding[padding],
     };
@@ -266,7 +351,7 @@ export function HolisticCard({
       case "minimal":
         return {
           ...baseStyle,
-          backgroundColor: colors.surface.secondary,
+          backgroundColor: theme.colors.surfaceVariant,
           ...materialShadows.none,
         };
       default:
@@ -301,6 +386,12 @@ export function HolisticCard({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         style={onPress && styles.pressable}
+        testID={testID}
+        accessible={true}
+        accessibilityLabel={accessibilityLabel || "Card"}
+        accessibilityHint={accessibilityHint}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: !onPress }}
       >
         {image && <View style={styles.cardImage}>{image}</View>}
 
@@ -308,7 +399,7 @@ export function HolisticCard({
           <Text
             style={[
               typography.title.medium,
-              { color: colors.content.primary, marginBottom: spacing.small },
+              { color: theme.colors.onSurface, marginBottom: spacing.small },
             ]}
           >
             {title}
@@ -319,7 +410,10 @@ export function HolisticCard({
           <Text
             style={[
               typography.body.medium,
-              { color: colors.content.secondary, marginBottom: spacing.small },
+              {
+                color: theme.colors.onSurfaceVariant,
+                marginBottom: spacing.small,
+              },
             ]}
           >
             {subtitle}
@@ -330,7 +424,7 @@ export function HolisticCard({
           <Text
             style={[
               typography.body.large,
-              { color: colors.content.primary, marginBottom: spacing.medium },
+              { color: theme.colors.onSurface, marginBottom: spacing.medium },
             ]}
           >
             {content}
@@ -359,6 +453,9 @@ interface HolisticInputProps {
   error?: string;
   label?: string;
   icon?: React.ReactNode;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
+  testID?: string;
 }
 
 export function HolisticInput({
@@ -371,8 +468,49 @@ export function HolisticInput({
   error,
   label,
   icon,
+  accessibilityLabel,
+  accessibilityHint,
+  testID,
 }: HolisticInputProps) {
+  const theme = useTheme<AppTheme>();
+  const { isScreenReaderEnabled } = useScreenReader();
   const [isFocused, setIsFocused] = useState(false);
+  const focusAnim = useRef(new Animated.Value(0)).current;
+  const errorAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(focusAnim, {
+      toValue: isFocused ? 1 : 0,
+      duration: interactions.transitions.fast,
+      useNativeDriver: false,
+    }).start();
+  }, [isFocused, focusAnim]);
+
+  useEffect(() => {
+    Animated.timing(errorAnim, {
+      toValue: error ? 1 : 0,
+      duration: interactions.transitions.fast,
+      useNativeDriver: false,
+    }).start();
+  }, [error, errorAnim]);
+
+  const handleFocus = () => {
+    setIsFocused(true);
+    if (isScreenReaderEnabled && accessibilityLabel) {
+      announcementUtils.announceAction(`${accessibilityLabel} focused`);
+    }
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+  };
+
+  const handleChangeText = (text: string) => {
+    onChangeText?.(text);
+    if (isScreenReaderEnabled && accessibilityLabel) {
+      announcementUtils.announceAction(`${text.length} characters entered`);
+    }
+  };
 
   const getInputStyle = () => {
     const baseStyle = {
@@ -392,28 +530,28 @@ export function HolisticInput({
           ...baseStyle,
           backgroundColor: "transparent",
           borderColor: isFocused
-            ? colors.brand.primary
+            ? theme.colors.primary
             : error
-            ? colors.semantic.error
-            : colors.content.tertiary,
+            ? theme.colors.error
+            : theme.colors.outline,
           ...(isFocused ? materialShadows.subtle : materialShadows.none),
         };
       case "filled":
         return {
           ...baseStyle,
-          backgroundColor: colors.surface.secondary,
+          backgroundColor: theme.colors.surfaceVariant,
           borderColor: "transparent",
           ...materialShadows.subtle,
         };
       default:
         return {
           ...baseStyle,
-          backgroundColor: colors.surface.primary,
+          backgroundColor: theme.colors.surface,
           borderColor: isFocused
-            ? colors.brand.primary
+            ? theme.colors.primary
             : error
-            ? colors.semantic.error
-            : colors.content.tertiary,
+            ? theme.colors.error
+            : theme.colors.outline,
           ...(isFocused ? materialShadows.light : materialShadows.subtle),
         };
     }
@@ -422,47 +560,86 @@ export function HolisticInput({
   return (
     <View style={styles.inputContainer}>
       {label && (
-        <Text
-          style={[
-            typography.label.medium,
-            { color: colors.content.secondary, marginBottom: spacing.tiny },
-          ]}
+        <HolisticText
+          variant="label.medium"
+          color="secondary"
+          style={styles.inputLabel}
         >
           {label}
-        </Text>
+        </HolisticText>
       )}
 
-      <View style={[getInputStyle(), disabled && { opacity: 0.5 }]}>
+      <Animated.View
+        style={[
+          styles.inputWrapper,
+          {
+            borderColor: error
+              ? theme.colors.error
+              : isFocused
+              ? theme.colors.primary
+              : theme.colors.outline,
+            borderWidth: focusAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [1, 2],
+            }),
+            backgroundColor: disabled
+              ? theme.colors.surfaceVariant
+              : theme.colors.surface,
+          },
+        ]}
+      >
         {icon && icon}
         <TextInput
           style={[
-            typography.body.large,
-            { color: colors.content.primary, flex: 1 },
+            styles.input,
+            {
+              color: theme.colors.onSurface,
+              ...typography.body.large,
+            },
           ]}
           placeholder={placeholder}
-          placeholderTextColor={colors.content.tertiary}
+          placeholderTextColor={theme.colors.onSurfaceVariant}
           value={value}
-          onChangeText={onChangeText}
-          onFocus={() => {
-            if (!disabled) {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setIsFocused(true);
-            }
-          }}
-          onBlur={() => setIsFocused(false)}
+          onChangeText={handleChangeText}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
           editable={!disabled}
+          testID={testID}
+          accessible={true}
+          accessibilityLabel={
+            accessibilityLabel || label || placeholder || "Input field"
+          }
+          accessibilityHint={
+            accessibilityHint || `Enter ${label || placeholder || "text"}`
+          }
+          accessibilityRole="text"
+          accessibilityState={{ disabled }}
         />
-      </View>
+      </Animated.View>
 
       {error && (
-        <Text
+        <Animated.View
           style={[
-            typography.body.small,
-            { color: colors.semantic.error, marginTop: spacing.tiny },
+            styles.errorContainer,
+            {
+              opacity: errorAnim,
+            },
           ]}
         >
-          {error}
-        </Text>
+          <MaterialIcons
+            name="error"
+            size={16}
+            color={theme.colors.error}
+            style={styles.errorIcon}
+          />
+          <HolisticText
+            variant="label.small"
+            color="secondary"
+            style={styles.errorText}
+          >
+            {error}
+          </HolisticText>
+        </Animated.View>
       )}
     </View>
   );
@@ -495,6 +672,9 @@ interface HolisticTextProps {
   align?: "left" | "center" | "right";
   weight?: "200" | "300" | "400" | "500" | "600" | "700";
   style?: any;
+  accessibilityRole?: "header" | "text" | "link";
+  accessibilityLabel?: string;
+  testID?: string;
 }
 
 export function HolisticText({
@@ -504,7 +684,47 @@ export function HolisticText({
   align = "left",
   weight,
   style,
+  accessibilityRole = "text",
+  accessibilityLabel,
+  testID,
 }: HolisticTextProps) {
+  const theme = useTheme<AppTheme>();
+  const { isScreenReaderEnabled } = useScreenReader();
+
+  const getColor = () => {
+    switch (color) {
+      case "primary":
+        return theme.colors.primary;
+      case "secondary":
+        return theme.colors.secondary;
+      default:
+        return theme.colors.onSurface;
+    }
+  };
+
+  const getAccessibilityProps = () => {
+    if (accessibilityRole === "header") {
+      return accessibilityUtils.generateHeaderProps(
+        accessibilityLabel ||
+          (typeof children === "string" ? children : "Header"),
+        1
+      );
+    }
+
+    if (accessibilityRole === "link") {
+      return accessibilityUtils.generateLinkProps(
+        accessibilityLabel || (typeof children === "string" ? children : "Link")
+      );
+    }
+
+    return accessibilityUtils.generateAccessibilityProps({
+      label:
+        accessibilityLabel ||
+        (typeof children === "string" ? children : "Text"),
+      role: "text",
+    });
+  };
+
   const getTypographyStyle = () => {
     const [category, size] = variant.split(".");
     const categoryObj = typography[category as keyof typeof typography];
@@ -516,13 +736,17 @@ export function HolisticText({
 
   const textStyle = {
     ...getTypographyStyle(),
-    color: colors.content[color],
+    color: getColor(),
     textAlign: align,
     ...(weight && { fontWeight: weight }),
     ...style,
   };
 
-  return <Text style={textStyle}>{children}</Text>;
+  return (
+    <Text style={textStyle} testID={testID}>
+      {children}
+    </Text>
+  );
 }
 
 // ============================================================================
@@ -975,5 +1199,62 @@ const styles = StyleSheet.create({
 
   inputContainer: {
     gap: spacing.tiny,
+  },
+
+  inputLabel: {
+    marginBottom: spacing.tiny,
+  },
+
+  inputWrapper: {
+    borderRadius: 8,
+    ...materialShadows.subtle,
+  },
+
+  input: {
+    paddingHorizontal: spacing.medium,
+    paddingVertical: spacing.medium,
+    minHeight: 48,
+  },
+
+  errorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: spacing.tiny,
+  },
+
+  errorIcon: {
+    marginRight: spacing.tiny,
+  },
+
+  errorText: {
+    flex: 1,
+  },
+
+  button: {
+    ...materialShadows.subtle,
+  },
+
+  buttonText: {
+    fontWeight: "600",
+  },
+
+  fullWidth: {
+    width: "100%",
+  },
+
+  disabled: {
+    opacity: 0.5,
+  },
+
+  leftIcon: {
+    marginRight: spacing.small,
+  },
+
+  rightIcon: {
+    marginLeft: spacing.small,
+  },
+
+  loadingIcon: {
+    marginRight: spacing.small,
   },
 });

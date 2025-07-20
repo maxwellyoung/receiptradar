@@ -26,6 +26,7 @@ export interface OCRResult {
     issues: string[];
   };
   processing_time: number;
+  ai_enhanced?: boolean;
 }
 
 export interface SaveReceiptRequest {
@@ -61,7 +62,7 @@ class OCRService {
 
   async parseReceipt(imageUri: string): Promise<OCRResult> {
     try {
-      logger.info("Starting OCR processing", { imageUri });
+      logger.info("Starting AI-enhanced OCR processing", { imageUri });
 
       // Check if service is available first
       const isHealthy = await this.healthCheck();
@@ -70,8 +71,8 @@ class OCRService {
         return this.getFallbackResult("OCR service unavailable");
       }
 
-      // Try to process with OCR service
-      const response = await fetch(`${this.baseUrl}/parse`, {
+      // Try AI-enhanced parsing first (hybrid approach)
+      const response = await fetch(`${this.baseUrl}/parse-hybrid`, {
         method: "POST",
         headers: {
           "Content-Type": "multipart/form-data",
@@ -89,25 +90,204 @@ class OCRService {
 
       // Validate the result
       if (this.validateOCRResult(result)) {
-        logger.info("OCR processing successful", {
+        logger.info("AI-enhanced OCR processing successful", {
           store: result.store_name,
           total: result.total,
           itemCount: result.items?.length || 0,
+          aiEnhanced: result.ai_enhanced,
         });
         return result;
       } else {
         throw new Error("Invalid OCR result structure");
       }
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      logger.warn("OCR processing failed, using fallback", {
-        errorMessage,
+      const errorObj =
+        error instanceof Error ? error : new Error(String(error));
+      logger.warn("AI-enhanced OCR processing failed, using fallback", {
+        errorMessage: errorObj.message,
         imageUri,
       });
 
       // Return enhanced fallback result with error information
-      return this.getFallbackResult(errorMessage);
+      return this.getFallbackResult(errorObj.message);
+    }
+  }
+
+  async parseReceiptWithAI(imageUri: string): Promise<OCRResult> {
+    try {
+      logger.info("Starting pure AI receipt parsing", { imageUri });
+
+      // Check if AI service is available
+      const aiHealth = await this.aiHealthCheck();
+      if (!aiHealth.ai_available || aiHealth.status !== "healthy") {
+        logger.warn("AI service unavailable, falling back to hybrid parsing");
+        return this.parseReceipt(imageUri);
+      }
+
+      // Use pure AI parsing
+      const response = await fetch(`${this.baseUrl}/parse-ai`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        body: this.createFormData(imageUri),
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `AI service returned ${response.status}: ${response.statusText}`
+        );
+      }
+
+      const result = await response.json();
+
+      // Validate the result
+      if (this.validateOCRResult(result)) {
+        logger.info("Pure AI receipt parsing successful", {
+          store: result.store_name,
+          total: result.total,
+          itemCount: result.items?.length || 0,
+          confidence: result.confidence,
+        });
+        return result;
+      } else {
+        throw new Error("Invalid AI result structure");
+      }
+    } catch (error) {
+      const errorObj =
+        error instanceof Error ? error : new Error(String(error));
+      logger.warn("Pure AI parsing failed, falling back to hybrid", {
+        errorMessage: errorObj.message,
+        imageUri,
+      });
+
+      // Fallback to hybrid parsing
+      return this.parseReceipt(imageUri);
+    }
+  }
+
+  async normalizeProducts(products: string[]): Promise<any[]> {
+    try {
+      logger.info("Normalizing products with AI", {
+        productCount: products.length,
+      });
+
+      const response = await fetch(`${this.baseUrl}/normalize-products`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(products),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Product normalization failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      logger.info("Product normalization successful", {
+        normalizedCount: result.normalized_products?.length || 0,
+      });
+
+      return result.normalized_products || [];
+    } catch (error) {
+      const errorObj =
+        error instanceof Error ? error : new Error(String(error));
+      logger.error("Product normalization failed", errorObj);
+      // Return original products if normalization fails
+      return products.map((product) => ({
+        original: product,
+        normalized: product,
+        confidence: 0.5,
+      }));
+    }
+  }
+
+  async generateShoppingInsights(
+    userHistory: any[],
+    currentBasket: any[]
+  ): Promise<any> {
+    try {
+      logger.info("Generating AI shopping insights", {
+        historyCount: userHistory.length,
+        basketCount: currentBasket.length,
+      });
+
+      const response = await fetch(`${this.baseUrl}/shopping-insights`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user_history: userHistory,
+          current_basket: currentBasket,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Shopping insights failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      logger.info("Shopping insights generated successfully");
+
+      return result;
+    } catch (error) {
+      const errorObj =
+        error instanceof Error ? error : new Error(String(error));
+      logger.error("Shopping insights generation failed", errorObj);
+      // Return empty insights if generation fails
+      return {
+        price_anomalies: [],
+        substitutions: [],
+        timing_recommendations: [],
+        store_switching: [],
+      };
+    }
+  }
+
+  async generateBudgetCoaching(
+    userData: any,
+    toneMode: "gentle" | "direct" = "gentle"
+  ): Promise<any> {
+    try {
+      logger.info("Generating AI budget coaching", { toneMode });
+
+      const response = await fetch(`${this.baseUrl}/budget-coaching`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user_data: userData,
+          tone_mode: toneMode,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Budget coaching failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      logger.info("Budget coaching generated successfully");
+
+      return result;
+    } catch (error) {
+      const errorObj =
+        error instanceof Error ? error : new Error(String(error));
+      logger.error("Budget coaching generation failed", errorObj);
+      // Return mock coaching if generation fails
+      return {
+        weekly_analysis:
+          "Unable to analyze your spending patterns at the moment.",
+        spending_patterns: [],
+        savings_opportunities: [],
+        motivational_message:
+          "Keep tracking your receipts to get personalized insights!",
+        next_week_prediction: 0,
+        action_items: [],
+        progress_score: 50,
+      };
     }
   }
 
@@ -154,6 +334,7 @@ class OCRService {
           : ["Unable to process receipt"],
       },
       processing_time: 0,
+      ai_enhanced: false,
     };
 
     return fallbackResult;
@@ -208,6 +389,24 @@ class OCRService {
     }
   }
 
+  async aiHealthCheck(): Promise<any> {
+    try {
+      const response = await fetch(`${this.baseUrl}/ai-health`, {
+        method: "GET",
+        timeout: 5000,
+      } as any);
+
+      if (!response.ok) {
+        return { ai_available: false, status: "error" };
+      }
+
+      return await response.json();
+    } catch (error) {
+      logger.warn("AI service health check failed", { error });
+      return { ai_available: false, status: "error" };
+    }
+  }
+
   // Analyze savings opportunities
   async analyzeSavings(items: OCRItem[], storeId: string, userId: string) {
     try {
@@ -248,10 +447,10 @@ class OCRService {
     }
   }
 
-  // Get price history for an item
   async getPriceHistory(itemName: string, storeId?: string, days: number = 90) {
     try {
       const params = new URLSearchParams({
+        item_name: itemName,
         days: days.toString(),
       });
 
@@ -259,11 +458,10 @@ class OCRService {
         params.append("store_id", storeId);
       }
 
-      const response = await fetch(
-        `${this.baseUrl}/price-history/${encodeURIComponent(
-          itemName
-        )}?${params}`
-      );
+      const response = await fetch(`${this.baseUrl}/price-history?${params}`, {
+        method: "GET",
+        timeout: 10000,
+      } as any);
 
       if (!response.ok) {
         throw new Error(`Price history failed: ${response.status}`);
@@ -271,10 +469,11 @@ class OCRService {
 
       return await response.json();
     } catch (error) {
-      const errorObj =
-        error instanceof Error ? error : new Error(String(error));
-      logger.error("Price history failed", errorObj, { itemName });
-      return { price_history: [] };
+      logger.info("Price history skipped (service unavailable)", {
+        itemName,
+        storeId,
+      });
+      return [];
     }
   }
 }

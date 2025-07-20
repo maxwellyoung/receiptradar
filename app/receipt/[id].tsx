@@ -24,6 +24,7 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { AppTheme } from "@/constants/theme";
 import { formatCurrency } from "@/utils/formatters";
 import { OCRItem } from "@/services/ocr";
+import { StoreLogo } from "@/components/StoreLogo";
 
 interface ReceiptDetail {
   id: string;
@@ -243,10 +244,10 @@ export default function ReceiptDetailScreen() {
         <Card style={styles.summaryCard}>
           <Card.Content>
             <View style={styles.summaryHeader}>
-              <MaterialIcons
-                name="store"
-                size={24}
-                color={theme.colors.primary}
+              <StoreLogo
+                storeName={receipt.store_name}
+                size="medium"
+                variant="icon"
               />
               <Text variant="titleLarge" style={styles.storeName}>
                 {receipt.store_name}

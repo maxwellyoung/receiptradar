@@ -12,9 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.receiptradar.app",
@@ -72,6 +70,12 @@
         "expo-apple-authentication",
         {
           "appleTeamId": "AWN2WCN26Y"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "ReceiptRadar uses location to show nearby stores and calculate distances."
         }
       ],
       "expo-font"

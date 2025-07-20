@@ -100,6 +100,18 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="stores"
+        options={{
+          tabBarIcon: ({ color, size, focused }: IconProps) => (
+            <MaterialCommunityIcons
+              name={focused ? "map-marker" : "map-marker-outline"}
+              size={size}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="price-compare"
         options={{
           tabBarIcon: ({ color, size, focused }: IconProps) => (

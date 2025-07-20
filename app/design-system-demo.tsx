@@ -1,84 +1,60 @@
 import React from "react";
-import { View, StyleSheet, SafeAreaView } from "react-native";
-import { HolisticButton } from "@/components/HolisticDesignSystem";
-import { HolisticText } from "@/components/HolisticDesignSystem";
-import { HolisticCard } from "@/components/HolisticDesignSystem";
+import { ScrollView, StyleSheet } from "react-native";
+import { Text, useTheme } from "react-native-paper";
+import { AppTheme, spacing, typography } from "@/constants/theme";
+import { HolisticDesignSystemShowcase } from "@/components/HolisticDesignSystem";
+import { ImageDemo } from "@/components/ImageDemo";
+import { SimpleImageTest } from "@/components/SimpleImageTest";
+import { OfficialLogoDemo } from "@/components/OfficialLogoDemo";
 
 export default function DesignSystemDemo() {
+  const theme = useTheme<AppTheme>();
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <HolisticText variant="headline.large" style={styles.title}>
-          Design System Demo
-        </HolisticText>
+    <ScrollView style={styles.container}>
+      <Text
+        variant="headlineLarge"
+        style={[styles.title, { color: theme.colors.onSurface }]}
+      >
+        🎨 Design System Demo
+      </Text>
 
-        <HolisticText
-          variant="body.medium"
-          color="secondary"
-          style={styles.subtitle}
-        >
-          Testing the holistic design system components
-        </HolisticText>
+      <Text
+        variant="bodyLarge"
+        style={[styles.subtitle, { color: theme.colors.onSurfaceVariant }]}
+      >
+        Showcasing ReceiptRadar's comprehensive design system and image
+        components
+      </Text>
 
-        <View style={styles.componentsContainer}>
-          <HolisticCard
-            title="Design System"
-            subtitle="Clean and functional"
-            content="This demonstrates the holistic design system with proper typography, spacing, and color usage."
-            variant="elevated"
-          />
+      {/* Simple Image Test */}
+      <SimpleImageTest />
 
-          <View style={styles.buttonGrid}>
-            <HolisticButton
-              title="Primary Button"
-              onPress={() => console.log("Primary pressed")}
-              variant="primary"
-            />
-            <HolisticButton
-              title="Secondary Button"
-              onPress={() => console.log("Secondary pressed")}
-              variant="secondary"
-            />
-            <HolisticButton
-              title="Outline Button"
-              onPress={() => console.log("Outline pressed")}
-              variant="outline"
-            />
-          </View>
-        </View>
-      </View>
-    </SafeAreaView>
+      {/* Official Store Logos */}
+      <OfficialLogoDemo />
+
+      {/* Image Demo Section */}
+      <ImageDemo />
+
+      {/* Original Design System */}
+      <HolisticDesignSystemShowcase />
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-    alignItems: "center",
-    justifyContent: "center",
+    padding: spacing.lg,
   },
   title: {
-    marginBottom: 8,
     textAlign: "center",
+    marginBottom: spacing.sm,
+    ...typography.headline1,
   },
   subtitle: {
-    marginBottom: 40,
     textAlign: "center",
-  },
-  componentsContainer: {
-    width: "100%",
-    alignItems: "center",
-    gap: 20,
-  },
-  buttonGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    justifyContent: "center",
+    marginBottom: spacing.xl,
+    ...typography.body1,
   },
 });

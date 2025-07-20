@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  Dimensions,
+  Image,
+} from "react-native";
 import {
   Text,
   Card,
@@ -11,6 +18,8 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { MotiView } from "moti";
 import * as Linking from "expo-linking";
 import { AppTheme, spacing, typography, borderRadius } from "@/constants/theme";
+import { getStoreImage, getProductImage } from "@/constants/storeImages";
+import { StoreLogo } from "@/components/StoreLogo";
 
 interface StoreLocation {
   id: string;
@@ -33,6 +42,7 @@ interface StoreMapProps {
     longitude: number;
   };
   onStoreSelect?: (store: StoreLocation) => void;
+  showMap?: boolean;
 }
 
 // Sample store data - in production this would come from an API
@@ -94,13 +104,35 @@ const SAMPLE_STORES: StoreLocation[] = [
   },
 ];
 
-export function StoreMap({ userLocation, onStoreSelect }: StoreMapProps) {
+const { width, height } = Dimensions.get("window");
+const ASPECT_RATIO = width / height;
+const LATITUDE_DELTA = 0.02;
+const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
+
+export function StoreMap({
+  userLocation,
+  onStoreSelect,
+  showMap = true,
+}: StoreMapProps) {
   const theme = useTheme<AppTheme>();
   const [stores, setStores] = useState<StoreLocation[]>(SAMPLE_STORES);
   const [loading, setLoading] = useState(false);
   const [selectedStore, setSelectedStore] = useState<StoreLocation | null>(
     null
   );
+  const [mapAvailable, setMapAvailable] = useState(false);
+
+  useEffect(() => {
+    // Check if react-native-maps is available
+    try {
+      // This will throw an error if react-native-maps is not available
+      require("react-native-maps");
+      setMapAvailable(true);
+    } catch (error) {
+      console.log("react-native-maps not available, using list view");
+      setMapAvailable(false);
+    }
+  }, []);
 
   useEffect(() => {
     // In production, this would fetch stores from an API
@@ -147,13 +179,14 @@ export function StoreMap({ userLocation, onStoreSelect }: StoreMapProps) {
 
   const handleDirections = async (store: StoreLocation) => {
     try {
-      const url = `https://maps.apple.com/?daddr=${store.coordinates.latitude},${store.coordinates.longitude}`;
+      // Use Apple Maps for directions
+      const url = `http://maps.apple.com/?daddr=${store.coordinates.latitude},${store.coordinates.longitude}&dirflg=d`;
       const supported = await Linking.canOpenURL(url);
 
       if (supported) {
         await Linking.openURL(url);
       } else {
-        Alert.alert("Error", "Unable to open maps app");
+        Alert.alert("Error", "Unable to open Apple Maps");
       }
     } catch (error) {
       Alert.alert("Error", "Unable to open directions");
@@ -184,13 +217,204 @@ export function StoreMap({ userLocation, onStoreSelect }: StoreMapProps) {
   };
 
   const getStoreIcon = (storeName: string): string => {
-    const lowerName = storeName.toLowerCase();
-    if (lowerName.includes("countdown")) return "shopping-cart";
-    if (lowerName.includes("new world")) return "store";
-    if (lowerName.includes("warehouse")) return "home";
-    if (lowerName.includes("moore wilson")) return "restaurant";
-    if (lowerName.includes("fresh choice")) return "local-grocery-store";
-    return "store";
+    const storeConfig = getStoreImage(storeName);
+    return storeConfig.icon;
+  };
+
+  const getStoreColor = (storeName: string): string => {
+    const storeConfig = getStoreImage(storeName);
+    return storeConfig.color;
+  };
+
+  const renderMapView = () => {
+    if (!mapAvailable) {
+      return (
+        <View style={styles.mapFallback}>
+          <View style={styles.mapPlaceholder}>
+            <MaterialIcons
+              name="map"
+              size={64}
+              color={theme.colors.onSurfaceVariant}
+            />
+            <Text
+              style={[
+                styles.mapPlaceholderText,
+                { color: theme.colors.onSurface },
+              ]}
+            >
+              Map View
+            </Text>
+            <Text
+              style={[
+                styles.mapPlaceholderSubtext,
+                { color: theme.colors.onSurfaceVariant },
+              ]}
+            >
+              Available in development build
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.openMapsButton,
+                { backgroundColor: theme.colors.primary },
+              ]}
+              onPress={() => {
+                const url = `http://maps.apple.com/?ll=${
+                  userLocation?.latitude || -41.2785
+                },${userLocation?.longitude || 174.7803}&z=13`;
+                Linking.openURL(url);
+              }}
+            >
+              <MaterialIcons name="open-in-new" size={20} color="white" />
+              <Text style={styles.openMapsButtonText}>Open in Apple Maps</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      );
+    }
+
+    // If map is available, render the actual map
+    try {
+      const MapView = require("react-native-maps").default;
+      const {
+        Marker,
+        Callout,
+        PROVIDER_DEFAULT,
+      } = require("react-native-maps");
+
+      return (
+        <View style={styles.mapContainer}>
+          <MapView
+            provider={PROVIDER_DEFAULT}
+            style={styles.map}
+            region={{
+              latitude: userLocation?.latitude || -41.2785,
+              longitude: userLocation?.longitude || 174.7803,
+              latitudeDelta: LATITUDE_DELTA,
+              longitudeDelta: LONGITUDE_DELTA,
+            }}
+            showsUserLocation={true}
+            showsMyLocationButton={true}
+            showsCompass={true}
+            showsScale={true}
+            mapType="standard"
+          >
+            {stores.map((store) => (
+              <Marker
+                key={store.id}
+                coordinate={store.coordinates}
+                title={store.name}
+                description={`${store.address}, ${store.city}`}
+                onPress={() => handleStorePress(store)}
+                pinColor={getStoreColor(store.name)}
+              >
+                <Callout tooltip>
+                  <View
+                    style={[
+                      styles.calloutContainer,
+                      { backgroundColor: theme.colors.surface },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.calloutTitle,
+                        { color: theme.colors.onSurface },
+                      ]}
+                    >
+                      {store.name}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.calloutAddress,
+                        { color: theme.colors.onSurfaceVariant },
+                      ]}
+                    >
+                      {store.address}, {store.city}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.calloutHours,
+                        { color: theme.colors.onSurfaceVariant },
+                      ]}
+                    >
+                      {store.openingHours}
+                    </Text>
+                    <View style={styles.calloutActions}>
+                      <TouchableOpacity
+                        style={styles.calloutButton}
+                        onPress={() => handleDirections(store)}
+                      >
+                        <MaterialIcons
+                          name="directions"
+                          size={16}
+                          color={theme.colors.primary}
+                        />
+                        <Text
+                          style={[
+                            styles.calloutButtonText,
+                            { color: theme.colors.primary },
+                          ]}
+                        >
+                          Directions
+                        </Text>
+                      </TouchableOpacity>
+                      {store.phone && (
+                        <TouchableOpacity
+                          style={styles.calloutButton}
+                          onPress={() => handleCall(store)}
+                        >
+                          <MaterialIcons
+                            name="phone"
+                            size={16}
+                            color={theme.colors.primary}
+                          />
+                          <Text
+                            style={[
+                              styles.calloutButtonText,
+                              { color: theme.colors.primary },
+                            ]}
+                          >
+                            Call
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
+                </Callout>
+              </Marker>
+            ))}
+          </MapView>
+        </View>
+      );
+    } catch (error) {
+      console.log("Error rendering map:", error);
+      return (
+        <View style={styles.mapFallback}>
+          <View style={styles.mapPlaceholder}>
+            <MaterialIcons
+              name="map"
+              size={64}
+              color={theme.colors.onSurfaceVariant}
+            />
+            <Text
+              style={[
+                styles.mapPlaceholderText,
+                { color: theme.colors.onSurface },
+              ]}
+            >
+              Map View
+            </Text>
+            <Text
+              style={[
+                styles.mapPlaceholderSubtext,
+                { color: theme.colors.onSurfaceVariant },
+              ]}
+            >
+              Available in development build
+            </Text>
+          </View>
+        </View>
+      );
+    }
   };
 
   const renderStoreCard = (store: StoreLocation) => (
@@ -216,18 +440,7 @@ export function StoreMap({ userLocation, onStoreSelect }: StoreMapProps) {
       >
         <Card.Content style={styles.storeCardContent}>
           <View style={styles.storeHeader}>
-            <View
-              style={[
-                styles.storeIcon,
-                { backgroundColor: theme.colors.primaryContainer },
-              ]}
-            >
-              <MaterialIcons
-                name={getStoreIcon(store.name) as any}
-                size={24}
-                color={theme.colors.onPrimaryContainer}
-              />
-            </View>
+            <StoreLogo storeName={store.name} size="medium" variant="icon" />
             <View style={styles.storeInfo}>
               <Text
                 variant="titleMedium"
@@ -351,6 +564,8 @@ export function StoreMap({ userLocation, onStoreSelect }: StoreMapProps) {
         </Text>
       </View>
 
+      {showMap && renderMapView()}
+
       <View style={styles.storesList}>{stores.map(renderStoreCard)}</View>
 
       {stores.length === 0 && (
@@ -389,6 +604,90 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
     ...typography.headline1,
   },
+  mapContainer: {
+    height: 300,
+    marginBottom: spacing.lg,
+    borderRadius: borderRadius.lg,
+    overflow: "hidden",
+  },
+  map: {
+    flex: 1,
+  },
+  mapFallback: {
+    height: 300,
+    marginBottom: spacing.lg,
+    borderRadius: borderRadius.lg,
+    overflow: "hidden",
+    backgroundColor: "rgba(0,0,0,0.05)",
+  },
+  mapPlaceholder: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: spacing.xl,
+  },
+  mapPlaceholderText: {
+    ...typography.headline3,
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  mapPlaceholderSubtext: {
+    ...typography.body2,
+    textAlign: "center",
+    marginBottom: spacing.lg,
+  },
+  openMapsButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
+    gap: spacing.xs,
+  },
+  openMapsButtonText: {
+    color: "white",
+    ...typography.body2,
+    fontWeight: "600",
+  },
+  calloutContainer: {
+    padding: spacing.sm,
+    borderRadius: borderRadius.md,
+    minWidth: 200,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  calloutTitle: {
+    ...typography.title3,
+    fontWeight: "600",
+    marginBottom: spacing.xs,
+  },
+  calloutAddress: {
+    ...typography.body2,
+    marginBottom: spacing.xs,
+  },
+  calloutHours: {
+    ...typography.caption1,
+    marginBottom: spacing.sm,
+  },
+  calloutActions: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  calloutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    backgroundColor: "rgba(0,0,0,0.05)",
+    borderRadius: borderRadius.sm,
+  },
+  calloutButtonText: {
+    ...typography.caption1,
+    marginLeft: spacing.xs,
+  },
   storesList: {
     gap: spacing.md,
   },
@@ -411,6 +710,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     flexShrink: 0,
+  },
+  storeLogo: {
+    width: 32,
+    height: 32,
   },
   storeInfo: {
     flex: 1,

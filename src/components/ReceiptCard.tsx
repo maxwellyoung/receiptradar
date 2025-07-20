@@ -12,6 +12,7 @@ import { useTheme } from "react-native-paper";
 import { AppTheme } from "@/constants/theme";
 import { Receipt } from "@/types/database";
 import { formatCurrency } from "@/utils/formatters";
+import { StoreLogo } from "@/components/StoreLogo";
 import {
   spacing,
   typography,
@@ -144,18 +145,11 @@ export const ReceiptCard: React.FC<ReceiptCardProps> = ({
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.storeInfo}>
-              <View
-                style={[
-                  styles.storeIcon,
-                  { backgroundColor: theme.colors.primaryContainer },
-                ]}
-              >
-                <MaterialIcons
-                  name={getStoreIcon(receipt.store_name) as any}
-                  size={20}
-                  color={theme.colors.primary}
-                />
-              </View>
+              <StoreLogo
+                storeName={receipt.store_name}
+                size="small"
+                variant="icon"
+              />
               <View style={styles.storeDetails}>
                 <Text
                   style={[styles.storeName, { color: theme.colors.onSurface }]}
