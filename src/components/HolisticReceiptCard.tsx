@@ -233,8 +233,14 @@ const styles = StyleSheet.create({
     marginRight: spacing.medium,
   },
 
-  storeName: {
+  storeHeader: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: spacing.tiny,
+  },
+
+  storeName: {
+    marginLeft: spacing.small,
   },
 
   totalContainer: {

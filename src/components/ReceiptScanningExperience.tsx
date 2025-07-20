@@ -18,6 +18,7 @@ import { HolisticContainer } from "./HolisticDesignSystem";
 import { HolisticCard } from "./HolisticDesignSystem";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useRouter } from "expo-router";
+import { StoreLogo } from "./StoreLogo";
 import { useReceipts } from "@/hooks/useReceipts";
 // Removed useRadarMood import - hook was deleted
 import * as Haptics from "expo-haptics";
@@ -263,9 +264,19 @@ export function ReceiptScanningExperience({
             <View style={styles.receiptCard}>
               <HolisticCard variant="elevated" padding="large">
                 <View style={styles.receiptHeader}>
-                  <HolisticText variant="title.large" style={styles.storeName}>
-                    {receiptData.store}
-                  </HolisticText>
+                  <View style={styles.storeInfo}>
+                    <StoreLogo
+                      storeName={receiptData.store}
+                      size="large"
+                      variant="icon"
+                    />
+                    <HolisticText
+                      variant="title.large"
+                      style={styles.storeName}
+                    >
+                      {receiptData.store}
+                    </HolisticText>
+                  </View>
                   <HolisticText
                     variant="headline.large"
                     style={styles.totalAmount}
@@ -415,8 +426,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
-  storeName: {
+  storeInfo: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 8,
+  },
+  storeName: {
+    marginLeft: 12,
   },
   totalAmount: {
     marginBottom: 8,

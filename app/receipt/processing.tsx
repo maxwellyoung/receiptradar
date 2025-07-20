@@ -173,9 +173,11 @@ export default function ReceiptProcessingScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
 
-    Animated.timing(stepAnim, {
+    // Smoother step transition
+    Animated.spring(stepAnim, {
       toValue: currentStep,
-      duration: interactions.transitions.fast,
+      friction: 8,
+      tension: 40,
       useNativeDriver: true,
     }).start();
   }, [currentStep]);
@@ -377,8 +379,11 @@ export default function ReceiptProcessingScreen() {
   const getInsightData = (): InsightData => {
     return {
       totalSpent: receiptData?.total_amount || 0,
-      savings: 0,
-      weekNumber: 1,
+      itemCount: receiptData?.items?.length || 0,
+      categories: {},
+      storeName: receiptData?.store_name || "Unknown Store",
+      date: receiptData?.date || new Date().toISOString(),
+      items: receiptData?.items || [],
     };
   };
 

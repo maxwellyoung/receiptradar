@@ -3,6 +3,7 @@ import { View, ScrollView, StyleSheet, TouchableOpacity } from "react-native";
 import { Text, useTheme, Card, Chip, Button } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
 import { MotiView } from "moti";
+import { StoreLogo } from "./StoreLogo";
 import {
   VictoryChart,
   VictoryBar,
@@ -99,14 +100,7 @@ export const StoreAnalytics: React.FC = () => {
     return Math.min(100, Math.max(0, savingsRatio * 1000)); // Scale to 0-100
   };
 
-  const getStoreIcon = (storeName: string) => {
-    const name = storeName.toLowerCase();
-    if (name.includes("countdown")) return "basket-outline";
-    if (name.includes("new world")) return "leaf-outline";
-    if (name.includes("pak")) return "bag-outline";
-    if (name.includes("four square")) return "square-outline";
-    return "storefront-outline";
-  };
+  // getStoreIcon function removed - now using StoreLogo component
 
   const getCompetitivenessColor = (score: number) => {
     if (score >= 80) return theme.colors.positive;
@@ -242,10 +236,10 @@ export const StoreAnalytics: React.FC = () => {
               <Card.Content>
                 <View style={styles.storeHeader}>
                   <View style={styles.storeInfo}>
-                    <Ionicons
-                      name={getStoreIcon(store.storeName) as any}
-                      size={24}
-                      color={theme.colors.primary}
+                    <StoreLogo
+                      storeName={store.storeName}
+                      size="small"
+                      variant="icon"
                     />
                     <View style={styles.storeText}>
                       <Text variant="titleMedium" style={styles.storeName}>

@@ -26,6 +26,7 @@ import {
 import { MotiView } from "moti";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useStoreTracking } from "@/hooks/useStoreTracking";
+import { StoreLogo } from "@/components/StoreLogo";
 import { CompetitiveAdvantage } from "@/components/CompetitiveAdvantage";
 import { CompleteSavingsEcosystem } from "@/components/CompleteSavingsEcosystem";
 import { AdvancedProductMatching } from "@/components/AdvancedProductMatching";
@@ -475,13 +476,8 @@ export default function PriceCompareScreen() {
   };
 
   const getStoreIcon = (storeName: string) => {
-    const storeIcons: { [key: string]: string } = {
-      Countdown: "🛒",
-      "Pak'nSave": "🧃",
-      "New World": "🛍️",
-      "Fresh Choice": "🥬",
-    };
-    return storeIcons[storeName] || "🏪";
+    // This function is no longer needed since we're using StoreLogo component
+    return null;
   };
 
   const getDataFreshnessStatus = (lastChecked: string) => {
@@ -608,9 +604,11 @@ export default function PriceCompareScreen() {
                   <View key={index} style={styles.storePriceRow}>
                     <View style={styles.storeInfo}>
                       <View style={styles.storeHeader}>
-                        <Text style={styles.storeIcon}>
-                          {getStoreIcon(store.storeName)}
-                        </Text>
+                        <StoreLogo
+                          storeName={store.storeName}
+                          size="small"
+                          variant="icon"
+                        />
                         <Text style={styles.storeName}>{store.storeName}</Text>
                         <Text style={styles.freshnessStatus}>
                           {freshness.status}
@@ -1186,15 +1184,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  storeIcon: {
-    ...typography.body2,
-    fontSize: 18,
-    marginRight: spacing.xs,
-  },
   storeName: {
     ...typography.body2,
     fontWeight: "500",
-    marginLeft: spacing.xs,
+    marginLeft: spacing.sm,
   },
   freshnessStatus: {
     ...typography.caption1,

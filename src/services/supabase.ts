@@ -335,36 +335,13 @@ export const dbService = {
 
 // Storage service for images
 export const storageService = {
-  async uploadReceiptImage(imageUri: string, fileName: string, userId: string) {
+  async uploadReceiptImage(
+    imageUri: string,
+    fileName: string,
+    userId: string
+  ): Promise<{ data: any; error: any }> {
     try {
       logger.info("Uploading receipt image", { fileName, userId });
-
-      // Check if storage bucket exists first
-      const { data: buckets, error: bucketError } =
-        await supabase.storage.listBuckets();
-
-      if (bucketError) {
-        logger.warn("Storage bucket check failed", {
-          error: bucketError.message,
-        });
-        return { data: null, error: bucketError };
-      }
-
-      const bucketExists = buckets?.some(
-        (bucket) => bucket.name === "receipt-images"
-      );
-      if (!bucketExists) {
-        logger.warn("Storage bucket 'receipt-images' not found", {
-          availableBuckets: buckets?.map((b) => b.name) || [],
-        });
-        return {
-          data: null,
-          error: {
-            message:
-              "Storage bucket 'receipt-images' not found. Please create it in your Supabase dashboard.",
-          } as any,
-        };
-      }
 
       // Create file path
       const timestamp = Date.now();
@@ -393,7 +370,7 @@ export const storageService = {
       logger.error("Image upload error", {
         error: error instanceof Error ? error.message : String(error),
       });
-      return { data: null, error: error as Error };
+      return { data: null, error: error as any };
     }
   },
 

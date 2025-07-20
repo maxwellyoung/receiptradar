@@ -71,23 +71,30 @@ export const ViralFeaturesManager: React.FC<ViralFeaturesManagerProps> = ({
     if (step === "confetti") {
       setShowConfetti(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      // Smoother transition - longer confetti duration
       setTimeout(() => {
         setShowConfetti(false);
-        setStep("mascot");
-      }, 1200);
+        // Add a small delay before mascot appears
+        setTimeout(() => {
+          setStep("mascot");
+        }, 200);
+      }, 1500);
     } else if (step === "mascot") {
       setShowCritter(true);
+      // Smoother spring animation
       Animated.spring(mascotBounceAnim, {
         toValue: 1,
-        friction: 4,
+        friction: 6,
+        tension: 40,
         useNativeDriver: true,
       }).start();
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } else if (step === "aura") {
       setShowAura(true);
+      // Smoother aura reveal
       Animated.timing(auraRevealAnim, {
         toValue: 1,
-        duration: 800,
+        duration: 1000,
         useNativeDriver: true,
       }).start();
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -96,9 +103,10 @@ export const ViralFeaturesManager: React.FC<ViralFeaturesManagerProps> = ({
 
   const handleConfettiComplete = () => {
     setShowConfetti(false);
+    // Smoother transition with longer delay
     setTimeout(() => {
       setShowCritter(true);
-    }, 500);
+    }, 300);
   };
 
   const handleCritterShare = () => {
@@ -120,27 +128,36 @@ export const ViralFeaturesManager: React.FC<ViralFeaturesManagerProps> = ({
 
   const handleCritterComplete = () => {
     setCritterDone(true);
+    // Smoother transition to aura
     setTimeout(() => {
       setShowCritter(false);
-      setStep("aura");
-    }, 1000);
+      // Add a small delay before aura appears
+      setTimeout(() => {
+        setStep("aura");
+      }, 150);
+    }, 1200);
   };
 
   const handleButtonPress = () => {
+    // Smoother button animation
     Animated.sequence([
       Animated.timing(buttonAnim, {
-        toValue: 0.95,
-        duration: BUTTON_BOUNCE_DURATION / 2,
+        toValue: 0.92,
+        duration: 100,
         useNativeDriver: true,
       }),
-      Animated.timing(buttonAnim, {
+      Animated.spring(buttonAnim, {
         toValue: 1,
-        duration: BUTTON_BOUNCE_DURATION / 2,
+        friction: 8,
+        tension: 50,
         useNativeDriver: true,
       }),
     ]).start();
 
-    handleContinue();
+    // Add a small delay before continuing
+    setTimeout(() => {
+      handleContinue();
+    }, 50);
   };
 
   return (
