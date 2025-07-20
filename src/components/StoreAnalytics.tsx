@@ -82,7 +82,15 @@ export const StoreAnalytics: React.FC = () => {
     }));
 
     setAnalytics(analyticsArray);
-    setComparison(analyticsArray);
+    setComparison(
+      analyticsArray.map((store) => ({
+        storeName: store.storeName,
+        totalSpent: store.totalSpent,
+        averageSpend: store.averageSpend,
+        savingsIdentified: store.savingsIdentified,
+        priceCompetitiveness: store.priceCompetitiveness,
+      }))
+    );
     setLoading(false);
   };
 

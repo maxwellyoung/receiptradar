@@ -11,6 +11,7 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { spacing, typography, borderRadius, shadows } from "@/constants/theme";
 import { useThemeContext } from "@/contexts/ThemeContext";
+import { PriceIntelligence } from "./PriceIntelligence";
 
 export interface ReceiptItem {
   id: string;
@@ -97,81 +98,151 @@ export function WeeklyInsights({
     setTimeout(() => {
       const generatedInsights: Insight[] = [];
 
-      // Spending insight
+      // Spending insight with personality
       if (insightData.totalSpent > 0) {
         const spendingLevel = getSpendingLevel(insightData.totalSpent);
+        const avgPerItem = insightData.totalSpent / insightData.itemCount;
+
+        let spendingMessage = "";
+        if (spendingLevel === "small") {
+          spendingMessage = `A tidy $${insightData.totalSpent.toFixed(2)} for ${
+            insightData.itemCount
+          } items. That's $${avgPerItem.toFixed(
+            2
+          )} per item - the worm is impressed with your restraint.`;
+        } else if (spendingLevel === "moderate") {
+          spendingMessage = `$${insightData.totalSpent.toFixed(2)} for ${
+            insightData.itemCount
+          } items. Solid grocery game at $${avgPerItem.toFixed(2)} per item.`;
+        } else if (spendingLevel === "large") {
+          spendingMessage = `$${insightData.totalSpent.toFixed(2)} for ${
+            insightData.itemCount
+          } items. That's $${avgPerItem.toFixed(
+            2
+          )} per item - someone's been shopping!`;
+        } else {
+          spendingMessage = `$${insightData.totalSpent.toFixed(2)} for ${
+            insightData.itemCount
+          } items. At $${avgPerItem.toFixed(
+            2
+          )} per item, the worm is taking notes on your lifestyle choices.`;
+        }
+
         generatedInsights.push({
           id: "spending",
           type: "spending",
-          title: "Spending Overview",
-          description: `You spent $${insightData.totalSpent.toFixed(2)} on ${
-            insightData.itemCount
-          } items. This is a ${spendingLevel} shopping trip.`,
+          title: "Spending Breakdown",
+          description: spendingMessage,
           icon: "shopping-cart",
+          color: "#007AFF",
+          priority: 1,
+        });
+      } else {
+        // Default insight for no spending data
+        generatedInsights.push({
+          id: "no-data",
+          type: "recommendation",
+          title: "Ready to Start",
+          description:
+            "Scan your first receipt to unlock personalized insights and spending analysis.",
+          icon: "camera-alt",
           color: "#007AFF",
           priority: 1,
         });
       }
 
-      // Category insights
+      // Category insights with personality
       const topCategories = Object.entries(insightData.categories)
         .sort(([, a], [, b]) => b - a)
         .slice(0, 3);
 
       if (topCategories.length > 0) {
         const [topCategory, topAmount] = topCategories[0];
+        const categoryPercentage = (topAmount / insightData.totalSpent) * 100;
+
+        let categoryMessage = "";
+        if (categoryPercentage > 50) {
+          categoryMessage = `${topCategory} dominates at $${topAmount.toFixed(
+            2
+          )} (${categoryPercentage.toFixed(
+            0
+          )}% of total). The worm wonders if you're a specialist.`;
+        } else if (categoryPercentage > 30) {
+          categoryMessage = `${topCategory} leads at $${topAmount.toFixed(
+            2
+          )} (${categoryPercentage.toFixed(
+            0
+          )}% of total). Good category management.`;
+        } else {
+          categoryMessage = `${topCategory} tops the list at $${topAmount.toFixed(
+            2
+          )} (${categoryPercentage.toFixed(
+            0
+          )}% of total). Well-balanced shopping.`;
+        }
+
         generatedInsights.push({
           id: "category",
           type: "category",
-          title: "Top Category",
-          description: `${topCategory} was your biggest expense at $${topAmount.toFixed(
-            2
-          )}. Consider if this aligns with your budget goals.`,
+          title: "Category Champion",
+          description: categoryMessage,
+          icon: "category",
+          color: "#34C759",
+          priority: 2,
+        });
+      } else if (insightData.totalSpent > 0) {
+        // Insight for when there's spending but no categories
+        generatedInsights.push({
+          id: "no-categories",
+          type: "category",
+          title: "Category Analysis",
+          description:
+            "Your items will be automatically categorized to help you understand your spending patterns.",
           icon: "category",
           color: "#34C759",
           priority: 2,
         });
       }
 
-      // Trend insights
-      if (insightData.itemCount > 5) {
-        generatedInsights.push({
-          id: "trend",
-          type: "trend",
-          title: "Bulk Shopping",
-          description: `You bought ${insightData.itemCount} items - this looks like a major grocery run! Planning ahead can help with budgeting.`,
-          icon: "trending-up",
-          color: "#FF9500",
-          priority: 3,
-        });
-      }
+      // Add personality-driven generic insights
+      if (generatedInsights.length < 2) {
+        const randomInsights = [
+          {
+            title: "Smart Tracking",
+            description:
+              "Great job keeping tabs on your spending! The worm is taking notes on your financial mindfulness.",
+            icon: "star",
+            color: "#AF52DE",
+          },
+          {
+            title: "Receipt Warrior",
+            description:
+              "Every scan builds your financial story. The worm appreciates your dedication to transparency.",
+            icon: "shield",
+            color: "#5856D6",
+          },
+          {
+            title: "Data Enthusiast",
+            description:
+              "Your spending patterns are becoming clearer. The worm loves a good data story.",
+            icon: "analytics",
+            color: "#FF2D92",
+          },
+          {
+            title: "Getting Started",
+            description:
+              "The first receipt is the hardest. Once you start scanning, insights will flow naturally.",
+            icon: "trending-up",
+            color: "#FF9500",
+          },
+        ];
 
-      // Recommendations
-      const avgItemPrice = insightData.totalSpent / insightData.itemCount;
-      if (avgItemPrice > 10) {
+        const randomInsight =
+          randomInsights[Math.floor(Math.random() * randomInsights.length)];
         generatedInsights.push({
-          id: "recommendation",
+          id: "personality",
           type: "recommendation",
-          title: "Premium Items",
-          description: `Average item price is $${avgItemPrice.toFixed(
-            2
-          )}. Consider generic alternatives for some items to save money.`,
-          icon: "lightbulb",
-          color: "#FF6B35",
-          priority: 4,
-        });
-      }
-
-      // Add generic insights if we don't have enough
-      if (generatedInsights.length < 3) {
-        generatedInsights.push({
-          id: "general",
-          type: "recommendation",
-          title: "Smart Shopping",
-          description:
-            "Great job tracking your spending! Consider setting up budget alerts for future shopping trips.",
-          icon: "star",
-          color: "#AF52DE",
+          ...randomInsight,
           priority: 5,
         });
       }
@@ -186,12 +257,6 @@ export function WeeklyInsights({
     if (amount < 80) return "moderate";
     if (amount < 150) return "large";
     return "major";
-  };
-
-  const getCategoryBreakdown = () => {
-    return Object.entries(insightData.categories)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 5);
   };
 
   const renderInsightCard = (insight: Insight, index: number) => (
@@ -226,46 +291,6 @@ export function WeeklyInsights({
     </Animated.View>
   );
 
-  const renderCategoryBreakdown = () => {
-    const categories = getCategoryBreakdown();
-
-    return (
-      <Card style={styles.categoryCard}>
-        <Card.Content>
-          <Text style={styles.sectionTitle}>Category Breakdown</Text>
-          <View style={styles.categoryList}>
-            {categories.map(([category, amount], index) => (
-              <View key={category} style={styles.categoryItem}>
-                <View style={styles.categoryInfo}>
-                  <Text style={styles.categoryName}>{category}</Text>
-                  <Text style={styles.categoryAmount}>
-                    ${amount.toFixed(2)}
-                  </Text>
-                </View>
-                <View style={styles.categoryBar}>
-                  <View
-                    style={[
-                      styles.categoryBarFill,
-                      {
-                        width: `${(amount / insightData.totalSpent) * 100}%`,
-                        backgroundColor: getCategoryColor(index),
-                      },
-                    ]}
-                  />
-                </View>
-              </View>
-            ))}
-          </View>
-        </Card.Content>
-      </Card>
-    );
-  };
-
-  const getCategoryColor = (index: number): string => {
-    const colors = ["#007AFF", "#34C759", "#FF9500", "#FF6B35", "#AF52DE"];
-    return colors[index % colors.length];
-  };
-
   if (isGenerating) {
     return (
       <View
@@ -289,7 +314,9 @@ export function WeeklyInsights({
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
       >
+        {/* Clean Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Shopping Insights</Text>
           <Text style={styles.subtitle}>
@@ -298,40 +325,101 @@ export function WeeklyInsights({
           </Text>
         </View>
 
-        <View style={styles.summaryCards}>
-          <Card style={styles.summaryCard}>
-            <Card.Content>
-              <Text style={styles.summaryLabel}>Total Spent</Text>
-              <Text style={styles.summaryValue}>
-                ${insightData.totalSpent.toFixed(2)}
+        {/* Compact Data Summary */}
+        <Card style={styles.summaryCard}>
+          <Card.Content style={styles.summaryContent}>
+            <View style={styles.summaryRow}>
+              <View style={styles.summaryColumn}>
+                <Text style={styles.summaryLabel}>Total Spent</Text>
+                <Text style={styles.summaryValue}>
+                  ${insightData.totalSpent.toFixed(2)}
+                </Text>
+                <Text style={styles.summarySubtext}>
+                  {insightData.itemCount > 0
+                    ? `${insightData.itemCount} items • $${(
+                        insightData.totalSpent / insightData.itemCount
+                      ).toFixed(2)} avg`
+                    : "No items yet"}
+                </Text>
+              </View>
+              <View style={styles.summaryDivider} />
+              <View style={styles.summaryColumn}>
+                <Text style={styles.summaryLabel}>Categories</Text>
+                <Text style={styles.summaryValue}>
+                  {Object.keys(insightData.categories).length}
+                </Text>
+                <Text style={styles.summarySubtext}>
+                  {Object.keys(insightData.categories).length > 0
+                    ? "Tracked automatically"
+                    : "Will appear as you scan"}
+                </Text>
+              </View>
+            </View>
+          </Card.Content>
+        </Card>
+
+        {/* Compact Context - Only when meaningful */}
+        {insightData.totalSpent > 0 && (
+          <Card style={styles.contextCard}>
+            <Card.Content style={styles.contextContent}>
+              <Text style={styles.contextMessage}>
+                {insightData.totalSpent < 30
+                  ? "A modest shopping day. Well done."
+                  : insightData.totalSpent < 80
+                  ? "Solid grocery run. Nothing unusual here."
+                  : insightData.totalSpent < 150
+                  ? "Someone's been shopping. Let's see the details."
+                  : "Big shopping day. The details are interesting."}
               </Text>
+              {insightData.totalSpent > 150 && (
+                <View style={styles.badgeContainer}>
+                  <Text style={styles.badge}>Big Spender</Text>
+                </View>
+              )}
             </Card.Content>
           </Card>
+        )}
 
-          <Card style={styles.summaryCard}>
-            <Card.Content>
-              <Text style={styles.summaryLabel}>Items</Text>
-              <Text style={styles.summaryValue}>{insightData.itemCount}</Text>
-            </Card.Content>
-          </Card>
-
-          <Card style={styles.summaryCard}>
-            <Card.Content>
-              <Text style={styles.summaryLabel}>Categories</Text>
-              <Text style={styles.summaryValue}>
-                {Object.keys(insightData.categories).length}
-              </Text>
-            </Card.Content>
-          </Card>
-        </View>
-
+        {/* Compact AI Insights Section */}
         <View style={styles.insightsSection}>
-          <Text style={styles.sectionTitle}>AI Insights</Text>
-          {insights.map((insight, index) => renderInsightCard(insight, index))}
+          <Text style={styles.insightsTitle}>AI Insights</Text>
+
+          {insights.length > 0 ? (
+            <View style={styles.insightsList}>
+              {insights.map((insight, index) =>
+                renderInsightCard(insight, index)
+              )}
+            </View>
+          ) : (
+            <Card style={styles.emptyStateCard}>
+              <Card.Content style={styles.emptyStateContent}>
+                <Text style={styles.emptyStateTitle}>
+                  {insightData.totalSpent > 0
+                    ? "Analyzing..."
+                    : "Ready to Start"}
+                </Text>
+                <Text style={styles.emptyStateMessage}>
+                  {insightData.totalSpent > 0
+                    ? "Your spending patterns are being analyzed. Insights will appear here."
+                    : "Scan your first receipt to unlock personalized insights and spending analysis."}
+                </Text>
+              </Card.Content>
+            </Card>
+          )}
         </View>
 
-        {renderCategoryBreakdown()}
+        {/* Price Intelligence - Only if items exist */}
+        {insightData.items.length > 0 && (
+          <View style={styles.priceIntelligenceSection}>
+            <Text style={styles.sectionTitle}>Price Analysis</Text>
+            <PriceIntelligence
+              receiptItems={insightData.items}
+              totalSpent={insightData.totalSpent}
+            />
+          </View>
+        )}
 
+        {/* Clean Actions */}
         <View style={styles.actions}>
           <Button
             mode="contained"
@@ -364,17 +452,23 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: spacing.xl * 2,
+  },
   header: {
     padding: spacing.lg,
+    paddingBottom: spacing.md,
     alignItems: "center",
   },
   title: {
-    ...typography.headline2,
+    ...typography.headline3,
     marginBottom: spacing.xs,
+    textAlign: "center",
   },
   subtitle: {
     ...typography.body2,
     color: "#666",
+    textAlign: "center",
   },
   loadingContainer: {
     flex: 1,
@@ -391,32 +485,110 @@ const styles = StyleSheet.create({
     ...typography.body2,
     color: "#666",
   },
-  summaryCards: {
-    flexDirection: "row",
-    paddingHorizontal: spacing.lg,
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
-  },
   summaryCard: {
-    flex: 1,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
     ...shadows.sm,
+  },
+  summaryContent: {
+    padding: spacing.lg,
+  },
+  summaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: spacing.md,
+  },
+  summaryColumn: {
+    flex: 1,
+    alignItems: "center",
+    minWidth: 0,
   },
   summaryLabel: {
     ...typography.caption1,
     color: "#666",
     marginBottom: spacing.xs,
+    textAlign: "center",
   },
   summaryValue: {
+    ...typography.headline2,
+    fontWeight: "600",
+    textAlign: "center",
+    flexShrink: 1,
+  },
+  summaryDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: "#E0E0E0",
+    marginHorizontal: spacing.lg,
+  },
+  summarySubtext: {
+    ...typography.body2,
+    color: "#666",
+    textAlign: "center",
+  },
+  contextCard: {
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    ...shadows.sm,
+  },
+  contextContent: {
+    padding: spacing.lg,
+    alignItems: "center",
+  },
+  contextMessage: {
+    ...typography.body2,
+    color: "#666",
+    textAlign: "center",
+    marginBottom: spacing.md,
+  },
+  badgeContainer: {
+    backgroundColor: "#f0f0f0",
+    padding: spacing.sm,
+    borderRadius: 16,
+    ...typography.headline3,
+    fontWeight: "600",
+  },
+  badge: {
     ...typography.headline3,
     fontWeight: "600",
   },
   insightsSection: {
     paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  insightsTitle: {
+    ...typography.headline3,
     marginBottom: spacing.lg,
+    textAlign: "center",
+    color: "#333",
+  },
+  insightsList: {
+    padding: spacing.md,
+  },
+  emptyStateCard: {
+    ...shadows.sm,
+  },
+  emptyStateContent: {
+    padding: spacing.lg,
+    alignItems: "center",
+  },
+  emptyStateTitle: {
+    ...typography.headline3,
+    marginBottom: spacing.xs,
+  },
+  emptyStateMessage: {
+    ...typography.body2,
+    color: "#666",
+    textAlign: "center",
+  },
+  priceIntelligenceSection: {
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
   },
   sectionTitle: {
     ...typography.headline3,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
+    textAlign: "center",
   },
   insightCard: {
     marginBottom: spacing.md,
@@ -426,11 +598,12 @@ const styles = StyleSheet.create({
   insightHeader: {
     flexDirection: "row",
     alignItems: "flex-start",
+    padding: spacing.md,
   },
   iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
     marginRight: spacing.md,
@@ -447,43 +620,9 @@ const styles = StyleSheet.create({
     color: "#666",
     lineHeight: 20,
   },
-  categoryCard: {
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
-    ...shadows.sm,
-  },
-  categoryList: {
-    gap: spacing.sm,
-  },
-  categoryItem: {
-    gap: spacing.xs,
-  },
-  categoryInfo: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  categoryName: {
-    ...typography.body2,
-    fontWeight: "500",
-  },
-  categoryAmount: {
-    ...typography.body2,
-    fontWeight: "600",
-  },
-  categoryBar: {
-    height: 8,
-    backgroundColor: "#f0f0f0",
-    borderRadius: 4,
-    overflow: "hidden",
-  },
-  categoryBarFill: {
-    height: "100%",
-    borderRadius: 4,
-  },
   actions: {
-    padding: spacing.lg,
-    gap: spacing.sm,
+    paddingHorizontal: spacing.xl,
+    gap: spacing.md,
   },
   actionButton: {
     marginBottom: spacing.sm,

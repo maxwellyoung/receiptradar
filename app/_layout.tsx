@@ -32,7 +32,7 @@ import {
 } from "@expo-google-fonts/inter";
 import * as SplashScreen from "expo-splash-screen";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { OnboardingScreen } from "@/components/OnboardingScreen";
+import { EnhancedOnboardingScreen } from "@/components/EnhancedOnboardingScreen";
 
 console.log("[LOG] app/_layout.tsx loaded");
 
@@ -162,9 +162,9 @@ function RootContent() {
           />
           <Stack.Screen name="viral-demo" options={{ presentation: "modal" }} />
         </Stack>
-        <OnboardingScreen
+        <EnhancedOnboardingScreen
           isVisible={showOnboarding}
-          onDismiss={handleOnboardingDismiss}
+          onComplete={handleOnboardingDismiss}
         />
       </SafeAreaProvider>
     </PaperProvider>

@@ -179,27 +179,6 @@ export default function ViralDemoScreen() {
           </Card.Content>
         </Card>
 
-        {/* Three.js Effects Demo */}
-        <Card style={styles.card}>
-          <Card.Content>
-            <Text variant="titleLarge" style={styles.sectionTitle}>
-              Fun Screen Effects
-            </Text>
-            <Text variant="bodyMedium" style={styles.sectionDescription}>
-              Try out our Three.js WebView effects for celebrations and feedback
-            </Text>
-
-            <Button
-              mode="contained"
-              onPress={() => router.push("/threejs-effects-demo")}
-              style={styles.shareButton}
-              icon="animation"
-            >
-              Try Three.js Effects
-            </Button>
-          </Card.Content>
-        </Card>
-
         {/* Viral Features */}
         <Card style={styles.card}>
           <Card.Content>

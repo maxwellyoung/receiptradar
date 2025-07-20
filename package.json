@@ -15,6 +15,7 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "type-check": "tsc --noEmit",
+    "backend": "node scripts/start-backend.js",
     "build:ios": "eas build --platform ios",
     "build:android": "eas build --platform android",
     "submit:ios": "eas submit --platform ios",
@@ -69,11 +70,12 @@
     "react-native-vector-icons": "^10.0.3",
     "react-native-view-shot": "^4.0.3",
     "react-native-web": "^0.20.0",
-    "react-native-webview": "^13.15.0",
+    "react-native-webview": "13.13.5",
     "text-encoding": "^0.7.0",
     "victory-native": "^36.9.0",
     "zod": "^4.0.5",
-    "zustand": "^4.5.0"
+    "zustand": "^4.5.0",
+    "expo-web-browser": "~14.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

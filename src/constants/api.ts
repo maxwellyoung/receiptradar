@@ -1,22 +1,25 @@
 import { logger } from "@/utils/logger";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
+// For local development, use the local server
+const LOCAL_API_URL = "http://192.168.1.10:8787";
+const PRODUCTION_API_URL = "https://receiptradar-api.receipt-radar.workers.dev";
 
-if (!API_URL) {
-  // On a physical device, 'localhost' will not work. You need to use your
-  // computer's local IP address. Create a .env.local file in the root of
-  // your project and add the following line, replacing with your actual IP:
-  // EXPO_PUBLIC_API_URL=http://192.168.1.10:8000
-  logger.warn(
-    "EXPO_PUBLIC_API_URL is not set. Using default development URL. " +
-      "Create a .env.local file with EXPO_PUBLIC_API_URL for production builds.",
-    { component: "API_CONFIG" }
-  );
+// Check if we're in development mode
+const isDevelopment = __DEV__;
+
+// Use local server in development, production URL otherwise
+const API_URL = isDevelopment ? LOCAL_API_URL : PRODUCTION_API_URL;
+
+if (isDevelopment) {
+  logger.info(`Using local development API: ${API_URL}`, {
+    component: "API_CONFIG",
+  });
+} else {
+  logger.info(`Using production API: ${API_URL}`, { component: "API_CONFIG" });
 }
 
 export const API_CONFIG = {
-  baseUrl: API_URL || "https://receiptradar-api.receipt-radar.workers.dev",
-  honoApiUrl:
-    process.env.EXPO_PUBLIC_HONO_API_URL ||
-    "https://receiptradar-api.receipt-radar.workers.dev",
+  baseUrl: API_URL,
+  honoApiUrl: API_URL,
+  isDevelopment,
 } as const;

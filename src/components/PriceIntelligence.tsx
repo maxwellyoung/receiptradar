@@ -1,119 +1,286 @@
-import React from "react";
-import { View, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { Card, Text } from "react-native-paper";
-import { usePriceIntelligence } from "@/hooks/usePriceIntelligence";
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet, Animated } from "react-native";
+import { Text, Card, Button, Chip, useTheme } from "react-native-paper";
+import { MaterialIcons } from "@expo/vector-icons";
+import { spacing, typography, borderRadius, shadows } from "@/constants/theme";
+import { AppTheme } from "@/constants/theme";
 
-import { SavingsSummary } from "./price-intelligence/SavingsSummary";
-import { StoreRecommendation } from "./price-intelligence/StoreRecommendation";
-import { SavingsOpportunities } from "./price-intelligence/SavingsOpportunities";
-import { PriceHistoryModal } from "./price-intelligence/PriceHistoryModal";
-
-interface PriceIntelligenceProps {
-  itemName: string;
-  currentPrice: number;
+interface PriceInsight {
+  id: string;
+  type: "savings" | "warning" | "tip" | "comparison";
+  title: string;
+  description: string;
+  savings?: number;
+  icon: string;
+  color: string;
+  priority: number;
 }
 
-export const PriceIntelligence: React.FC<PriceIntelligenceProps> = ({
-  itemName,
-  currentPrice,
-}) => {
-  const {
-    analysis,
-    loading,
-    selectedItem,
-    priceHistory,
-    insight,
-    getPriceHistory,
-    formatCurrency,
-    getConfidenceColor,
-    setSelectedItem,
-  } = usePriceIntelligence(itemName, currentPrice);
+interface PriceIntelligenceProps {
+  receiptItems: Array<{
+    name: string;
+    price: number;
+    category?: string;
+  }>;
+  totalSpent: number;
+}
 
-  if (loading) {
+export function PriceIntelligence({
+  receiptItems,
+  totalSpent,
+}: PriceIntelligenceProps) {
+  const theme = useTheme<AppTheme>();
+  const [insights, setInsights] = useState<PriceInsight[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(true);
+  const fadeAnim = new Animated.Value(0);
+
+  useEffect(() => {
+    analyzePrices();
+
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 800,
+      useNativeDriver: true,
+    }).start();
+  }, [receiptItems]);
+
+  const analyzePrices = () => {
+    setIsAnalyzing(true);
+
+    // Simulate AI analysis
+    setTimeout(() => {
+      const generatedInsights: PriceInsight[] = [];
+
+      // Calculate average item price
+      const avgItemPrice = totalSpent / receiptItems.length;
+
+      // Find expensive items
+      const expensiveItems = receiptItems.filter(
+        (item) => item.price > avgItemPrice * 1.5
+      );
+
+      if (expensiveItems.length > 0) {
+        const mostExpensive = expensiveItems[0];
+        const potentialSavings = mostExpensive.price * 0.2; // Assume 20% savings with alternatives
+
+        generatedInsights.push({
+          id: "expensive-item",
+          type: "warning",
+          title: "Premium Item Alert",
+          description: `${
+            mostExpensive.name
+          } cost $${mostExpensive.price.toFixed(
+            2
+          )}. Consider generic alternatives to save ~$${potentialSavings.toFixed(
+            2
+          )}.`,
+          savings: potentialSavings,
+          icon: "lightbulb",
+          color: "#FF6B35",
+          priority: 1,
+        });
+      }
+
+      // Store comparison
+      if (totalSpent > 100) {
+        const estimatedSavings = totalSpent * 0.08; // Assume 8% savings at different store
+        generatedInsights.push({
+          id: "store-comparison",
+          type: "comparison",
+          title: "Store Comparison",
+          description: `Similar items at Pak'nSave could save you ~$${estimatedSavings.toFixed(
+            2
+          )} on this trip.`,
+          savings: estimatedSavings,
+          icon: "store",
+          color: "#007AFF",
+          priority: 2,
+        });
+      }
+
+      // Add generic tip if not enough insights
+      if (generatedInsights.length < 2) {
+        generatedInsights.push({
+          id: "general-tip",
+          type: "tip",
+          title: "Smart Shopping Tip",
+          description:
+            "Consider shopping on weekdays when stores often have better deals and less crowds.",
+          icon: "calendar",
+          color: "#FF9500",
+          priority: 3,
+        });
+      }
+
+      setInsights(generatedInsights.sort((a, b) => a.priority - b.priority));
+      setIsAnalyzing(false);
+    }, 2000);
+  };
+
+  const renderInsight = (insight: PriceInsight) => (
+    <Animated.View
+      key={insight.id}
+      style={[styles.insightCard, { opacity: fadeAnim }]}
+    >
+      <Card style={[styles.card, { borderLeftColor: insight.color }]}>
+        <Card.Content style={styles.cardContent}>
+          <View style={styles.insightHeader}>
+            <View
+              style={[styles.iconContainer, { backgroundColor: insight.color }]}
+            >
+              <MaterialIcons
+                name={insight.icon as any}
+                size={20}
+                color="white"
+              />
+            </View>
+            <View style={styles.insightContent}>
+              <Text style={styles.insightTitle}>{insight.title}</Text>
+              <Text style={styles.insightDescription}>
+                {insight.description}
+              </Text>
+              {insight.savings && (
+                <Chip
+                  style={[
+                    styles.savingsChip,
+                    { backgroundColor: insight.color + "20" },
+                  ]}
+                  textStyle={{ color: insight.color, fontWeight: "600" }}
+                >
+                  Save ${insight.savings.toFixed(2)}
+                </Chip>
+              )}
+            </View>
+          </View>
+        </Card.Content>
+      </Card>
+    </Animated.View>
+  );
+
+  if (isAnalyzing) {
     return (
-      <View style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <Ionicons name="analytics-outline" size={48} color="#6B7280" />
-          <Text style={styles.loadingText}>Analyzing your basket...</Text>
-        </View>
-      </View>
+      <Card style={styles.loadingCard}>
+        <Card.Content style={styles.loadingContent}>
+          <MaterialIcons
+            name="psychology"
+            size={32}
+            color={theme.colors.primary}
+          />
+          <Text style={styles.loadingTitle}>Analyzing Prices...</Text>
+          <Text style={styles.loadingSubtext}>
+            The worm is comparing prices across stores
+          </Text>
+        </Card.Content>
+      </Card>
     );
   }
 
-  if (!analysis) {
-    return null;
-  }
+  const totalPotentialSavings = insights.reduce(
+    (sum, insight) => sum + (insight.savings || 0),
+    0
+  );
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <SavingsSummary
-        totalSavings={analysis.total_savings}
-        opportunitiesCount={analysis.savings_opportunities.length}
-        cashbackAvailable={analysis.cashback_available}
-        formatCurrency={formatCurrency}
-      />
+    <View style={styles.container}>
+      {insights.map(renderInsight)}
 
-      <StoreRecommendation
-        storeRecommendation={analysis.store_recommendation}
-      />
-
-      <SavingsOpportunities
-        opportunities={analysis.savings_opportunities}
-        getPriceHistory={getPriceHistory}
-        formatCurrency={formatCurrency}
-        getConfidenceColor={getConfidenceColor}
-      />
-
-      <PriceHistoryModal
-        selectedItem={selectedItem}
-        priceHistory={priceHistory}
-        formatCurrency={formatCurrency}
-        onClose={() => setSelectedItem(null)}
-      />
-
-      {insight && (
-        <Card
-          style={{
-            marginHorizontal: 16,
-            marginBottom: 16,
-            backgroundColor: insight.color + "1A",
-          }}
-        >
-          <Card.Content style={{ flexDirection: "row", alignItems: "center" }}>
-            <MaterialIcons
-              name={insight.icon}
-              size={20}
-              color={insight.color}
-            />
-            <Text
-              variant="bodySmall"
-              style={{ marginLeft: 8, color: insight.color, flex: 1 }}
-            >
-              {insight.message}
+      {totalPotentialSavings > 0 && (
+        <Card style={styles.summaryCard}>
+          <Card.Content style={styles.summaryContent}>
+            <Text style={styles.summaryTitle}>Potential Savings</Text>
+            <Text style={styles.summaryAmount}>
+              ${totalPotentialSavings.toFixed(2)}
+            </Text>
+            <Text style={styles.summarySubtext}>
+              Based on price comparisons and shopping tips
             </Text>
           </Card.Content>
         </Card>
       )}
-    </ScrollView>
+    </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: "#F9FAFB",
+    gap: spacing.md,
   },
-  loadingContainer: {
-    flex: 1,
+  loadingCard: {
+    ...shadows.sm,
+  },
+  loadingContent: {
+    alignItems: "center",
+    padding: spacing.xl,
+  },
+  loadingTitle: {
+    ...typography.headline3,
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  loadingSubtext: {
+    ...typography.body2,
+    color: "#666",
+    textAlign: "center",
+  },
+  insightCard: {
+    marginBottom: spacing.md,
+  },
+  card: {
+    borderLeftWidth: 4,
+    ...shadows.sm,
+  },
+  cardContent: {
+    padding: spacing.lg,
+  },
+  insightHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    marginRight: spacing.md,
   },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: "#6B7280",
+  insightContent: {
+    flex: 1,
+  },
+  insightTitle: {
+    ...typography.headline1,
+    marginBottom: spacing.xs,
+  },
+  insightDescription: {
+    ...typography.body2,
+    color: "#666",
+    marginBottom: spacing.sm,
+    lineHeight: 20,
+  },
+  savingsChip: {
+    alignSelf: "flex-start",
+  },
+  summaryCard: {
+    ...shadows.sm,
+  },
+  summaryContent: {
+    alignItems: "center",
+    padding: spacing.lg,
+  },
+  summaryTitle: {
+    ...typography.headline3,
+    textAlign: "center",
+    marginBottom: spacing.xs,
+  },
+  summaryAmount: {
+    ...typography.headline2,
+    color: "#34C759",
+    textAlign: "center",
+    marginBottom: spacing.xs,
+  },
+  summarySubtext: {
+    ...typography.body2,
+    color: "#666",
     textAlign: "center",
   },
 });

@@ -44,10 +44,12 @@ const StatCard = ({
   label,
   value,
   color,
+  subtext,
 }: {
   label: string;
   value: string;
   color?: string;
+  subtext: string;
 }) => {
   const theme = useTheme<AppTheme>();
   return (
@@ -63,6 +65,12 @@ const StatCard = ({
         style={{ color: color || theme.colors.onSurface }}
       >
         {value}
+      </Text>
+      <Text
+        variant="bodyMedium"
+        style={{ color: theme.colors.onSurfaceVariant }}
+      >
+        {subtext}
       </Text>
     </View>
   );
@@ -177,11 +185,17 @@ export default function TrendsScreen() {
                 <StatCard
                   label="Avg. Weekly Spend"
                   value={`$${averagePerWeek.toFixed(2)}`}
+                  subtext={`${weeklySpending.length} weeks tracked`}
                 />
                 <StatCard
                   label="Total Savings"
                   value={`$${(analytics.totalSavings ?? 0).toFixed(2)}`}
                   color={theme.colors.positive}
+                  subtext={
+                    analytics.totalSavings > 0
+                      ? "Great job!"
+                      : "No savings yet — let's change that next week"
+                  }
                 />
               </View>
             </Section>
@@ -199,6 +213,8 @@ export default function TrendsScreen() {
                       fill: ({ datum }) =>
                         datum.y > averagePerWeek * 1.2
                           ? theme.colors.error
+                          : datum.y < averagePerWeek * 0.8
+                          ? theme.colors.positive
                           : theme.colors.primary,
                       width: 25,
                       borderRadius: 6,
@@ -208,7 +224,11 @@ export default function TrendsScreen() {
                     duration: 1000,
                     onLoad: { duration: 500 },
                   }}
-                  labels={({ datum }) => (datum.y === maxSpend ? "🔥" : null)}
+                  labels={({ datum }) => {
+                    if (datum.y === maxSpend) return "🔥";
+                    if (datum.y < averagePerWeek * 0.8) return "💚";
+                    return null;
+                  }}
                   labelComponent={<VictoryLabel dy={-20} />}
                 />
                 <VictoryAxis
@@ -228,9 +248,25 @@ export default function TrendsScreen() {
                   }}
                 />
               </VictoryChart>
+
+              {/* Chart context */}
+              <View style={styles.chartContext}>
+                <Text
+                  style={[
+                    styles.chartContextText,
+                    { color: theme.colors.onSurfaceVariant },
+                  ]}
+                >
+                  {maxSpend > averagePerWeek * 1.2
+                    ? "🔥 Peak spending week detected"
+                    : maxSpend < averagePerWeek * 0.8
+                    ? "💚 Your most frugal week"
+                    : "📊 Consistent spending pattern"}
+                </Text>
+              </View>
             </Section>
 
-            {analytics.totalSavings > 0 && (
+            {analytics.totalSavings > 0 ? (
               <Section title="Savings Spotlight">
                 <View
                   style={[
@@ -255,6 +291,46 @@ export default function TrendsScreen() {
                     }}
                   >
                     That's enough for a fancy tub of hummus. The worm approves.
+                  </Text>
+                </View>
+              </Section>
+            ) : (
+              <Section title="Savings Opportunity">
+                <View
+                  style={[
+                    styles.statCard,
+                    {
+                      backgroundColor: theme.colors.surface,
+                      alignItems: "center",
+                    },
+                  ]}
+                >
+                  <Text
+                    variant="headlineSmall"
+                    style={{ color: theme.colors.onSurfaceVariant }}
+                  >
+                    No savings yet
+                  </Text>
+                  <Text
+                    variant="bodyLarge"
+                    style={{
+                      color: theme.colors.onSurfaceVariant,
+                      marginTop: 8,
+                      textAlign: "center",
+                    }}
+                  >
+                    Let's change that next week! Try comparing prices across
+                    stores or look for generic alternatives.
+                  </Text>
+                  <Text
+                    variant="bodyMedium"
+                    style={{
+                      color: theme.colors.primary,
+                      marginTop: 12,
+                      fontStyle: "italic",
+                    }}
+                  >
+                    The worm believes in you 🐛
                   </Text>
                 </View>
               </Section>
@@ -370,5 +446,15 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: spacing.sm,
     color: "#6c757d",
+  },
+  chartContext: {
+    marginTop: spacing.md,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    backgroundColor: "#f0f0f0",
+  },
+  chartContextText: {
+    fontSize: 12,
+    fontWeight: "500",
   },
 });

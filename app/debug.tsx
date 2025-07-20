@@ -171,7 +171,7 @@ export default function DebugScreen() {
           <Card.Content>
             <View style={styles.cardHeader}>
               <MaterialIcons
-                name="person"
+                name="person-outline"
                 size={24}
                 color={theme.colors.primary}
               />

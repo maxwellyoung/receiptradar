@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { API_CONFIG } from "@/constants/api";
 import { authService } from "@/services/supabase";
 import { handleAsyncError, logError } from "@/utils/error-handler";
+import { logger } from "@/utils/logger";
 
 interface HouseholdMember {
   user: {
@@ -77,8 +78,37 @@ export const useHousehold = () => {
       setState({ household: data, loading: false, error: null });
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      logError(err, "useHousehold.fetchHousehold");
-      setState((prev) => ({ ...prev, loading: false, error: err.message }));
+
+      // Handle network errors gracefully
+      if (
+        err.message.includes("Network request failed") ||
+        err.message.includes("fetch")
+      ) {
+        logger.warn("Network request failed - backend may not be running", {
+          component: "useHousehold",
+          error: err.message,
+          apiUrl: API_CONFIG.honoApiUrl,
+        });
+
+        // In development, provide helpful feedback
+        if (API_CONFIG.isDevelopment) {
+          setState((prev) => ({
+            ...prev,
+            loading: false,
+            error:
+              "Backend server not running. Start with: cd backend && npm run dev",
+          }));
+        } else {
+          setState((prev) => ({
+            ...prev,
+            loading: false,
+            error: "Network error - please check your connection",
+          }));
+        }
+      } else {
+        logError(err, "useHousehold.fetchHousehold");
+        setState((prev) => ({ ...prev, loading: false, error: err.message }));
+      }
     }
   }, []);
 

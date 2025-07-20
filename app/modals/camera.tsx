@@ -19,6 +19,7 @@ import { spacing, shadows } from "@/constants/theme";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import * as FileSystem from "expo-file-system";
+import * as Device from "expo-device";
 
 // TensorFlow Lite imports (you'll need to install these packages)
 // import * as tf from '@tensorflow/tfjs';
@@ -43,8 +44,12 @@ export default function CameraScreen() {
   const [detectionConfidence, setDetectionConfidence] = useState(0);
   const detectionAnim = useRef(new Animated.Value(0)).current;
 
-  // Flash mode state
+  // Flash mode state (for photo capture)
   const [flashMode, setFlashMode] = useState<"off" | "on" | "auto">("auto");
+
+  // Flashlight state (continuous light for scanning)
+  const [flashlightOn, setFlashlightOn] = useState(false);
+  const [flashlightSupported, setFlashlightSupported] = useState(false);
 
   // Advanced detection state
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -60,6 +65,11 @@ export default function CameraScreen() {
     (async () => {
       const { status } = await Camera.requestCameraPermissionsAsync();
       setHasPermission(status === "granted");
+
+      // Check if device supports flashlight
+      if (Device.isDevice) {
+        setFlashlightSupported(true);
+      }
     })();
   }, []);
 
@@ -295,6 +305,13 @@ export default function CameraScreen() {
     setFlashMode(modes[nextIndex]);
   };
 
+  const toggleFlashlight = () => {
+    if (!flashlightSupported) return;
+
+    setFlashlightOn(!flashlightOn);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
   const getFlashIcon = () => {
     switch (flashMode) {
       case "on":
@@ -305,6 +322,10 @@ export default function CameraScreen() {
       default:
         return "flash-auto";
     }
+  };
+
+  const getFlashlightIcon = () => {
+    return flashlightOn ? "highlight" : "highlight-outline";
   };
 
   if (hasPermission === null) {
@@ -381,24 +402,53 @@ export default function CameraScreen() {
             <MaterialIcons name="close" size={28} color="#8E8E93" />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={toggleFlashMode}
-            style={styles.flashButton}
-            activeOpacity={0.7}
-          >
-            <MaterialIcons
-              name={getFlashIcon() as any}
-              size={24}
-              color={flashMode === "on" ? "#fff" : "rgba(255, 255, 255, 0.8)"}
-            />
-            <Text style={styles.flashModeText}>
-              {flashMode === "auto"
-                ? "AUTO"
-                : flashMode === "on"
-                ? "ON"
-                : "OFF"}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.headerControls}>
+            {/* Flashlight button (continuous light for scanning) */}
+            {flashlightSupported && (
+              <TouchableOpacity
+                onPress={toggleFlashlight}
+                style={[
+                  styles.flashButton,
+                  flashlightOn && styles.flashButtonActive,
+                ]}
+                activeOpacity={0.7}
+              >
+                <MaterialIcons
+                  name={getFlashlightIcon() as any}
+                  size={24}
+                  color={flashlightOn ? "#FFD700" : "rgba(255, 255, 255, 0.8)"}
+                />
+                <Text
+                  style={[
+                    styles.flashModeText,
+                    flashlightOn && { color: "rgba(255, 215, 0, 0.8)" },
+                  ]}
+                >
+                  {flashlightOn ? "ON" : "OFF"}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Camera flash button (for photo capture) */}
+            <TouchableOpacity
+              onPress={toggleFlashMode}
+              style={styles.flashButton}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons
+                name={getFlashIcon() as any}
+                size={24}
+                color={flashMode === "on" ? "#fff" : "rgba(255, 255, 255, 0.8)"}
+              />
+              <Text style={styles.flashModeText}>
+                {flashMode === "auto"
+                  ? "AUTO"
+                  : flashMode === "on"
+                  ? "ON"
+                  : "OFF"}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
         <Text style={styles.poeticPrompt}>Frame your receipt</Text>
         <Text style={styles.subtitle}>Position within the guide</Text>
@@ -415,6 +465,7 @@ export default function CameraScreen() {
               facing="back"
               ratio="4:3"
               flash={flashMode}
+              enableTorch={flashlightOn}
             />
 
             {/* Elegant Scanning Overlay */}
@@ -525,7 +576,10 @@ export default function CameraScreen() {
                     ? "Ready to capture"
                     : "Align receipt in frame"}
                 </Text>
-                {flashMode === "on" && (
+                {flashlightOn && (
+                  <Text style={styles.flashIndicator}>Flashlight on</Text>
+                )}
+                {flashMode === "on" && !flashlightOn && (
                   <Text style={styles.flashIndicator}>Flash enabled</Text>
                 )}
               </Animated.View>
@@ -582,6 +636,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     zIndex: 10,
   },
+  headerControls: {
+    flexDirection: "row",
+    gap: 12,
+  },
   closeButton: {
     backgroundColor: "rgba(0, 0, 0, 0.3)",
     borderRadius: 24,
@@ -606,6 +664,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 12,
     backdropFilter: "blur(20px)",
+  },
+  flashButtonActive: {
+    backgroundColor: "rgba(255, 215, 0, 0.2)",
+    borderColor: "rgba(255, 215, 0, 0.4)",
   },
   flashModeText: {
     color: "rgba(255, 255, 255, 0.6)",

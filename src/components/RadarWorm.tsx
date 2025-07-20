@@ -35,81 +35,91 @@ interface RadarWormProps {
   interactive?: boolean;
 }
 
-const moodConfig = {
+interface MoodConfig {
+  color: string;
+  emoji: string;
+  message: string;
+  eyeStyle: string;
+  gooSpeed: number;
+  gooeyness: number;
+  bounceIntensity: number;
+  backgroundColor: string;
+  accessory?: string;
+  personality?: string;
+}
+
+const moodConfig: Record<RadarMood, MoodConfig> = {
   calm: {
-    emoji: "🙂",
-    color: "#34C759",
-    backgroundColor: "#F0F9F0",
-    message: "Frugal — suspiciously so. The worm nods approvingly.",
+    color: "#6FCF97",
+    emoji: "😌",
+    message: "Looks like a tidy little shop.",
     eyeStyle: "normal",
+    gooSpeed: 1,
+    gooeyness: 0.3,
+    bounceIntensity: 2,
+    backgroundColor: "#E8F5E8",
     accessory: "monocle",
     personality: "observant",
-    gooeyness: 0.8,
-    bounceIntensity: 0.6,
-    gooSpeed: 0.8,
   },
   concerned: {
-    emoji: "🤔",
-    color: "#FF9500",
-    backgroundColor: "#FFF8F0",
-    message: "Those snack aisles... a siren's call to your wallet. Be strong.",
-    eyeStyle: "narrow",
+    color: "#F2994A",
+    emoji: "😟",
+    message: "Another chips binge, huh?",
+    eyeStyle: "worried",
+    gooSpeed: 1.2,
+    gooeyness: 0.4,
+    bounceIntensity: 3,
+    backgroundColor: "#FFF3E0",
     accessory: "worried",
     personality: "cautious",
-    gooeyness: 0.6,
-    bounceIntensity: 0.4,
-    gooSpeed: 0.6,
   },
   dramatic: {
+    color: "#EB5757",
     emoji: "😱",
-    color: "#FF3B30",
-    backgroundColor: "#FFF0F0",
-    message: "BY THE GHOST OF ESCOFFIER, WHAT IS THIS?! I must lie down.",
+    message: "Caviar? In this economy?",
     eyeStyle: "wide",
+    gooSpeed: 1.5,
+    gooeyness: 0.6,
+    bounceIntensity: 5,
+    backgroundColor: "#FFEBEE",
     accessory: "fainting",
     personality: "theatrical",
-    gooeyness: 1.2,
-    bounceIntensity: 1.0,
-    gooSpeed: 1.2,
   },
   zen: {
-    emoji: "🧘",
-    color: "#AF52DE",
-    backgroundColor: "#F8F0FF",
-    message:
-      "The receipt is blank. The wallet is full. The worm has reached nirvana.",
+    color: "#9B51E0",
+    emoji: "🧘‍♂️",
+    message: "You are one with the pantry.",
     eyeStyle: "closed",
+    gooSpeed: 0.8,
+    gooeyness: 0.2,
+    bounceIntensity: 1,
+    backgroundColor: "#F3E5F5",
     accessory: "lotus",
     personality: "peaceful",
-    gooeyness: 0.4,
-    bounceIntensity: 0.3,
-    gooSpeed: 0.4,
   },
   suspicious: {
+    color: "#F2C94C",
     emoji: "👀",
-    color: "#FFCC00",
-    backgroundColor: "#FFFDF0",
-    message:
-      "Three types of cheese? You're either building a cheese board or a cheese fort. The worm is watching.",
-    eyeStyle: "squint",
+    message: "Are you laundering groceries?",
+    eyeStyle: "narrow",
+    gooSpeed: 1.3,
+    gooeyness: 0.5,
+    bounceIntensity: 4,
+    backgroundColor: "#FFF8E1",
     accessory: "magnifying",
     personality: "investigative",
-    gooeyness: 0.9,
-    bounceIntensity: 0.7,
-    gooSpeed: 0.9,
   },
   insightful: {
-    emoji: "✨",
-    color: "#007AFF",
-    backgroundColor: "#F0F8FF",
-    message:
-      "A masterclass in couponing. You've saved enough for... another, smaller cucumber. Bravo.",
+    color: "#2F80ED",
+    emoji: "🧠",
+    message: "You saved $9.60 this week. Worm proud.",
     eyeStyle: "sparkle",
+    gooSpeed: 1.1,
+    gooeyness: 0.35,
+    bounceIntensity: 2.5,
+    backgroundColor: "#E3F2FD",
     accessory: "crown",
     personality: "proud",
-    gooeyness: 1.0,
-    bounceIntensity: 0.8,
-    gooSpeed: 1.0,
   },
 };
 
@@ -153,6 +163,27 @@ export const RadarWorm: React.FC<RadarWormProps> = ({
   const config = moodConfig[mood] || moodConfig.calm;
   const customMessage =
     message || config.message || "The worm is processing...";
+
+  // Enhanced personality messages based on context
+  const getPersonalityMessage = () => {
+    if (message) return message;
+
+    if (totalSpend && totalSpend > 0) {
+      if (totalSpend < 20) {
+        return "A modest day. The worm approves of your restraint.";
+      } else if (totalSpend < 50) {
+        return "Solid grocery game. Nothing to see here.";
+      } else if (totalSpend < 100) {
+        return "Someone's been shopping. Let's see what you got.";
+      } else {
+        return "Big spender alert! The worm is taking notes.";
+      }
+    }
+
+    return config.message;
+  };
+
+  const personalityMessage = getPersonalityMessage();
 
   // Big, gooey size calculations
   const sizeMap = {
@@ -805,7 +836,7 @@ export const RadarWorm: React.FC<RadarWormProps> = ({
             numberOfLines={3}
             ellipsizeMode="tail"
           >
-            {customMessage}
+            {personalityMessage}
           </Text>
           <View
             style={[

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   StyleSheet,
@@ -14,7 +14,10 @@ import { useThemeContext } from "@/contexts/ThemeContext";
 import { spacing, borderRadius, shadows, typography } from "@/constants/theme";
 import { RadarWorm } from "./RadarWorm";
 import { useRouter } from "expo-router";
-import { useThreeJSEffects } from "@/hooks/useThreeJSEffects";
+import { SimpleEffects } from "./SimpleEffects";
+import { Card, Button, useTheme } from "react-native-paper";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { AppTheme } from "@/constants/theme";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -39,7 +42,10 @@ export const ReceiptSuccessScreen: React.FC<ReceiptSuccessScreenProps> = ({
 }) => {
   const { theme } = useThemeContext();
   const router = useRouter();
-  const { triggerReceiptProcessed, triggerSuccess } = useThreeJSEffects();
+  const [showEffects, setShowEffects] = useState(false);
+  const [effectType, setEffectType] = useState<"confetti" | "particles">(
+    "confetti"
+  );
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -69,9 +75,10 @@ export const ReceiptSuccessScreen: React.FC<ReceiptSuccessScreenProps> = ({
 
     // Trigger receipt processed effect
     setTimeout(() => {
-      triggerReceiptProcessed();
+      setEffectType("confetti");
+      setShowEffects(true);
     }, 1000);
-  }, [triggerReceiptProcessed]);
+  }, []);
 
   const handleViewReceipt = () => {
     if (receiptData?.id) {
@@ -99,277 +106,288 @@ export const ReceiptSuccessScreen: React.FC<ReceiptSuccessScreenProps> = ({
   };
 
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        {
-          opacity: fadeAnim,
-          transform: [{ scale: scaleAnim }, { translateY: slideAnim }],
-        },
-      ]}
-    >
-      {/* Main Content Card */}
-      <View
-        style={[styles.mainCard, { backgroundColor: theme.colors.surface }]}
+    <View style={styles.container}>
+      <SimpleEffects
+        visible={showEffects}
+        effect={effectType}
+        color="#FFD700"
+        onComplete={() => setShowEffects(false)}
+      />
+      <Animated.View
+        style={[
+          styles.animatedContainer,
+          {
+            opacity: fadeAnim,
+            transform: [{ scale: scaleAnim }, { translateY: slideAnim }],
+          },
+        ]}
       >
-        {/* Success Header */}
-        <MotiView
-          from={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: "spring", delay: 200 }}
-          style={styles.successHeader}
+        {/* Main Content Card */}
+        <View
+          style={[styles.mainCard, { backgroundColor: theme.colors.surface }]}
         >
-          <View
-            style={[
-              styles.successIcon,
-              { backgroundColor: theme.colors.positive },
-            ]}
+          {/* Success Header */}
+          <MotiView
+            from={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: "spring", delay: 200 }}
+            style={styles.successHeader}
           >
-            <MaterialIcons
-              name="check-circle"
-              size={32}
-              color={theme.colors.onPrimary}
-            />
-          </View>
-          <Text
-            style={[styles.successTitle, { color: theme.colors.onSurface }]}
-          >
-            Receipt Processed
-          </Text>
-        </MotiView>
-
-        {/* Receipt Image */}
-        <MotiView
-          from={{ opacity: 0, translateY: 20 }}
-          animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: "timing", duration: 600, delay: 300 }}
-          style={styles.receiptContainer}
-        >
-          <View style={styles.imageContainer}>
-            <Image source={{ uri: photoUri }} style={styles.receiptImage} />
             <View
               style={[
-                styles.successOverlay,
-                { backgroundColor: theme.colors.positive + "CC" },
+                styles.successIcon,
+                { backgroundColor: theme.colors.positive },
               ]}
             >
               <MaterialIcons
-                name="check"
-                size={24}
+                name="check-circle"
+                size={32}
                 color={theme.colors.onPrimary}
               />
             </View>
-          </View>
-        </MotiView>
+            <Text
+              style={[styles.successTitle, { color: theme.colors.onSurface }]}
+            >
+              Receipt Processed
+            </Text>
+          </MotiView>
 
-        {/* Receipt Details */}
-        <MotiView
-          from={{ opacity: 0, translateY: 20 }}
-          animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: "timing", duration: 600, delay: 400 }}
-          style={[
-            styles.detailsContainer,
-            { backgroundColor: theme.colors.surfaceVariant },
-          ]}
-        >
-          <View style={styles.detailRow}>
-            <Text
-              style={[
-                styles.detailLabel,
-                { color: theme.colors.onSurfaceVariant },
-              ]}
-            >
-              Store
-            </Text>
-            <Text
-              style={[styles.detailValue, { color: theme.colors.onSurface }]}
-            >
-              {receiptData.store_name}
-            </Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text
-              style={[
-                styles.detailLabel,
-                { color: theme.colors.onSurfaceVariant },
-              ]}
-            >
-              Total
-            </Text>
-            <Text
-              style={[styles.detailValue, { color: theme.colors.positive }]}
-            >
-              ${receiptData.total_amount.toFixed(2)}
-            </Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text
-              style={[
-                styles.detailLabel,
-                { color: theme.colors.onSurfaceVariant },
-              ]}
-            >
-              Date
-            </Text>
-            <Text
-              style={[styles.detailValue, { color: theme.colors.onSurface }]}
-            >
-              {receiptData.date}
-            </Text>
-          </View>
-        </MotiView>
-
-        {/* Radar's Reaction */}
-        <MotiView
-          from={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: "spring", delay: 500 }}
-          style={styles.radarContainer}
-        >
-          <RadarWorm
-            mood={radarMood.mood}
-            message={radarMood.message}
-            totalSpend={receiptData.total_amount}
-            categoryBreakdown={receiptData.ocr_data?.items?.reduce(
-              (acc: any, item: any) => {
-                acc[item.category] =
-                  (acc[item.category] || 0) + (item.price || 0);
-                return acc;
-              },
-              {}
-            )}
-            visible={true}
-            size="medium"
-            showSpeechBubble={radarMood.showSpeechBubble}
-          />
-        </MotiView>
-
-        {/* Success Message */}
-        <MotiView
-          from={{ opacity: 0, translateY: 20 }}
-          animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: "timing", duration: 600, delay: 600 }}
-          style={styles.messageContainer}
-        >
-          <Text
-            style={[styles.successMessage, { color: theme.colors.positive }]}
+          {/* Receipt Image */}
+          <MotiView
+            from={{ opacity: 0, translateY: 20 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ type: "timing", duration: 600, delay: 300 }}
+            style={styles.receiptContainer}
           >
-            Receipt saved successfully
-          </Text>
-        </MotiView>
-      </View>
+            <View style={styles.imageContainer}>
+              <Image source={{ uri: photoUri }} style={styles.receiptImage} />
+              <View
+                style={[
+                  styles.successOverlay,
+                  { backgroundColor: theme.colors.positive + "CC" },
+                ]}
+              >
+                <MaterialIcons
+                  name="check"
+                  size={24}
+                  color={theme.colors.onPrimary}
+                />
+              </View>
+            </View>
+          </MotiView>
 
-      {/* Action Buttons */}
-      <MotiView
-        from={{ opacity: 0, translateY: 30 }}
-        animate={{ opacity: 1, translateY: 0 }}
-        transition={{ type: "timing", duration: 600, delay: 700 }}
-        style={styles.actionsContainer}
-      >
-        {/* Primary Action */}
-        <TouchableOpacity
-          style={[
-            styles.primaryButton,
-            { backgroundColor: theme.colors.primary },
-          ]}
-          onPress={handleViewReceipt}
-          activeOpacity={0.8}
-        >
-          <MaterialIcons
-            name="receipt"
-            size={20}
-            color={theme.colors.onPrimary}
-            style={styles.buttonIcon}
-          />
-          <Text
+          {/* Receipt Details */}
+          <MotiView
+            from={{ opacity: 0, translateY: 20 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ type: "timing", duration: 600, delay: 400 }}
             style={[
-              styles.primaryButtonText,
-              { color: theme.colors.onPrimary },
+              styles.detailsContainer,
+              { backgroundColor: theme.colors.surfaceVariant },
             ]}
           >
-            View Receipt
-          </Text>
-        </TouchableOpacity>
+            <View style={styles.detailRow}>
+              <Text
+                style={[
+                  styles.detailLabel,
+                  { color: theme.colors.onSurfaceVariant },
+                ]}
+              >
+                Store
+              </Text>
+              <Text
+                style={[styles.detailValue, { color: theme.colors.onSurface }]}
+              >
+                {receiptData.store_name}
+              </Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text
+                style={[
+                  styles.detailLabel,
+                  { color: theme.colors.onSurfaceVariant },
+                ]}
+              >
+                Total
+              </Text>
+              <Text
+                style={[styles.detailValue, { color: theme.colors.positive }]}
+              >
+                ${receiptData.total_amount.toFixed(2)}
+              </Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text
+                style={[
+                  styles.detailLabel,
+                  { color: theme.colors.onSurfaceVariant },
+                ]}
+              >
+                Date
+              </Text>
+              <Text
+                style={[styles.detailValue, { color: theme.colors.onSurface }]}
+              >
+                {receiptData.date}
+              </Text>
+            </View>
+          </MotiView>
 
-        {/* Secondary Actions Row */}
-        <View style={styles.secondaryActionsRow}>
-          <TouchableOpacity
-            style={[
-              styles.secondaryButton,
-              { backgroundColor: theme.colors.surface },
-            ]}
-            onPress={handleScanAnother}
-            activeOpacity={0.8}
+          {/* Radar's Reaction */}
+          <MotiView
+            from={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: "spring", delay: 500 }}
+            style={styles.radarContainer}
           >
-            <MaterialIcons
-              name="camera"
-              size={18}
-              color={theme.colors.primary}
-              style={styles.buttonIcon}
+            <RadarWorm
+              mood={radarMood.mood}
+              message={radarMood.message}
+              totalSpend={receiptData.total_amount}
+              categoryBreakdown={receiptData.ocr_data?.items?.reduce(
+                (acc: any, item: any) => {
+                  acc[item.category] =
+                    (acc[item.category] || 0) + (item.price || 0);
+                  return acc;
+                },
+                {}
+              )}
+              visible={true}
+              size="medium"
+              showSpeechBubble={radarMood.showSpeechBubble}
             />
-            <Text
-              style={[
-                styles.secondaryButtonText,
-                { color: theme.colors.primary },
-              ]}
-            >
-              Scan Another
-            </Text>
-          </TouchableOpacity>
+          </MotiView>
 
-          <TouchableOpacity
-            style={[
-              styles.secondaryButton,
-              { backgroundColor: theme.colors.surface },
-            ]}
-            onPress={handleGoToTrends}
-            activeOpacity={0.8}
+          {/* Success Message */}
+          <MotiView
+            from={{ opacity: 0, translateY: 20 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ type: "timing", duration: 600, delay: 600 }}
+            style={styles.messageContainer}
           >
-            <MaterialIcons
-              name="trending-up"
-              size={18}
-              color={theme.colors.primary}
-              style={styles.buttonIcon}
-            />
             <Text
-              style={[
-                styles.secondaryButtonText,
-                { color: theme.colors.primary },
-              ]}
+              style={[styles.successMessage, { color: theme.colors.positive }]}
             >
-              View Trends
+              Receipt saved successfully
             </Text>
-          </TouchableOpacity>
+          </MotiView>
         </View>
 
-        {/* Tertiary Action */}
-        <TouchableOpacity
-          style={styles.tertiaryButton}
-          onPress={handleBackToHome}
-          activeOpacity={0.7}
+        {/* Action Buttons */}
+        <MotiView
+          from={{ opacity: 0, translateY: 30 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: "timing", duration: 600, delay: 700 }}
+          style={styles.actionsContainer}
         >
-          <MaterialIcons
-            name="home"
-            size={18}
-            color={theme.colors.onSurfaceVariant}
-            style={styles.buttonIcon}
-          />
-          <Text
+          {/* Primary Action */}
+          <TouchableOpacity
             style={[
-              styles.tertiaryButtonText,
-              { color: theme.colors.onSurfaceVariant },
+              styles.primaryButton,
+              { backgroundColor: theme.colors.primary },
             ]}
+            onPress={handleViewReceipt}
+            activeOpacity={0.8}
           >
-            Back to Home
-          </Text>
-        </TouchableOpacity>
-      </MotiView>
-    </Animated.View>
+            <MaterialIcons
+              name="receipt"
+              size={20}
+              color={theme.colors.onPrimary}
+              style={styles.buttonIcon}
+            />
+            <Text
+              style={[
+                styles.primaryButtonText,
+                { color: theme.colors.onPrimary },
+              ]}
+            >
+              View Receipt
+            </Text>
+          </TouchableOpacity>
+
+          {/* Secondary Actions Row */}
+          <View style={styles.secondaryActionsRow}>
+            <TouchableOpacity
+              style={[
+                styles.secondaryButton,
+                { backgroundColor: theme.colors.surface },
+              ]}
+              onPress={handleScanAnother}
+              activeOpacity={0.8}
+            >
+              <MaterialIcons
+                name="camera"
+                size={18}
+                color={theme.colors.primary}
+                style={styles.buttonIcon}
+              />
+              <Text
+                style={[
+                  styles.secondaryButtonText,
+                  { color: theme.colors.primary },
+                ]}
+              >
+                Scan Another
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.secondaryButton,
+                { backgroundColor: theme.colors.surface },
+              ]}
+              onPress={handleGoToTrends}
+              activeOpacity={0.8}
+            >
+              <MaterialIcons
+                name="trending-up"
+                size={18}
+                color={theme.colors.primary}
+                style={styles.buttonIcon}
+              />
+              <Text
+                style={[
+                  styles.secondaryButtonText,
+                  { color: theme.colors.primary },
+                ]}
+              >
+                View Trends
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Tertiary Action */}
+          <TouchableOpacity
+            style={styles.tertiaryButton}
+            onPress={handleBackToHome}
+            activeOpacity={0.7}
+          >
+            <MaterialIcons
+              name="home"
+              size={18}
+              color={theme.colors.onSurfaceVariant}
+              style={styles.buttonIcon}
+            />
+            <Text
+              style={[
+                styles.tertiaryButtonText,
+                { color: theme.colors.onSurfaceVariant },
+              ]}
+            >
+              Back to Home
+            </Text>
+          </TouchableOpacity>
+        </MotiView>
+      </Animated.View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  animatedContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",

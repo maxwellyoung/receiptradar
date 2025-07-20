@@ -100,6 +100,18 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="price-compare"
+        options={{
+          tabBarIcon: ({ color, size, focused }: IconProps) => (
+            <MaterialCommunityIcons
+              name={focused ? "scale-balance" : "scale-balance"}
+              size={size}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="household"
         options={{
           tabBarIcon: ({ color, size, focused }: IconProps) => (

@@ -159,8 +159,8 @@ export default function ManageHouseholdModal() {
                 {members.map((member) => (
                   <List.Item
                     key={member.user.id}
-                    title={member.user.email}
-                    description={member.role}
+                    title={<Text>{member.user.email}</Text>}
+                    description={<Text>{member.role}</Text>}
                     left={(props) => (
                       <List.Icon
                         {...props}

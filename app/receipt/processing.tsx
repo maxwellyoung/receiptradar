@@ -22,6 +22,7 @@ import { ViralFeaturesManager } from "@/components/ViralFeaturesManager";
 import { RadarWorm } from "@/components/RadarWorm";
 import { NotReceiptScreen } from "@/components/NotReceiptScreen";
 import { ReceiptSuccessScreen } from "@/components/ReceiptSuccessScreen";
+import { ReceiptScanningExperience } from "@/components/ReceiptScanningExperience";
 import { CorrectionModal, ReceiptItem } from "@/components/CorrectionModal";
 import { WeeklyInsights, InsightData } from "@/components/WeeklyInsights";
 import { useRadarMood } from "@/hooks/useRadarMood";
@@ -710,66 +711,17 @@ export default function ReceiptProcessingScreen() {
         )}
 
         {processingComplete && receiptData && !notAReceipt && (
-          <ReceiptSuccessScreen
+          <ReceiptScanningExperience
             receiptData={receiptData}
             photoUri={photoUri}
-            radarMood={radarMood}
             onViewReceipt={handleViewReceipt}
             onScanAnother={handleScanAnother}
             onBackToHome={handleBackToHome}
-            onViewTrends={handleGoToTrends}
           />
         )}
       </Animated.View>
 
-      {/* Action Buttons - Only show for successful receipts */}
-      {processingComplete && receiptData && !notAReceipt && (
-        <View style={styles.actions}>
-          <View style={styles.actionButtonsContainer}>
-            <Button
-              mode="contained"
-              onPress={handleViewReceipt}
-              style={styles.primaryButton}
-              labelStyle={styles.buttonLabel}
-              icon="receipt"
-            >
-              View Receipt
-            </Button>
-
-            <View style={styles.buttonRow}>
-              <Button
-                mode="outlined"
-                onPress={handleScanAnother}
-                style={styles.secondaryButton}
-                labelStyle={styles.secondaryButtonLabel}
-                icon="camera"
-              >
-                Scan Another
-              </Button>
-
-              <Button
-                mode="outlined"
-                onPress={handleGoToTrends}
-                style={styles.secondaryButton}
-                labelStyle={styles.secondaryButtonLabel}
-                icon="chart-line"
-              >
-                View Trends
-              </Button>
-            </View>
-
-            <Button
-              mode="text"
-              onPress={handleBackToHome}
-              style={styles.textButton}
-              labelStyle={styles.textButtonLabel}
-              icon="home"
-            >
-              Back to Home
-            </Button>
-          </View>
-        </View>
-      )}
+      {/* Action buttons are now handled by ReceiptScanningExperience component */}
 
       {/* Viral Features */}
       {showViralFeatures && receiptData && processingComplete && (
