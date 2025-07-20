@@ -19,7 +19,7 @@ import { HolisticCard } from "./HolisticDesignSystem";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useRouter } from "expo-router";
 import { useReceipts } from "@/hooks/useReceipts";
-import { useRadarMood } from "@/hooks/useRadarMood";
+// Removed useRadarMood import - hook was deleted
 import * as Haptics from "expo-haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -273,7 +273,7 @@ export function ReceiptScanningExperience({
                     {formatCurrency(receiptData.total)}
                   </HolisticText>
                   <HolisticText variant="body.medium" color="secondary">
-                    {receiptData.items.length} items •{" "}
+                    {receiptData.items?.length || 0} items •{" "}
                     {new Date(receiptData.timestamp).toLocaleDateString()}
                   </HolisticText>
                 </View>
@@ -327,7 +327,7 @@ export function ReceiptScanningExperience({
                   >
                     Top Items
                   </HolisticText>
-                  {receiptData.items.slice(0, 3).map((item, index) => (
+                  {receiptData.items?.slice(0, 3).map((item, index) => (
                     <View key={index} style={styles.itemRow}>
                       <HolisticText
                         variant="body.medium"
@@ -343,13 +343,13 @@ export function ReceiptScanningExperience({
                       </HolisticText>
                     </View>
                   ))}
-                  {receiptData.items.length > 3 && (
+                  {receiptData.items && receiptData.items.length > 3 && (
                     <HolisticText
                       variant="body.small"
                       color="secondary"
                       style={styles.moreItems}
                     >
-                      +{receiptData.items.length - 3} more items
+                      +{(receiptData.items?.length || 0) - 3} more items
                     </HolisticText>
                   )}
                 </View>

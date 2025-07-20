@@ -1,6 +1,6 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { Text, Card, useTheme, Chip } from "react-native-paper";
+import { Text, Card, useTheme } from "react-native-paper";
 import { AppTheme } from "@/constants/theme";
 import { Receipt } from "@/types";
 import { spacing, borderRadius, shadows, typography } from "@/constants/theme";
@@ -13,25 +13,26 @@ interface ReceiptCardProps {
 
 const getStoreIcon = (storeName: string): string => {
   const name = storeName.toLowerCase();
-  if (name.includes("countdown")) return "🛒";
-  if (name.includes("pak'n") || name.includes("paknsave")) return "🥬";
-  if (name.includes("new world")) return "🌍";
-  if (name.includes("four square")) return "🏪";
-  if (name.includes("supermarket")) return "🛍️";
-  if (name.includes("dairy")) return "🥛";
-  if (name.includes("pharmacy")) return "💊";
-  if (name.includes("liquor")) return "🍷";
-  return "🛒";
+  if (name.includes("countdown")) return "store";
+  if (name.includes("pak'n") || name.includes("paknsave"))
+    return "local-grocery-store";
+  if (name.includes("new world")) return "storefront";
+  if (name.includes("four square")) return "local-convenience-store";
+  if (name.includes("supermarket")) return "shopping-cart";
+  if (name.includes("dairy")) return "local-dining";
+  if (name.includes("pharmacy")) return "local-pharmacy";
+  if (name.includes("liquor")) return "local-bar";
+  return "store";
 };
 
 const getSpendingContext = (
   amount: number
-): { label: string; color: string; emoji: string } => {
-  if (amount < 20) return { label: "Small", color: "#34C759", emoji: "🐹" };
-  if (amount < 50) return { label: "Modest", color: "#007AFF", emoji: "😌" };
-  if (amount < 100) return { label: "Regular", color: "#FF9500", emoji: "🛒" };
-  if (amount < 200) return { label: "Big", color: "#FF6B35", emoji: "🛍️" };
-  return { label: "Major", color: "#AF52DE", emoji: "👑" };
+): { label: string; color: string } => {
+  if (amount < 20) return { label: "Small", color: "#34C759" };
+  if (amount < 50) return { label: "Modest", color: "#007AFF" };
+  if (amount < 100) return { label: "Regular", color: "#FF9500" };
+  if (amount < 200) return { label: "Large", color: "#FF6B35" };
+  return { label: "Major", color: "#AF52DE" };
 };
 
 const getTimeAgo = (timestamp: string): string => {
@@ -67,7 +68,13 @@ export function ReceiptCard({ receipt, onPress }: ReceiptCardProps) {
       <Card.Content style={styles.content}>
         <View style={styles.leftSection}>
           <View style={styles.storeInfo}>
-            <Text style={styles.storeIcon}>{storeIcon}</Text>
+            <View style={styles.iconContainer}>
+              <MaterialIcons
+                name={storeIcon as any}
+                size={20}
+                color={theme.colors.primary}
+              />
+            </View>
             <View style={styles.storeDetails}>
               <Text
                 style={[
@@ -91,18 +98,18 @@ export function ReceiptCard({ receipt, onPress }: ReceiptCardProps) {
           </View>
 
           <View style={styles.spendingContext}>
-            <Chip
-              icon={() => (
-                <Text style={styles.chipEmoji}>{spendingContext.emoji}</Text>
-              )}
+            <View
               style={[
-                styles.contextChip,
-                { backgroundColor: spendingContext.color + "20" },
+                styles.contextBadge,
+                { backgroundColor: spendingContext.color + "15" },
               ]}
-              textStyle={[styles.chipText, { color: spendingContext.color }]}
             >
-              {spendingContext.label}
-            </Chip>
+              <Text
+                style={[styles.contextText, { color: spendingContext.color }]}
+              >
+                {spendingContext.label}
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -143,10 +150,14 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: spacing.sm,
   },
-  storeIcon: {
-    fontSize: 24,
+  iconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#F5F5F5",
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: spacing.sm,
-    marginTop: 2,
   },
   storeDetails: {
     flex: 1,
@@ -154,15 +165,12 @@ const styles = StyleSheet.create({
   spendingContext: {
     alignSelf: "flex-start",
   },
-  contextChip: {
-    height: 32,
+  contextBadge: {
     paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
   },
-  chipEmoji: {
-    fontSize: 14,
-    marginRight: spacing.xs,
-  },
-  chipText: {
+  contextText: {
     fontSize: 12,
     fontWeight: "600",
     lineHeight: 16,

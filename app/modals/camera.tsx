@@ -15,7 +15,7 @@ import {
 } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { spacing, shadows } from "@/constants/theme";
+import { spacing, shadows } from "@/constants/holisticDesignSystem";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import * as FileSystem from "expo-file-system";

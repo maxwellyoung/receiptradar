@@ -168,7 +168,7 @@ export function PriceIntelligence({
           />
           <Text style={styles.loadingTitle}>Analyzing Prices...</Text>
           <Text style={styles.loadingSubtext}>
-            The worm is comparing prices across stores
+            Comparing prices across stores
           </Text>
         </Card.Content>
       </Card>

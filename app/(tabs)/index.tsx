@@ -6,7 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
 } from "react-native";
-import { Text, Button, useTheme, Searchbar } from "react-native-paper";
+import { Text, useTheme, Searchbar } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { useReceipts } from "@/hooks/useReceipts";
 import { AppTheme } from "@/constants/theme";
@@ -55,50 +55,6 @@ import {
   commonStyles,
 } from "@/utils/designSystem";
 
-const WORM_GREETINGS = [
-  "Here's what you really spent today.",
-  "Your grocery impact, revealed.",
-  "The numbers don't lie, but they do tell stories.",
-  "Today's consumption chronicle.",
-  "Your spending story, chapter by chapter.",
-  "The receipts have spoken.",
-  "Your financial footprint, one scan at a time.",
-];
-
-const getPersonalityGreeting = (
-  totalSpending: number,
-  mood: string,
-  toneMode: "gentle" | "hard" | "silly" | "wise"
-) => {
-  if (totalSpending === 0) {
-    return toneMode === "gentle"
-      ? "Ready to start your spending story? ✨"
-      : "No receipts yet. Let's see what you're made of.";
-  }
-
-  if (totalSpending < 30) {
-    return toneMode === "gentle"
-      ? "A modest day of consumption. The worm approves! 🌱"
-      : "Not bad. Could be worse.";
-  }
-
-  if (totalSpending < 80) {
-    return toneMode === "gentle"
-      ? "Solid grocery game. Nothing to see here! ✨"
-      : "Acceptable spending. Moving on.";
-  }
-
-  if (totalSpending < 150) {
-    return toneMode === "gentle"
-      ? "Someone's been shopping. Let's see what you got! 🛒"
-      : "That's a lot of groceries. Hope you're feeding a family.";
-  }
-
-  return toneMode === "gentle"
-    ? "Big spender alert! The worm is taking notes! 📝"
-    : "Caviar? In this economy? 😱";
-};
-
 export default function DashboardScreen() {
   const router = useRouter();
   const theme = useTheme<AppTheme>();
@@ -113,10 +69,6 @@ export default function DashboardScreen() {
   const totalSpending = receipts.reduce(
     (acc, receipt) => acc + receipt.total,
     0
-  );
-
-  const [greeting, setGreeting] = useState(
-    "Ready to start your spending story?"
   );
 
   const debouncedSearch = useCallback(
@@ -143,15 +95,11 @@ export default function DashboardScreen() {
     }).start();
   }, [fadeAnim]);
 
-  useEffect(() => {
-    setGreeting(getPersonalityGreeting(totalSpending, "calm", toneMode));
-  }, [totalSpending, toneMode]);
-
   const onChangeSearch = (query: string) => setSearchQuery(query);
 
   const listHeader = (
     <View style={styles.listHeader}>
-      {/* Clean Header */}
+      {/* Clean Header - Editorial Hierarchy */}
       <View style={styles.header}>
         <HolisticText variant="headline.large" style={styles.mainTitle}>
           ReceiptRadar
@@ -160,13 +108,13 @@ export default function DashboardScreen() {
         <HolisticText
           variant="body.large"
           color="secondary"
-          style={styles.greeting}
+          style={styles.subtitle}
         >
-          {greeting}
+          Track your spending with clarity
         </HolisticText>
       </View>
 
-      {/* Primary Action - Clean and Focused */}
+      {/* Primary Action - Clear and Focused */}
       <View style={styles.primaryActionContainer}>
         <HolisticButton
           title="Scan Receipt"
@@ -177,11 +125,10 @@ export default function DashboardScreen() {
           variant="primary"
           size="large"
           fullWidth
-          icon="📸"
         />
       </View>
 
-      {/* Quick Stats - Only if there's data */}
+      {/* Essential Stats - Only if there's data */}
       {receipts.length > 0 && (
         <View style={styles.statsContainer}>
           <HolisticCard variant="minimal" padding="medium">
@@ -206,30 +153,15 @@ export default function DashboardScreen() {
                 </HolisticText>
               </View>
             </View>
-
-            {/* Last Receipt Context */}
-            {receipts.length > 0 && (
-              <View style={styles.lastReceiptContainer}>
-                <View style={styles.statDivider} />
-                <View style={styles.lastReceiptInfo}>
-                  <HolisticText variant="body.small" color="secondary">
-                    Last receipt: {receipts[0].store?.name || "Unknown store"}
-                  </HolisticText>
-                  <HolisticText variant="body.small" color="secondary">
-                    {formatTimeAgo(receipts[0].created_at)}
-                  </HolisticText>
-                </View>
-              </View>
-            )}
           </HolisticCard>
         </View>
       )}
 
-      {/* Secondary Actions - Clean and Minimal */}
+      {/* Secondary Actions - Minimal and Purposeful */}
       {receipts.length > 0 && (
         <View style={styles.secondaryActionsContainer}>
           <HolisticButton
-            title="Weekly Insights"
+            title="View Insights"
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               setShowWeeklyDigest(true);
@@ -237,7 +169,6 @@ export default function DashboardScreen() {
             variant="outline"
             size="medium"
             fullWidth
-            icon="📊"
           />
         </View>
       )}
@@ -292,18 +223,14 @@ export default function DashboardScreen() {
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <HolisticText variant="title.large" style={styles.emptyTitle}>
-                {toneMode === "gentle"
-                  ? "Ready to start your spending story? ✨"
-                  : "No receipts yet. Let's see what you're made of."}
+                Start tracking your spending
               </HolisticText>
               <HolisticText
                 variant="body.medium"
                 color="secondary"
                 style={styles.emptyMessage}
               >
-                {toneMode === "gentle"
-                  ? "Start by scanning your first receipt"
-                  : "Scan a receipt to get started"}
+                Scan your first receipt to begin
               </HolisticText>
             </View>
           }
@@ -316,7 +243,7 @@ export default function DashboardScreen() {
         />
       </Animated.View>
 
-      {/* Weekly Worm Digest Modal */}
+      {/* Weekly Insights Modal */}
       <WeeklyWormDigest
         isVisible={showWeeklyDigest}
         onDismiss={() => setShowWeeklyDigest(false)}
@@ -346,12 +273,10 @@ const styles = StyleSheet.create({
   },
   mainTitle: {
     textAlign: "center",
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sm,
   },
-
-  greeting: {
+  subtitle: {
     textAlign: "center",
-    fontStyle: "italic",
   },
   searchHeader: {
     paddingHorizontal: spacing.lg,
@@ -398,26 +323,5 @@ const styles = StyleSheet.create({
   },
   emptyMessage: {
     textAlign: "center",
-  },
-  lastReceiptContainer: {
-    marginTop: spacing.md,
-  },
-  lastReceiptInfo: {
-    alignItems: "center",
-    marginTop: spacing.sm,
-  },
-  primaryButton: {
-    borderRadius: borderRadius.lg,
-    elevation: 0,
-    shadowOpacity: 0,
-  },
-  buttonContent: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-  },
-  buttonLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-    letterSpacing: 0.5,
   },
 });

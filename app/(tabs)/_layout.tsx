@@ -68,7 +68,7 @@ export default function TabLayout() {
         options={{
           tabBarIcon: ({ color, size, focused }: IconProps) => (
             <MaterialCommunityIcons
-              name={focused ? "script-text" : "script-text-outline"}
+              name={focused ? "home" : "home-outline"}
               size={size}
               color={color}
             />
@@ -90,9 +90,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="trends"
         options={{
-          tabBarIcon: ({ color, size }: IconProps) => (
+          tabBarIcon: ({ color, size, focused }: IconProps) => (
             <MaterialCommunityIcons
-              name="chart-arc"
+              name={focused ? "chart-line" : "chart-line"}
               size={size}
               color={color}
             />
@@ -124,23 +124,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="radar-demo"
-        options={{
-          tabBarIcon: ({ color, size, focused }: IconProps) => (
-            <MaterialCommunityIcons
-              name={focused ? "account-heart" : "account-heart-outline"}
-              size={size}
-              color={color}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="settings"
         options={{
           tabBarIcon: ({ color, size, focused }: IconProps) => (
             <MaterialCommunityIcons
-              name={focused ? "tune" : "tune-variant"}
+              name={focused ? "cog" : "cog-outline"}
               size={size}
               color={color}
             />

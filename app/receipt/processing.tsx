@@ -705,7 +705,18 @@ export default function ReceiptProcessingScreen() {
 
         {processingComplete && receiptData && !notAReceipt && (
           <ReceiptScanningExperience
-            receiptData={receiptData}
+            receiptData={{
+              total: receiptData.total_amount,
+              store: receiptData.store_name,
+              items:
+                receiptData.ocr_data?.items?.map((item: any) => ({
+                  name: item.name,
+                  price: item.price,
+                  quantity: item.quantity,
+                  category: item.category,
+                })) || [],
+              timestamp: receiptData.date,
+            }}
             onSave={handleViewReceipt}
           />
         )}
