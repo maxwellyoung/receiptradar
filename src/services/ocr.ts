@@ -139,48 +139,22 @@ class OCRService {
   private getFallbackResult(errorMessage?: string): OCRResult {
     // Enhanced fallback result with error information
     const fallbackResult: OCRResult = {
-      store_name: "Demo Store",
+      store_name: "Unknown Store",
       date: new Date().toISOString().split("T")[0],
-      total: 45.67,
-      items: [
-        {
-          name: "Milk 2L",
-          price: 4.5,
-          quantity: 1,
-          category: "Dairy",
-          confidence: 0.95,
-        },
-        {
-          name: "Bread Loaf",
-          price: 3.2,
-          quantity: 1,
-          category: "Bakery",
-          confidence: 0.92,
-        },
-        {
-          name: "Bananas 1kg",
-          price: 2.8,
-          quantity: 1,
-          category: "Fresh Produce",
-          confidence: 0.88,
-        },
-      ],
-      subtotal: 41.23,
-      tax: 4.44,
-      receipt_number: "R123456789",
+      total: 0,
+      items: [],
+      subtotal: 0,
+      tax: 0,
+      receipt_number: "",
       validation: {
-        is_valid: true,
-        confidence_score: 0.92,
-        issues: errorMessage ? [`OCR Service Error: ${errorMessage}`] : [],
+        is_valid: false,
+        confidence_score: 0.0,
+        issues: errorMessage
+          ? [`OCR Service Error: ${errorMessage}`]
+          : ["Unable to process receipt"],
       },
-      processing_time: 1.2,
+      processing_time: 0,
     };
-
-    // If there was an error, mark as invalid
-    if (errorMessage) {
-      fallbackResult.validation.is_valid = false;
-      fallbackResult.validation.confidence_score = 0.3;
-    }
 
     return fallbackResult;
   }

@@ -28,6 +28,7 @@ import {
   shadows,
 } from "@/constants/theme";
 import { API_CONFIG } from "@/constants/api";
+import { useRealPriceComparison } from "@/hooks/useRealPriceComparison";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -59,65 +60,22 @@ export function PriceComparisonModal({
   currentStore,
 }: PriceComparisonModalProps) {
   const theme = useTheme<AppTheme>();
-  const [priceData, setPriceData] = useState<PriceData[]>([]);
-  const [loading, setLoading] = useState(false);
   const [selectedStore, setSelectedStore] = useState<string | null>(null);
   const [showPriceHistory, setShowPriceHistory] = useState(false);
 
+  const {
+    priceComparisons,
+    priceHistory,
+    loading,
+    error,
+    getBestPrice,
+    getPriceTrend,
+    getPotentialSavings,
+  } = useRealPriceComparison(itemName);
+
   useEffect(() => {
-    if (visible && itemName) {
-      fetchPriceData();
-    }
+    // Price comparison data is automatically fetched by the hook
   }, [visible, itemName]);
-
-  const fetchPriceData = async () => {
-    setLoading(true);
-    try {
-      // Simulate API call - replace with actual endpoint
-      const response = await fetch(
-        `${API_CONFIG.honoApiUrl}/api/v1/price-comparison/${encodeURIComponent(
-          itemName
-        )}`
-      );
-
-      if (response.ok) {
-        const data: PriceData[] = await response.json();
-        setPriceData(data);
-      } else {
-        // Generate mock data for demo
-        setPriceData(generateMockPriceData());
-      }
-    } catch (error) {
-      console.error("Price comparison failed:", error);
-      setPriceData(generateMockPriceData());
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const generateMockPriceData = (): PriceData[] => {
-    const stores = ["Countdown", "Pak'nSave", "New World", "Fresh Choice"];
-    const basePrice = 8.5 + Math.random() * 12;
-
-    return stores.map((store, index) => {
-      const price = basePrice + index * 1.5 + Math.random() * 2;
-      const confidence = 0.7 + Math.random() * 0.3;
-
-      return {
-        storeName: store,
-        price,
-        inStock: Math.random() > 0.1,
-        lastUpdated: new Date(
-          Date.now() - Math.random() * 3600000
-        ).toISOString(),
-        confidence,
-        priceHistory: Array.from({ length: 7 }, (_, i) => ({
-          date: new Date(Date.now() - i * 86400000).toISOString(),
-          price: price + (Math.random() - 0.5) * 2,
-        })),
-      };
-    });
-  };
 
   const formatCurrency = (amount: number) => {
     return `$${amount.toFixed(2)}`;
@@ -129,24 +87,17 @@ export function PriceComparisonModal({
     return "#EF4444";
   };
 
-  const getBestPrice = () => {
-    if (priceData.length === 0) return null;
-    return priceData.reduce((best, current) =>
-      current.price < best.price ? current : best
-    );
-  };
-
   const getWorstPrice = () => {
-    if (priceData.length === 0) return null;
-    return priceData.reduce((worst, current) =>
-      current.price > worst.price ? current : worst
+    if (priceComparisons.length === 0) return null;
+    return priceComparisons.reduce((worst, current) =>
+      current.averagePrice > worst.averagePrice ? current : worst
     );
   };
 
   const calculateSavings = (price: number) => {
     const bestPrice = getBestPrice();
     if (!bestPrice) return 0;
-    return price - bestPrice.price;
+    return price - bestPrice.averagePrice;
   };
 
   const renderPriceCard = (data: PriceData, index: number) => {

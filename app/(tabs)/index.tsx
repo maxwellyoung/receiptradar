@@ -11,6 +11,7 @@ import { useRouter } from "expo-router";
 import { useReceipts } from "@/hooks/useReceipts";
 import { AppTheme } from "@/constants/theme";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useRealAnalytics } from "@/hooks/useRealAnalytics";
 import { ReceiptCard } from "@/components/ReceiptCard";
 import { WeeklyInsights } from "@/components/WeeklyInsights";
 import { QuickSearchWidget } from "@/components/QuickSearchWidget";
@@ -60,16 +61,25 @@ export default function DashboardScreen() {
   const theme = useTheme<AppTheme>();
   const { user } = useAuthContext();
   const { receipts, loading, search } = useReceipts(user?.id ?? "");
+  const {
+    spendingAnalytics,
+    storeAnalytics,
+    savingsAnalytics,
+    loading: analyticsLoading,
+    getTopCategory,
+    getTopStore,
+    getWeeklySpendingTrend,
+  } = useRealAnalytics();
   const { toneMode } = useToneMode();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [searchQuery, setSearchQuery] = useState("");
   const [showWeeklyDigest, setShowWeeklyDigest] = useState(false);
   const insets = useSafeAreaInsets();
 
-  const totalSpending = receipts.reduce(
-    (acc, receipt) => acc + receipt.total,
-    0
-  );
+  // Use real analytics data when available, fallback to calculated data
+  const totalSpending =
+    spendingAnalytics?.totalSpending ||
+    receipts.reduce((acc, receipt) => acc + receipt.total, 0);
 
   const debouncedSearch = useCallback(
     debounce((query: string) => {
@@ -129,7 +139,7 @@ export default function DashboardScreen() {
       </View>
 
       {/* Essential Stats - Only if there's data */}
-      {receipts.length > 0 && (
+      {(receipts.length > 0 || spendingAnalytics) && (
         <View style={styles.statsContainer}>
           <HolisticCard variant="minimal" padding="medium">
             <View style={styles.statsRow}>
@@ -146,12 +156,29 @@ export default function DashboardScreen() {
 
               <View style={styles.statItem}>
                 <HolisticText variant="title.large" style={styles.statValue}>
-                  {receipts.length}
+                  {spendingAnalytics?.receiptCount || receipts.length}
                 </HolisticText>
                 <HolisticText variant="body.small" color="secondary">
                   Receipts
                 </HolisticText>
               </View>
+
+              {savingsAnalytics && (
+                <>
+                  <View style={styles.statDivider} />
+                  <View style={styles.statItem}>
+                    <HolisticText
+                      variant="title.large"
+                      style={styles.statValue}
+                    >
+                      ${savingsAnalytics.totalSavings.toFixed(2)}
+                    </HolisticText>
+                    <HolisticText variant="body.small" color="secondary">
+                      Savings
+                    </HolisticText>
+                  </View>
+                </>
+              )}
             </View>
           </HolisticCard>
         </View>

@@ -109,14 +109,14 @@ export const WeeklyWormDigest: React.FC<{
 
     const averagePerReceipt = totalSpent / weeklyReceipts.length;
 
-    // Mock data for demo
+    // Real data from receipts
     const mockStats: WeeklyStats = {
       totalSpent,
       receiptsCount: weeklyReceipts.length,
       averagePerReceipt,
-      topCategories: ["Dairy", "Produce", "Snacks"],
-      savingsOpportunities: Math.floor(Math.random() * 20) + 5,
-      weekOverWeekChange: Math.floor(Math.random() * 30) - 15, // -15 to +15%
+      topCategories: [], // Will be calculated from real data
+      savingsOpportunities: 0, // Will be calculated from real data
+      weekOverWeekChange: 0, // Will be calculated from real data
     };
 
     setStats(mockStats);

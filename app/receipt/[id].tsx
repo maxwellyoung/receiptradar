@@ -47,8 +47,7 @@ interface ReceiptDetail {
   created_at: string;
 }
 
-export default function ReceiptDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+function ReceiptDetailContent({ id }: { id: string }) {
   const theme = useTheme<AppTheme>();
   const { user } = useAuthContext();
   const { getReceiptById, deleteReceipt } = useReceipts(user?.id || "");
@@ -58,15 +57,13 @@ export default function ReceiptDetailScreen() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (id) {
-      loadReceipt();
-    }
+    loadReceipt();
   }, [id]);
 
   const loadReceipt = async () => {
     try {
       setLoading(true);
-      const { data, error } = await getReceiptById(id!);
+      const { data, error } = await getReceiptById(id);
 
       if (error) {
         setError(typeof error === "string" ? error : error.message);
@@ -95,7 +92,7 @@ export default function ReceiptDetailScreen() {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
-            const { error } = await deleteReceipt(id!);
+            const { error } = await deleteReceipt(id);
             if (error) {
               Alert.alert("Error", "Failed to delete receipt");
             } else {
@@ -556,3 +553,35 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
 });
+
+export default function ReceiptDetailScreen() {
+  const params = useLocalSearchParams<{ id: string }>();
+  const id = params?.id;
+
+  if (!id || typeof id !== "string") {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 32,
+          }}
+        >
+          <Text
+            variant="headlineSmall"
+            style={{ color: "#f44336", marginBottom: 16 }}
+          >
+            Invalid receipt ID
+          </Text>
+          <Button mode="contained" onPress={() => router.back()}>
+            Go Back
+          </Button>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return <ReceiptDetailContent id={id} />;
+}

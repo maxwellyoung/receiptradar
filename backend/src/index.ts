@@ -5,8 +5,8 @@ import { logger } from "hono/logger";
 import { auth } from "./middleware/auth";
 import { receipts } from "./routes/receipts";
 import { households } from "./routes/households";
+import { analytics } from "./routes/analytics";
 // import { users } from "./routes/users";
-// import { analytics } from "./routes/analytics";
 // import { webhooks } from "./routes/webhooks";
 
 const app = new Hono();
@@ -59,8 +59,8 @@ v1.use("*", auth);
 
 v1.route("/receipts", receipts);
 v1.route("/households", households);
+v1.route("/analytics", analytics);
 // v1.route("/api/v1/users", auth, users);
-// v1.route("/api/v1/analytics", auth, analytics);
 // v1.route("/api/v1/webhooks", webhooks);
 
 app.route("/api/v1", v1);

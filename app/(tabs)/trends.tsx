@@ -12,6 +12,7 @@ import { useRouter } from "expo-router";
 import { useReceipts } from "@/hooks/useReceipts";
 import { AppTheme } from "@/constants/theme";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useRealAnalytics } from "@/hooks/useRealAnalytics";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import {
@@ -48,6 +49,15 @@ export default function TrendsScreen() {
   const theme = useTheme<AppTheme>();
   const { user } = useAuthContext();
   const { receipts } = useReceipts(user?.id ?? "");
+  const {
+    spendingAnalytics,
+    storeAnalytics,
+    savingsAnalytics,
+    loading: analyticsLoading,
+    getTopCategory,
+    getTopStore,
+    getWeeklySpendingTrend,
+  } = useRealAnalytics();
   const insets = useSafeAreaInsets();
 
   const [selectedPeriod, setSelectedPeriod] = useState("month");
@@ -122,8 +132,28 @@ export default function TrendsScreen() {
     router.push("/(tabs)/receipts");
   };
 
-  // Calculate trends data
+  // Calculate trends data using real analytics when available
   const getTrendsData = () => {
+    // Use real analytics data when available
+    if (spendingAnalytics) {
+      const categoryBreakdown = spendingAnalytics.categoryBreakdown.reduce(
+        (acc, cat) => {
+          acc[cat.name] = cat.amount;
+          return acc;
+        },
+        {} as { [key: string]: number }
+      );
+
+      return {
+        totalSpent: spendingAnalytics.totalSpending,
+        averageSpend: spendingAnalytics.averageSpend,
+        receiptCount: spendingAnalytics.receiptCount,
+        categoryBreakdown,
+        topCategory: getTopCategory()?.name || "Groceries",
+      };
+    }
+
+    // Fallback to calculated data from receipts
     const now = new Date();
     const filteredReceipts = receipts.filter((receipt) => {
       const receiptDate = new Date(receipt.ts);
@@ -151,7 +181,7 @@ export default function TrendsScreen() {
     const averageSpend =
       filteredReceipts.length > 0 ? totalSpent / filteredReceipts.length : 0;
 
-    // Mock category breakdown
+    // Mock category breakdown for fallback
     const categoryBreakdown = CATEGORIES.reduce((acc, category) => {
       acc[category] = Math.random() * totalSpent * 0.3;
       return acc;
@@ -174,6 +204,19 @@ export default function TrendsScreen() {
   const getInsightMessage = () => {
     if (trendsData.receiptCount === 0) {
       return "Start scanning receipts to see your spending trends";
+    }
+
+    // Use real analytics insights when available
+    if (savingsAnalytics) {
+      if (savingsAnalytics.savingsPercentage > 10) {
+        return `Great job! You've saved ${savingsAnalytics.savingsPercentage.toFixed(
+          1
+        )}% on your spending`;
+      } else if (savingsAnalytics.savingsPercentage > 5) {
+        return `You're saving money! ${savingsAnalytics.savingsPercentage.toFixed(
+          1
+        )}% savings so far`;
+      }
     }
 
     if (trendsData.averageSpend < 50) {
