@@ -11,6 +11,11 @@ import {
   borderRadius,
   shadows,
 } from "@/constants/theme";
+import {
+  materialShadows,
+  interactions,
+} from "@/constants/holisticDesignSystem";
+import * as Haptics from "expo-haptics";
 
 const QUICK_SEARCH_ITEMS = [
   { name: "washing powder", icon: "washing-machine", category: "Household" },
@@ -50,6 +55,7 @@ export function QuickSearchWidget({
   );
 
   const handleItemPress = (itemName: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (onItemSelect) {
       onItemSelect(itemName);
     } else {
@@ -63,8 +69,14 @@ export function QuickSearchWidget({
 
   const handleSearchSubmit = () => {
     if (searchQuery.trim()) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       handleItemPress(searchQuery.trim());
     }
+  };
+
+  const handleSearchFocus = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowSuggestions(true);
   };
 
   const renderQuickSearchItem = ({
@@ -75,12 +87,13 @@ export function QuickSearchWidget({
     <TouchableOpacity
       style={styles.quickSearchItem}
       onPress={() => handleItemPress(item.name)}
+      activeOpacity={0.7}
     >
       <MotiView
         from={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ type: "spring", damping: 15 }}
-        style={styles.itemContainer}
+        style={[styles.itemContainer, materialShadows.subtle]}
       >
         <View style={styles.itemIcon}>
           <MaterialIcons
@@ -109,10 +122,13 @@ export function QuickSearchWidget({
       <MotiView
         from={{ opacity: 0, translateY: 20 }}
         animate={{ opacity: 1, translateY: 0 }}
-        transition={{ type: "timing", duration: 500 }}
+        transition={{
+          type: "timing",
+          duration: interactions.transitions.normal,
+        }}
         style={styles.compactContainer}
       >
-        <Card style={styles.compactCard}>
+        <Card style={[styles.compactCard, materialShadows.light]}>
           <Card.Content style={styles.compactContent}>
             <View style={styles.compactHeader}>
               <MaterialIcons
@@ -127,7 +143,11 @@ export function QuickSearchWidget({
             </Text>
             <TouchableOpacity
               style={styles.compactButton}
-              onPress={() => router.push("/(tabs)/price-compare")}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push("/(tabs)/price-compare");
+              }}
+              activeOpacity={0.8}
             >
               <Text style={styles.compactButtonText}>Compare Prices</Text>
               <MaterialIcons name="arrow-forward" size={16} color="white" />
@@ -142,10 +162,10 @@ export function QuickSearchWidget({
     <MotiView
       from={{ opacity: 0, translateY: 20 }}
       animate={{ opacity: 1, translateY: 0 }}
-      transition={{ type: "timing", duration: 500 }}
+      transition={{ type: "timing", duration: interactions.transitions.normal }}
       style={styles.container}
     >
-      <Card style={styles.card}>
+      <Card style={[styles.card, materialShadows.medium]}>
         <Card.Content>
           <View style={styles.header}>
             <MaterialIcons
@@ -161,8 +181,8 @@ export function QuickSearchWidget({
             onChangeText={setSearchQuery}
             value={searchQuery}
             onSubmitEditing={handleSearchSubmit}
-            onFocus={() => setShowSuggestions(true)}
-            style={styles.searchBar}
+            onFocus={handleSearchFocus}
+            style={[styles.searchBar, materialShadows.subtle]}
             icon="magnify"
             iconColor={theme.colors.onSurfaceVariant}
             placeholderTextColor={theme.colors.onSurfaceVariant}
@@ -173,7 +193,10 @@ export function QuickSearchWidget({
             <MotiView
               from={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
-              transition={{ type: "timing", duration: 300 }}
+              transition={{
+                type: "timing",
+                duration: interactions.transitions.fast,
+              }}
               style={styles.suggestionsContainer}
             >
               <Text style={styles.suggestionsTitle}>Popular Items</Text>
@@ -201,6 +224,7 @@ export function QuickSearchWidget({
                     key={item.name}
                     style={styles.quickAccessItem}
                     onPress={() => handleItemPress(item.name)}
+                    activeOpacity={0.7}
                   >
                     <MotiView
                       from={{ opacity: 0, scale: 0.8 }}
@@ -210,17 +234,20 @@ export function QuickSearchWidget({
                         damping: 15,
                         delay: index * 50,
                       }}
-                      style={styles.quickAccessIcon}
+                      style={[
+                        styles.quickAccessItemContent,
+                        materialShadows.subtle,
+                      ]}
                     >
                       <MaterialIcons
                         name={item.icon as any}
                         size={20}
                         color={theme.colors.primary}
                       />
+                      <Text style={styles.quickAccessItemText}>
+                        {item.name}
+                      </Text>
                     </MotiView>
-                    <Text style={styles.quickAccessText} numberOfLines={2}>
-                      {item.name}
-                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -326,16 +353,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: spacing.md,
   },
-  quickAccessIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#F3F4F6",
-    justifyContent: "center",
+  quickAccessItemContent: {
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: spacing.sm,
+    padding: spacing.sm,
+    backgroundColor: "white",
+    borderRadius: borderRadius.md,
+    ...shadows.xs,
   },
-  quickAccessText: {
+  quickAccessItemText: {
     ...typography.caption1,
     textAlign: "center",
     color: "#374151",

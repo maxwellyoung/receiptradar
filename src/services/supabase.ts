@@ -82,7 +82,9 @@ export const authService = {
   // Reset password
   async resetPassword(email: string) {
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: "receiptradar://reset-password",
+      redirectTo: __DEV__
+        ? "receiptradar://reset-password"
+        : "https://expo.dev/accounts/maxwellyoung/projects/receipt-worm",
     });
     return { data, error };
   },

@@ -86,7 +86,7 @@ export const designPrinciples = {
 };
 
 // ============================================================================
-// TYPOGRAPHY SYSTEM (Emil Kowalski + Michael Beirut)
+// ENHANCED TYPOGRAPHY SYSTEM (Emil Kowalski + Michael Beirut)
 // ============================================================================
 
 export const typography = {
@@ -657,3 +657,196 @@ export const designSystemConfig = {
 };
 
 export default designTokens;
+
+// ============================================================================
+// ENHANCED DESIGN SYSTEM COMPONENTS (Phase 2 Improvements)
+// ============================================================================
+
+// Text handling utilities to fix cutoff issues
+export const textStyles = {
+  // For long text that should truncate
+  truncate: {
+    numberOfLines: 1,
+    ellipsizeMode: "tail" as const,
+  },
+
+  // For text that should wrap
+  wrap: {
+    flexWrap: "wrap" as const,
+    flexShrink: 1,
+  },
+
+  // For text that should be responsive
+  responsive: {
+    fontSize: 16,
+    lineHeight: 24,
+  },
+
+  // For text that needs proper spacing
+  spaced: {
+    letterSpacing: 0.15,
+    lineHeight: 1.5,
+  },
+};
+
+// Enhanced shadows system with material awareness
+export const materialShadows = {
+  // Subtle shadows for cards (material-aware)
+  subtle: {
+    shadowColor: colors.content.primary,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+
+  // Light shadows for hover states
+  light: {
+    shadowColor: colors.content.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+
+  // Medium shadows for elevated elements
+  medium: {
+    shadowColor: colors.content.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+
+  // Strong shadows for modals
+  strong: {
+    shadowColor: colors.content.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+
+  // No shadow for flat elements
+  none: {
+    shadowColor: "transparent",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
+  },
+};
+
+// Interaction system with human touch
+export const interactions = {
+  // Haptic feedback for all interactions
+  haptics: {
+    light: "light" as const,
+    medium: "medium" as const,
+    heavy: "heavy" as const,
+  },
+
+  // Smooth press animations
+  press: {
+    scale: 0.98,
+    duration: 100,
+    easing: "easeOut" as const,
+  },
+
+  // Purposeful transitions
+  transitions: {
+    fast: 200,
+    normal: 300,
+    slow: 500,
+  },
+
+  // Animation presets
+  animations: {
+    fadeIn: {
+      opacity: [0, 1],
+      duration: 300,
+    },
+    slideUp: {
+      transform: [{ translateY: [20, 0] }],
+      opacity: [0, 1],
+      duration: 300,
+    },
+    scaleIn: {
+      transform: [{ scale: [0.9, 1] }],
+      opacity: [0, 1],
+      duration: 300,
+    },
+    buttonPress: {
+      transform: [{ scale: [1, 0.98] }],
+      duration: 100,
+    },
+  },
+};
+
+// Enhanced component styles for consistency
+export const componentStyles = {
+  // Dashboard layout styles
+  dashboard: {
+    header: {
+      spacing: spacing.xxlarge,
+      typography: typography.headline.large,
+    },
+    primaryAction: {
+      marginBottom: spacing.large,
+      fullWidth: true,
+    },
+    stats: {
+      layout: "horizontal",
+      spacing: spacing.medium,
+      typography: typography.title.medium,
+      minimal: true,
+    },
+    search: {
+      marginBottom: spacing.medium,
+      variant: "outlined",
+    },
+  },
+
+  // Receipt card styles
+  receiptCard: {
+    layout: {
+      padding: spacing.medium,
+      spacing: spacing.small,
+      borderRadius: borderRadius.medium,
+    },
+    typography: {
+      storeName: typography.title.medium,
+      date: typography.body.small,
+      total: typography.title.large,
+      items: typography.body.small,
+    },
+    elevation: materialShadows.subtle,
+    interactions: {
+      pressFeedback: true,
+      hapticFeedback: interactions.haptics.light,
+      animation: interactions.animations.buttonPress,
+    },
+  },
+
+  // Processing screen styles
+  processing: {
+    progress: {
+      animation: "smooth",
+      color: colors.brand.primary,
+      thickness: "medium",
+      showPercentage: true,
+    },
+    steps: {
+      layout: "vertical",
+      spacing: spacing.medium,
+      typography: typography.body.medium,
+      icons: "material",
+    },
+    error: {
+      icon: "error",
+      typography: typography.title.medium,
+      action: "retry",
+      animation: "shake",
+    },
+  },
+};

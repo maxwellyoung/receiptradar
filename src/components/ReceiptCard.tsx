@@ -1,183 +1,334 @@
-import React from "react";
-import { View, StyleSheet } from "react-native";
-import { Text, Card, useTheme } from "react-native-paper";
-import { AppTheme } from "@/constants/theme";
-import { Receipt } from "@/types";
-import { spacing, borderRadius, shadows, typography } from "@/constants/theme";
+import React, { useState, useRef } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
+  Dimensions,
+} from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useTheme } from "react-native-paper";
+import { AppTheme } from "@/constants/theme";
+import { Receipt } from "@/types/database";
+import { formatCurrency } from "@/utils/formatters";
+import {
+  spacing,
+  typography,
+  materialShadows,
+  interactions,
+} from "@/constants/holisticDesignSystem";
+import * as Haptics from "expo-haptics";
+
+const { width: screenWidth } = Dimensions.get("window");
 
 interface ReceiptCardProps {
   receipt: Receipt;
-  onPress: () => void;
+  onPress?: () => void;
+  items?: Array<{
+    name: string;
+    price: number;
+    quantity: number;
+  }>;
 }
 
-const getStoreIcon = (storeName: string): string => {
-  const name = storeName.toLowerCase();
-  if (name.includes("countdown")) return "store";
-  if (name.includes("pak'n") || name.includes("paknsave"))
-    return "local-grocery-store";
-  if (name.includes("new world")) return "storefront";
-  if (name.includes("four square")) return "local-convenience-store";
-  if (name.includes("supermarket")) return "shopping-cart";
-  if (name.includes("dairy")) return "local-dining";
-  if (name.includes("pharmacy")) return "local-pharmacy";
-  if (name.includes("liquor")) return "local-bar";
-  return "store";
-};
-
-const getSpendingContext = (
-  amount: number
-): { label: string; color: string } => {
-  if (amount < 20) return { label: "Small", color: "#34C759" };
-  if (amount < 50) return { label: "Modest", color: "#007AFF" };
-  if (amount < 100) return { label: "Regular", color: "#FF9500" };
-  if (amount < 200) return { label: "Large", color: "#FF6B35" };
-  return { label: "Major", color: "#AF52DE" };
-};
-
-const getTimeAgo = (timestamp: string): string => {
-  const now = new Date();
-  const receiptDate = new Date(timestamp);
-  const diffInHours =
-    (now.getTime() - receiptDate.getTime()) / (1000 * 60 * 60);
-
-  if (diffInHours < 1) return "Just now";
-  if (diffInHours < 24) return `${Math.floor(diffInHours)}h ago`;
-  if (diffInHours < 168) return `${Math.floor(diffInHours / 24)}d ago`;
-  return receiptDate.toLocaleDateString();
-};
-
-export function ReceiptCard({ receipt, onPress }: ReceiptCardProps) {
+export const ReceiptCard: React.FC<ReceiptCardProps> = ({
+  receipt,
+  onPress,
+  items = [],
+}) => {
   const theme = useTheme<AppTheme>();
-  const storeIcon = getStoreIcon(receipt.store?.name ?? "Store");
-  const spendingContext = getSpendingContext(receipt.total);
-  const timeAgo = getTimeAgo(receipt.ts);
+  const [isPressed, setIsPressed] = useState(false);
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const elevationAnim = useRef(new Animated.Value(0)).current;
+
+  const handlePressIn = () => {
+    if (onPress) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setIsPressed(true);
+      Animated.parallel([
+        Animated.timing(scaleAnim, {
+          toValue: interactions.press.scale,
+          duration: interactions.press.duration,
+          useNativeDriver: true,
+        }),
+        Animated.timing(elevationAnim, {
+          toValue: 1,
+          duration: interactions.transitions.fast,
+          useNativeDriver: false,
+        }),
+      ]).start();
+    }
+  };
+
+  const handlePressOut = () => {
+    if (onPress) {
+      setIsPressed(false);
+      Animated.parallel([
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: interactions.transitions.fast,
+          useNativeDriver: true,
+        }),
+        Animated.timing(elevationAnim, {
+          toValue: 0,
+          duration: interactions.transitions.fast,
+          useNativeDriver: false,
+        }),
+      ]).start();
+    }
+  };
+
+  const handlePress = () => {
+    if (onPress) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      onPress();
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return "Today";
+    if (diffDays === 1) return "Yesterday";
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return date.toLocaleDateString();
+  };
+
+  const getStoreIcon = (storeName: string) => {
+    const name = storeName.toLowerCase();
+    if (name.includes("countdown")) return "shopping-cart";
+    if (name.includes("new world")) return "store";
+    if (name.includes("pak")) return "local-grocery-store";
+    if (name.includes("four square")) return "local-convenience-store";
+    return "receipt";
+  };
 
   return (
-    <Card
+    <Animated.View
       style={[
-        styles.card,
+        styles.container,
         {
           backgroundColor: theme.colors.surface,
-          borderRadius: borderRadius.md,
-          ...shadows.card,
+          transform: [{ scale: scaleAnim }],
+          ...materialShadows.light,
         },
       ]}
-      onPress={onPress}
     >
-      <Card.Content style={styles.content}>
-        <View style={styles.leftSection}>
-          <View style={styles.storeInfo}>
-            <View style={styles.iconContainer}>
-              <MaterialIcons
-                name={storeIcon as any}
-                size={20}
-                color={theme.colors.primary}
-              />
-            </View>
-            <View style={styles.storeDetails}>
-              <Text
+      <TouchableOpacity
+        style={styles.touchable}
+        onPress={handlePress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        activeOpacity={1}
+      >
+        <Animated.View
+          style={[
+            styles.content,
+            {
+              transform: [
+                {
+                  translateY: elevationAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, -4],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.storeInfo}>
+              <View
                 style={[
-                  typography.title2,
-                  { color: theme.colors.onSurface, marginBottom: spacing.xs },
+                  styles.storeIcon,
+                  { backgroundColor: theme.colors.primaryContainer },
                 ]}
-                numberOfLines={1}
-                ellipsizeMode="tail"
               >
-                {receipt.store?.name ?? "Store"}
+                <MaterialIcons
+                  name={getStoreIcon(receipt.store_name) as any}
+                  size={20}
+                  color={theme.colors.primary}
+                />
+              </View>
+              <View style={styles.storeDetails}>
+                <Text
+                  style={[styles.storeName, { color: theme.colors.onSurface }]}
+                  numberOfLines={1}
+                >
+                  {receipt.store_name}
+                </Text>
+                <Text
+                  style={[
+                    styles.date,
+                    { color: theme.colors.onSurfaceVariant },
+                  ]}
+                >
+                  {formatDate(receipt.date)}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.amountContainer}>
+              <Text style={[styles.amount, { color: theme.colors.onSurface }]}>
+                {formatCurrency(receipt.total_amount)}
               </Text>
+            </View>
+          </View>
+
+          {/* Items Preview */}
+          {items.length > 0 && (
+            <View style={styles.itemsPreview}>
               <Text
                 style={[
-                  typography.body2,
+                  styles.itemsTitle,
                   { color: theme.colors.onSurfaceVariant },
                 ]}
               >
-                {timeAgo}
+                {items.length} item{items.length !== 1 ? "s" : ""}
               </Text>
+              <View style={styles.itemsList}>
+                {items.slice(0, 3).map((item, index) => (
+                  <Text
+                    key={index}
+                    style={[
+                      styles.itemText,
+                      { color: theme.colors.onSurfaceVariant },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {item.name}
+                  </Text>
+                ))}
+                {items.length > 3 && (
+                  <Text
+                    style={[
+                      styles.moreItems,
+                      { color: theme.colors.onSurfaceVariant },
+                    ]}
+                  >
+                    +{items.length - 3} more
+                  </Text>
+                )}
+              </View>
             </View>
-          </View>
+          )}
 
-          <View style={styles.spendingContext}>
-            <View
-              style={[
-                styles.contextBadge,
-                { backgroundColor: spendingContext.color + "15" },
-              ]}
-            >
-              <Text
-                style={[styles.contextText, { color: spendingContext.color }]}
-              >
-                {spendingContext.label}
-              </Text>
+          {/* Footer */}
+          <View style={styles.footer}>
+            <View style={styles.metadata}>
+              {receipt.savings_identified && receipt.savings_identified > 0 && (
+                <View style={styles.savingsBadge}>
+                  <MaterialIcons
+                    name="trending-down"
+                    size={14}
+                    color={theme.colors.primary}
+                  />
+                  <Text
+                    style={[
+                      styles.savingsText,
+                      { color: theme.colors.primary },
+                    ]}
+                  >
+                    Saved {formatCurrency(receipt.savings_identified)}
+                  </Text>
+                </View>
+              )}
             </View>
+            <MaterialIcons
+              name="chevron-right"
+              size={20}
+              color={theme.colors.onSurfaceVariant}
+            />
           </View>
-        </View>
-
-        <View style={styles.rightSection}>
-          <Text
-            style={[typography.headline3, { color: theme.colors.secondary }]}
-          >
-            ${receipt.total.toFixed(2)}
-          </Text>
-          <MaterialIcons
-            name="chevron-right"
-            size={20}
-            color={theme.colors.onSurfaceVariant}
-          />
-        </View>
-      </Card.Content>
-    </Card>
+        </Animated.View>
+      </TouchableOpacity>
+    </Animated.View>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  card: {
-    marginBottom: spacing.md,
+  container: {
+    marginBottom: spacing.medium,
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  touchable: {
+    flex: 1,
   },
   content: {
-    padding: spacing.lg,
+    padding: spacing.medium,
+  },
+  header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    minHeight: 80,
-  },
-  leftSection: {
-    flex: 1,
-    marginRight: spacing.md,
+    marginBottom: spacing.small,
   },
   storeInfo: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: spacing.sm,
+    alignItems: "center",
+    flex: 1,
   },
-  iconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#F5F5F5",
+  storeIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: spacing.sm,
+    marginRight: spacing.small,
   },
   storeDetails: {
     flex: 1,
   },
-  spendingContext: {
-    alignSelf: "flex-start",
+  storeName: {
+    ...typography.title.small,
+    marginBottom: spacing.tiny,
   },
-  contextBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.sm,
+  date: {
+    ...typography.body.small,
   },
-  contextText: {
-    fontSize: 12,
-    fontWeight: "600",
-    lineHeight: 16,
-  },
-  rightSection: {
+  amountContainer: {
     alignItems: "flex-end",
+  },
+  amount: {
+    ...typography.title.medium,
+  },
+  itemsPreview: {
+    marginBottom: spacing.small,
+  },
+  itemsTitle: {
+    ...typography.label.medium,
+    marginBottom: spacing.tiny,
+  },
+  itemsList: {
+    gap: spacing.tiny,
+  },
+  itemText: {
+    ...typography.body.small,
+  },
+  moreItems: {
+    ...typography.body.small,
+    fontStyle: "italic",
+  },
+  footer: {
+    flexDirection: "row",
     justifyContent: "space-between",
-    minHeight: 60,
+    alignItems: "center",
+  },
+  metadata: {
+    flex: 1,
+  },
+  savingsBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.tiny,
+  },
+  savingsText: {
+    ...typography.label.small,
   },
 });

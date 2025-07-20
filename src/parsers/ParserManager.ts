@@ -4,6 +4,9 @@ import { CountdownParser } from "./CountdownParser";
 import { NewWorldParser } from "./NewWorldParser";
 import { PaknSaveParser } from "./PaknSaveParser";
 import { FourSquareParser } from "./FourSquareParser";
+import { MooreWilsonsParser } from "./MooreWilsonsParser";
+import { WarehouseParser } from "./WarehouseParser";
+import { FreshChoiceParser } from "./FreshChoiceParser";
 
 export class ParserManager {
   private parsers: IReceiptParser[];
@@ -14,6 +17,9 @@ export class ParserManager {
       new NewWorldParser(),
       new PaknSaveParser(),
       new FourSquareParser(),
+      new MooreWilsonsParser(),
+      new WarehouseParser(),
+      new FreshChoiceParser(),
     ];
   }
 

@@ -9,6 +9,7 @@ import {
 import { Text, Switch, useTheme, Divider } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { HolisticButton } from "@/components/HolisticDesignSystem";
 import { HolisticText } from "@/components/HolisticDesignSystem";
@@ -154,7 +155,7 @@ export default function SettingsScreen() {
   const formatCurrency = (amount: number) => `$${amount.toFixed(2)}`;
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -387,7 +388,7 @@ export default function SettingsScreen() {
           />
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 

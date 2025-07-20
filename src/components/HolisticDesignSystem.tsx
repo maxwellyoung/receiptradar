@@ -19,7 +19,10 @@ import {
   animation,
   components,
   layout,
+  materialShadows,
+  interactions,
 } from "@/constants/holisticDesignSystem";
+import * as Haptics from "expo-haptics";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -51,19 +54,24 @@ export function HolisticButton({
   const [scaleValue] = useState(new Animated.Value(1));
 
   const handlePressIn = () => {
-    Animated.timing(scaleValue, {
-      toValue: 0.98,
-      duration: animation.duration.instant,
-      useNativeDriver: true,
-    }).start();
+    if (!disabled && !loading) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Animated.timing(scaleValue, {
+        toValue: interactions.press.scale,
+        duration: interactions.press.duration,
+        useNativeDriver: true,
+      }).start();
+    }
   };
 
   const handlePressOut = () => {
-    Animated.timing(scaleValue, {
-      toValue: 1,
-      duration: animation.duration.fast,
-      useNativeDriver: true,
-    }).start();
+    if (!disabled && !loading) {
+      Animated.timing(scaleValue, {
+        toValue: 1,
+        duration: interactions.transitions.fast,
+        useNativeDriver: true,
+      }).start();
+    }
   };
 
   const getButtonStyle = () => {
@@ -75,7 +83,7 @@ export function HolisticButton({
       alignItems: "center" as const,
       flexDirection: "row" as const,
       gap: spacing.small,
-      ...shadows.subtle,
+      ...materialShadows.subtle,
     };
 
     switch (variant) {
@@ -90,19 +98,19 @@ export function HolisticButton({
           backgroundColor: "transparent",
           borderWidth: 1,
           borderColor: colors.brand.primary,
-          ...shadows.none,
+          ...materialShadows.none,
         };
       case "ghost":
         return {
           ...baseStyle,
           backgroundColor: "transparent",
-          ...shadows.none,
+          ...materialShadows.none,
         };
       case "minimal":
         return {
           ...baseStyle,
           backgroundColor: colors.surface.secondary,
-          ...shadows.none,
+          ...materialShadows.none,
         };
       default:
         return {
@@ -200,24 +208,40 @@ export function HolisticCard({
   actions,
 }: HolisticCardProps) {
   const [elevation] = useState(new Animated.Value(0));
+  const [scaleValue] = useState(new Animated.Value(1));
 
   const handlePressIn = () => {
     if (onPress) {
-      Animated.timing(elevation, {
-        toValue: 1,
-        duration: animation.duration.fast,
-        useNativeDriver: false,
-      }).start();
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Animated.parallel([
+        Animated.timing(elevation, {
+          toValue: 1,
+          duration: interactions.transitions.fast,
+          useNativeDriver: false,
+        }),
+        Animated.timing(scaleValue, {
+          toValue: interactions.press.scale,
+          duration: interactions.press.duration,
+          useNativeDriver: true,
+        }),
+      ]).start();
     }
   };
 
   const handlePressOut = () => {
     if (onPress) {
-      Animated.timing(elevation, {
-        toValue: 0,
-        duration: animation.duration.fast,
-        useNativeDriver: false,
-      }).start();
+      Animated.parallel([
+        Animated.timing(elevation, {
+          toValue: 0,
+          duration: interactions.transitions.fast,
+          useNativeDriver: false,
+        }),
+        Animated.timing(scaleValue, {
+          toValue: 1,
+          duration: interactions.transitions.fast,
+          useNativeDriver: true,
+        }),
+      ]).start();
     }
   };
 
@@ -232,23 +256,23 @@ export function HolisticCard({
       case "elevated":
         return {
           ...baseStyle,
-          ...shadows.medium,
+          ...materialShadows.medium,
         };
       case "flat":
         return {
           ...baseStyle,
-          ...shadows.none,
+          ...materialShadows.none,
         };
       case "minimal":
         return {
           ...baseStyle,
           backgroundColor: colors.surface.secondary,
-          ...shadows.none,
+          ...materialShadows.none,
         };
       default:
         return {
           ...baseStyle,
-          ...shadows.card,
+          ...materialShadows.light,
         };
     }
   };
@@ -264,9 +288,10 @@ export function HolisticCard({
             {
               translateY: elevation.interpolate({
                 inputRange: [0, 1],
-                outputRange: [0, -2],
+                outputRange: [0, -4],
               }),
             },
+            { scale: scaleValue },
           ],
         },
       ]}
@@ -371,12 +396,14 @@ export function HolisticInput({
             : error
             ? colors.semantic.error
             : colors.content.tertiary,
+          ...(isFocused ? materialShadows.subtle : materialShadows.none),
         };
       case "filled":
         return {
           ...baseStyle,
           backgroundColor: colors.surface.secondary,
           borderColor: "transparent",
+          ...materialShadows.subtle,
         };
       default:
         return {
@@ -387,6 +414,7 @@ export function HolisticInput({
             : error
             ? colors.semantic.error
             : colors.content.tertiary,
+          ...(isFocused ? materialShadows.light : materialShadows.subtle),
         };
     }
   };
@@ -415,7 +443,12 @@ export function HolisticInput({
           placeholderTextColor={colors.content.tertiary}
           value={value}
           onChangeText={onChangeText}
-          onFocus={() => setIsFocused(true)}
+          onFocus={() => {
+            if (!disabled) {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setIsFocused(true);
+            }
+          }}
           onBlur={() => setIsFocused(false)}
           editable={!disabled}
         />

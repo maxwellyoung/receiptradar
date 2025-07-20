@@ -226,6 +226,16 @@ export default function SignInScreen() {
                 style={styles.errorContainer}
               >
                 <Text style={styles.errorText}>{localError}</Text>
+                {localError.includes("Invalid email or password") && (
+                  <TouchableOpacity
+                    style={styles.forgotPasswordLink}
+                    onPress={() => setShowForgotPassword(true)}
+                  >
+                    <Text style={styles.forgotPasswordLinkText}>
+                      Forgot your password?
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </MotiView>
             )}
           </AnimatePresence>
@@ -573,5 +583,15 @@ const styles = StyleSheet.create({
     color: theme.colors.onPrimary,
     fontSize: 16,
     fontWeight: "bold",
+  },
+  forgotPasswordLink: {
+    marginTop: spacing.sm,
+    alignItems: "center",
+  },
+  forgotPasswordLinkText: {
+    color: theme.colors.primary,
+    fontSize: 14,
+    fontWeight: "500",
+    textDecorationLine: "underline",
   },
 });

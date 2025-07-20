@@ -1,4 +1,4 @@
-import { InteractionManager } from "react-native";
+import { InteractionManager, Animated } from "react-native";
 import { logger } from "./logger";
 
 interface PerformanceMetric {
@@ -9,8 +9,17 @@ interface PerformanceMetric {
 }
 
 class PerformanceMonitor {
+  private static instance: PerformanceMonitor;
   private metrics: Map<string, PerformanceMetric> = new Map();
+  private timers: Map<string, number> = new Map();
   private isEnabled: boolean = __DEV__;
+
+  static getInstance(): PerformanceMonitor {
+    if (!PerformanceMonitor.instance) {
+      PerformanceMonitor.instance = new PerformanceMonitor();
+    }
+    return PerformanceMonitor.instance;
+  }
 
   /**
    * Start measuring performance for a specific operation
@@ -135,10 +144,50 @@ class PerformanceMonitor {
    */
   clearMetrics(): void {
     this.metrics.clear();
+    this.timers.clear();
+  }
+
+  startTimer(name: string): void {
+    this.timers.set(name, Date.now());
+  }
+
+  endTimer(name: string): number {
+    const startTime = this.timers.get(name);
+    if (!startTime) {
+      console.warn(`Timer '${name}' was not started`);
+      return 0;
+    }
+
+    const duration = Date.now() - startTime;
+    this.metrics.set(name, {
+      name,
+      startTime: startTime,
+      endTime: Date.now(),
+      duration: duration,
+    });
+    this.timers.delete(name);
+
+    if (__DEV__) {
+      console.log(`⏱️ ${name}: ${duration}ms`);
+    }
+
+    return duration;
+  }
+
+  getMetric(name: string): number | undefined {
+    return this.metrics.get(name)?.duration;
+  }
+
+  getAllMetrics(): Record<string, number> {
+    const result: Record<string, number> = {};
+    this.metrics.forEach((metric, name) => {
+      result[name] = metric.duration || 0;
+    });
+    return result;
   }
 }
 
-export const performanceMonitor = new PerformanceMonitor();
+export const performanceMonitor = PerformanceMonitor.getInstance();
 
 /**
  * Performance optimization utilities
@@ -299,4 +348,188 @@ export const usePerformance = () => {
   };
 };
 
-export default performanceMonitor;
+// Animation cleanup utilities
+export class AnimationManager {
+  private animations: Set<Animated.CompositeAnimation> = new Set();
+
+  addAnimation(animation: Animated.CompositeAnimation): void {
+    this.animations.add(animation);
+  }
+
+  removeAnimation(animation: Animated.CompositeAnimation): void {
+    this.animations.delete(animation);
+  }
+
+  stopAllAnimations(): void {
+    this.animations.forEach((animation) => {
+      animation.stop();
+    });
+    this.animations.clear();
+  }
+
+  cleanup(): void {
+    this.stopAllAnimations();
+  }
+}
+
+// Memory management utilities
+export class MemoryManager {
+  private static instance: MemoryManager;
+  private listeners: Set<() => void> = new Set();
+
+  static getInstance(): MemoryManager {
+    if (!MemoryManager.instance) {
+      MemoryManager.instance = new MemoryManager();
+    }
+    return MemoryManager.instance;
+  }
+
+  addCleanupListener(listener: () => void): void {
+    this.listeners.add(listener);
+  }
+
+  removeCleanupListener(listener: () => void): void {
+    this.listeners.delete(listener);
+  }
+
+  cleanup(): void {
+    this.listeners.forEach((listener) => {
+      try {
+        listener();
+      } catch (error) {
+        console.warn("Cleanup listener error:", error);
+      }
+    });
+  }
+}
+
+// Optimized animation utilities
+export const createOptimizedAnimation = (
+  value: Animated.Value,
+  config: Animated.TimingAnimationConfig
+): Animated.CompositeAnimation => {
+  const animation = Animated.timing(value, {
+    ...config,
+    useNativeDriver: true, // Always use native driver when possible
+  });
+
+  // Add to global animation manager
+  const animationManager = new AnimationManager();
+  animationManager.addAnimation(animation);
+
+  return animation;
+};
+
+// Debounced function with cleanup
+export const createDebouncedFunction = <T extends (...args: any[]) => any>(
+  func: T,
+  delay: number
+): T => {
+  let timeoutId: ReturnType<typeof setTimeout>;
+
+  const debounced = ((...args: any[]) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func(...args), delay);
+  }) as T;
+
+  // Add cleanup to memory manager
+  const memoryManager = MemoryManager.getInstance();
+  memoryManager.addCleanupListener(() => {
+    clearTimeout(timeoutId);
+  });
+
+  return debounced;
+};
+
+// Image optimization utilities
+export const optimizeImage = async (
+  uri: string,
+  maxWidth: number = 1024,
+  maxHeight: number = 1024,
+  quality: number = 0.8
+): Promise<string> => {
+  // This would typically use a library like react-native-image-manipulator
+  // For now, we'll return the original URI
+  return uri;
+};
+
+// Bundle size optimization
+export const lazyLoad = <T>(
+  importFunc: () => Promise<{ default: T }>
+): Promise<T> => {
+  return importFunc().then((module) => module.default);
+};
+
+// Performance hooks
+export const useAnimationManager = () => {
+  const manager = new AnimationManager();
+
+  return {
+    addAnimation: manager.addAnimation.bind(manager),
+    removeAnimation: manager.removeAnimation.bind(manager),
+    stopAllAnimations: manager.stopAllAnimations.bind(manager),
+    cleanup: manager.cleanup.bind(manager),
+  };
+};
+
+export const useMemoryManager = () => {
+  const manager = MemoryManager.getInstance();
+
+  return {
+    addCleanupListener: manager.addCleanupListener.bind(manager),
+    removeCleanupListener: manager.removeCleanupListener.bind(manager),
+    cleanup: manager.cleanup.bind(manager),
+  };
+};
+
+// Performance constants
+export const PERFORMANCE_CONSTANTS = {
+  ANIMATION_DURATION: {
+    FAST: 200,
+    NORMAL: 300,
+    SLOW: 500,
+  },
+  DEBOUNCE_DELAY: {
+    SEARCH: 300,
+    SCROLL: 100,
+    RESIZE: 250,
+  },
+  MEMORY_LIMITS: {
+    MAX_ANIMATIONS: 10,
+    MAX_IMAGES: 50,
+    MAX_CACHE_SIZE: 100 * 1024 * 1024, // 100MB
+  },
+  PERFORMANCE_THRESHOLDS: {
+    FRAME_RATE: 60,
+    ANIMATION_DURATION: 500,
+    LOADING_TIMEOUT: 10000,
+  },
+};
+
+// Performance monitoring decorator
+export const measurePerformance = (name: string) => {
+  return function (
+    target: any,
+    propertyName: string,
+    descriptor: PropertyDescriptor
+  ) {
+    const method = descriptor.value;
+
+    descriptor.value = async function (...args: any[]) {
+      const monitor = PerformanceMonitor.getInstance();
+      monitor.startTimer(name);
+
+      try {
+        const result = await method.apply(this, args);
+        monitor.endTimer(name);
+        return result;
+      } catch (error) {
+        monitor.endTimer(name);
+        throw error;
+      }
+    };
+  };
+};
+
+// Export singleton instances
+export const memoryManager = MemoryManager.getInstance();

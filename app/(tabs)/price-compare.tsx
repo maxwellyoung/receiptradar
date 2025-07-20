@@ -26,6 +26,7 @@ import {
 import { MotiView } from "moti";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useStoreTracking } from "@/hooks/useStoreTracking";
+import { CompetitiveAdvantage } from "@/components/CompetitiveAdvantage";
 import {
   AppTheme,
   spacing,
@@ -37,6 +38,14 @@ import { API_CONFIG } from "@/constants/api";
 
 interface PriceComparison {
   itemName: string;
+  productDetails: {
+    brand?: string;
+    variety?: string;
+    size: string;
+    unit: string;
+    unitPrice: number;
+    packageType: "loose" | "prepackaged" | "bulk";
+  };
   currentPrice: number;
   bestPrice: number;
   savings: number;
@@ -44,6 +53,11 @@ interface PriceComparison {
   confidence: number;
   priceHistoryPoints: number;
   lastUpdated: string;
+  dataQuality: {
+    matchConfidence: number;
+    lastVerified: string;
+    source: "receipt" | "api" | "manual";
+  };
 }
 
 interface StorePrice {
@@ -51,6 +65,12 @@ interface StorePrice {
   price: number;
   inStock: boolean;
   lastChecked: string;
+  productDetails?: {
+    brand?: string;
+    size: string;
+    unit: string;
+    unitPrice: number;
+  };
 }
 
 interface QuickSearchResult {
@@ -66,6 +86,13 @@ interface QuickSearchResult {
     date: string;
     price: number;
     store: string;
+  }[];
+  productVarieties: {
+    name: string;
+    brand?: string;
+    size: string;
+    unit: string;
+    averagePrice: number;
   }[];
 }
 
@@ -102,6 +129,7 @@ export default function PriceCompareScreen() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [dataUpdateAnimation] = useState(new Animated.Value(1));
+  const [showAdvantages, setShowAdvantages] = useState(false);
 
   const formatCurrency = (amount: number) => {
     return `$${amount.toFixed(2)}`;
@@ -188,28 +216,128 @@ export default function PriceCompareScreen() {
       "Pantry",
     ];
 
+    // Generate realistic product varieties based on query
+    const getProductVarieties = (itemName: string) => {
+      const varieties = {
+        apples: [
+          {
+            name: "Royal Gala Apples",
+            brand: "FreshCo",
+            size: "1kg",
+            unit: "kg",
+            averagePrice: 4.99,
+          },
+          {
+            name: "Braeburn Apples",
+            brand: "Countdown",
+            size: "1kg",
+            unit: "kg",
+            averagePrice: 5.49,
+          },
+          {
+            name: "Organic Fuji Apples",
+            brand: "Organic Valley",
+            size: "500g",
+            unit: "kg",
+            averagePrice: 8.99,
+          },
+        ],
+        milk: [
+          {
+            name: "Full Cream Milk",
+            brand: "Anchor",
+            size: "2L",
+            unit: "L",
+            averagePrice: 4.5,
+          },
+          {
+            name: "Light Blue Milk",
+            brand: "Anchor",
+            size: "2L",
+            unit: "L",
+            averagePrice: 4.5,
+          },
+          {
+            name: "Organic Milk",
+            brand: "Lewis Road",
+            size: "1L",
+            unit: "L",
+            averagePrice: 6.99,
+          },
+        ],
+        bread: [
+          {
+            name: "White Sandwich Bread",
+            brand: "Tip Top",
+            size: "700g",
+            unit: "loaf",
+            averagePrice: 3.5,
+          },
+          {
+            name: "Whole Grain Bread",
+            brand: "Vogel's",
+            size: "700g",
+            unit: "loaf",
+            averagePrice: 5.99,
+          },
+          {
+            name: "Sourdough Bread",
+            brand: "Baker's Delight",
+            size: "500g",
+            unit: "loaf",
+            averagePrice: 4.5,
+          },
+        ],
+      };
+
+      const itemKey = itemName.toLowerCase().replace(/[^a-z]/g, "");
+      return (
+        varieties[itemKey as keyof typeof varieties] || [
+          {
+            name: itemName,
+            size: "1 unit",
+            unit: "unit",
+            averagePrice: 8.5 + Math.random() * 12,
+          },
+        ]
+      );
+    };
+
+    const varieties = getProductVarieties(query);
+    const selectedVariety =
+      varieties[Math.floor(Math.random() * varieties.length)];
+
     return [
       {
         itemName: query,
         category: categories[Math.floor(Math.random() * categories.length)],
-        averagePrice: 8.5 + Math.random() * 12,
+        averagePrice: selectedVariety.averagePrice,
         priceRange: {
-          min: 6.99,
-          max: 15.99,
+          min: selectedVariety.averagePrice * 0.8,
+          max: selectedVariety.averagePrice * 1.4,
         },
         stores: stores.map((store, index) => ({
           storeName: store,
-          price: 6.99 + index * 2.5 + Math.random() * 2,
+          price:
+            selectedVariety.averagePrice * (0.9 + index * 0.1) +
+            Math.random() * 2,
           inStock: Math.random() > 0.1,
           lastChecked: new Date(
             Date.now() - Math.random() * 86400000
           ).toISOString(),
+          productDetails: {
+            brand: selectedVariety.brand,
+            size: selectedVariety.size,
+            unit: selectedVariety.unit,
+            unitPrice: selectedVariety.averagePrice,
+          },
         })),
         priceHistory: Array.from({ length: 5 }, (_, i) => ({
           date: new Date(Date.now() - i * 86400000).toISOString(),
-          price: 7.5 + Math.random() * 8,
+          price: selectedVariety.averagePrice + Math.random() * 2,
           store: stores[Math.floor(Math.random() * stores.length)],
         })),
+        productVarieties: varieties,
       },
     ];
   };
@@ -264,25 +392,77 @@ export default function PriceCompareScreen() {
     itemName: string
   ): PriceComparison[] => {
     const stores = ["Countdown", "Pak'nSave", "New World", "Fresh Choice"];
-    const basePrice = 8.5 + Math.random() * 12;
+
+    // Generate realistic product details based on item name
+    const getProductDetails = (name: string) => {
+      const details = {
+        apples: {
+          brand: "FreshCo",
+          variety: "Royal Gala",
+          size: "1kg",
+          unit: "kg",
+          unitPrice: 4.99,
+          packageType: "prepackaged" as const,
+        },
+        milk: {
+          brand: "Anchor",
+          variety: "Full Cream",
+          size: "2L",
+          unit: "L",
+          unitPrice: 2.25,
+          packageType: "prepackaged" as const,
+        },
+        bread: {
+          brand: "Tip Top",
+          variety: "White Sandwich",
+          size: "700g",
+          unit: "loaf",
+          unitPrice: 3.5,
+          packageType: "prepackaged" as const,
+        },
+      };
+
+      const itemKey = name.toLowerCase().replace(/[^a-z]/g, "");
+      return (
+        details[itemKey as keyof typeof details] || {
+          brand: "Generic",
+          variety: name,
+          size: "1 unit",
+          unit: "unit",
+          unitPrice: 8.5 + Math.random() * 12,
+          packageType: "prepackaged" as const,
+        }
+      );
+    };
+
+    const productDetails = getProductDetails(itemName);
+    const basePrice = productDetails.unitPrice * (1 + Math.random() * 0.3);
 
     return stores.map((store, index) => {
-      const price = basePrice + index * 1.5 + Math.random() * 2;
-      const bestPrice = Math.min(
-        ...stores.map((_, i) => basePrice + i * 1.5 + Math.random() * 2)
-      );
+      const price = basePrice * (0.9 + index * 0.15) + Math.random() * 0.5;
+      const bestPrice = basePrice * 0.85; // Best price is typically 15% below average
 
       return {
         itemName,
+        productDetails,
         currentPrice: price,
         bestPrice,
-        savings: price - bestPrice,
+        savings: Math.max(0, price - bestPrice),
         storeName: store,
         confidence: 0.7 + Math.random() * 0.3,
         priceHistoryPoints: 5 + Math.floor(Math.random() * 10),
         lastUpdated: new Date(
           Date.now() - Math.random() * 3600000
         ).toISOString(),
+        dataQuality: {
+          matchConfidence: 0.8 + Math.random() * 0.2,
+          lastVerified: new Date(
+            Date.now() - Math.random() * 86400000
+          ).toISOString(),
+          source: (["receipt", "api", "manual"] as const)[
+            Math.floor(Math.random() * 3)
+          ],
+        },
       };
     });
   };
@@ -376,6 +556,30 @@ export default function PriceCompareScreen() {
                 <Text style={styles.storeSummary}>
                   Across {item.stores.map((s) => s.storeName).join(", ")}
                 </Text>
+
+                {/* Product Varieties */}
+                {item.productVarieties.length > 1 && (
+                  <View style={styles.varietiesContainer}>
+                    <Text style={styles.varietiesTitle}>
+                      Available varieties:
+                    </Text>
+                    <View style={styles.varietiesList}>
+                      {item.productVarieties
+                        .slice(0, 3)
+                        .map((variety, index) => (
+                          <Chip
+                            key={index}
+                            style={styles.varietyChip}
+                            textStyle={styles.varietyChipText}
+                          >
+                            {variety.brand ? `${variety.brand} ` : ""}
+                            {variety.size} •{" "}
+                            {formatCurrency(variety.averagePrice)}
+                          </Chip>
+                        ))}
+                    </View>
+                  </View>
+                )}
               </View>
               <TouchableOpacity
                 style={styles.compareButton}
@@ -422,6 +626,13 @@ export default function PriceCompareScreen() {
                       >
                         {formatCurrency(store.price)}
                       </Text>
+                      {store.productDetails && (
+                        <Text style={styles.storeProductDetails}>
+                          {store.productDetails.brand &&
+                            `${store.productDetails.brand} `}
+                          {store.productDetails.size}
+                        </Text>
+                      )}
                       {!store.inStock && (
                         <Text style={styles.outOfStockText}>Out of stock</Text>
                       )}
@@ -447,6 +658,21 @@ export default function PriceCompareScreen() {
           <View style={styles.comparisonCardHeader}>
             <View style={styles.comparisonStoreInfo}>
               <Text style={styles.storeName}>{item.storeName}</Text>
+
+              {/* Product Details */}
+              <View style={styles.productDetailsContainer}>
+                <Text style={styles.productDetailsText}>
+                  {item.productDetails.brand && `${item.productDetails.brand} `}
+                  {item.productDetails.variety &&
+                    `${item.productDetails.variety} `}
+                  {item.productDetails.size} {item.productDetails.unit}
+                </Text>
+                <Text style={styles.unitPriceText}>
+                  {formatCurrency(item.productDetails.unitPrice)} per{" "}
+                  {item.productDetails.unit}
+                </Text>
+              </View>
+
               <View style={styles.confidenceContainer}>
                 <View
                   style={[
@@ -456,6 +682,15 @@ export default function PriceCompareScreen() {
                 />
                 <Text style={styles.confidenceText}>
                   {Math.round(item.confidence * 100)}% confidence
+                </Text>
+              </View>
+
+              {/* Data Quality Info */}
+              <View style={styles.dataQualityContainer}>
+                <Text style={styles.dataQualityText}>
+                  Match: {Math.round(item.dataQuality.matchConfidence * 100)}% •
+                  Source: {item.dataQuality.source} • Updated:{" "}
+                  {new Date(item.dataQuality.lastVerified).toLocaleDateString()}
                 </Text>
               </View>
             </View>
@@ -468,14 +703,17 @@ export default function PriceCompareScreen() {
                   Save {formatCurrency(item.savings)}
                 </Text>
               )}
+              <Text style={styles.bestPriceText}>
+                Best: {formatCurrency(item.bestPrice)}
+              </Text>
             </View>
           </View>
 
           <View style={styles.comparisonDetails}>
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Best Price:</Text>
-              <Text style={styles.bestPrice}>
-                {formatCurrency(item.bestPrice)}
+              <Text style={styles.detailLabel}>Package Type:</Text>
+              <Text style={styles.detailValue}>
+                {item.productDetails.packageType}
               </Text>
             </View>
             <View style={styles.detailRow}>
@@ -640,6 +878,34 @@ export default function PriceCompareScreen() {
               Try searching for a different item or check the quick search
               suggestions
             </Text>
+          </MotiView>
+        )}
+
+        {/* Competitive Advantage - Show when no search is active */}
+        {!loading && searchResults.length === 0 && !searchQuery && (
+          <MotiView
+            from={{ opacity: 0, translateY: 20 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ type: "timing", duration: 500, delay: 300 }}
+            style={styles.advantageSection}
+          >
+            <View style={styles.advantageHeader}>
+              <Text style={styles.sectionTitle}>
+                Why Our Prices Are More Accurate
+              </Text>
+              <IconButton
+                icon={showAdvantages ? "expand-less" : "expand-more"}
+                size={20}
+                onPress={() => setShowAdvantages(!showAdvantages)}
+                style={styles.expandButton}
+              />
+            </View>
+            {showAdvantages && (
+              <CompetitiveAdvantage
+                title="ReceiptRadar vs Web-Based Sites"
+                showDetails={true}
+              />
+            )}
           </MotiView>
         )}
       </ScrollView>
@@ -943,5 +1209,71 @@ const styles = StyleSheet.create({
     color: "#666",
     textAlign: "center",
     paddingHorizontal: spacing.lg,
+  },
+  varietiesContainer: {
+    marginTop: spacing.sm,
+  },
+  varietiesTitle: {
+    ...typography.caption1,
+    color: "#6B7280",
+    marginBottom: spacing.xs,
+  },
+  varietiesList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.xs,
+  },
+  varietyChip: {
+    backgroundColor: "#F3F4F6",
+    marginRight: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  varietyChipText: {
+    ...typography.caption2,
+    color: "#374151",
+  },
+  productDetailsContainer: {
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  productDetailsText: {
+    ...typography.body2,
+    fontWeight: "500",
+    color: "#374151",
+  },
+  unitPriceText: {
+    ...typography.caption1,
+    color: "#6B7280",
+    marginTop: spacing.xs,
+  },
+  dataQualityContainer: {
+    marginTop: spacing.xs,
+  },
+  dataQualityText: {
+    ...typography.caption2,
+    color: "#6B7280",
+  },
+  bestPriceText: {
+    ...typography.caption1,
+    color: "#10B981",
+    fontWeight: "600",
+    marginTop: spacing.xs,
+  },
+  storeProductDetails: {
+    ...typography.caption2,
+    color: "#6B7280",
+    marginTop: spacing.xs,
+  },
+  advantageSection: {
+    marginBottom: spacing.lg,
+  },
+  advantageHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: spacing.md,
+  },
+  expandButton: {
+    margin: 0,
   },
 });

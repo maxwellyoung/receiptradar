@@ -19,6 +19,10 @@ import { spacing, typography, borderRadius, shadows } from "@/constants/theme";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useReceipts } from "@/hooks/useReceipts";
 import { ViralFeaturesManager } from "@/components/ViralFeaturesManager";
+import {
+  materialShadows,
+  interactions,
+} from "@/constants/holisticDesignSystem";
 
 import { NotReceiptScreen } from "@/components/NotReceiptScreen";
 import { ReceiptSuccessScreen } from "@/components/ReceiptSuccessScreen";
@@ -32,6 +36,7 @@ import ConfettiCannon from "react-native-confetti-cannon";
 import { ocrService } from "@/services/ocr";
 import { storageService } from "@/services/supabase";
 import { ParserManager } from "@/parsers/ParserManager";
+import * as Haptics from "expo-haptics";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -40,6 +45,7 @@ interface ProcessingStep {
   description: string;
   icon: string;
   duration: number;
+  color: string;
 }
 
 const processingSteps: ProcessingStep[] = [
@@ -48,30 +54,35 @@ const processingSteps: ProcessingStep[] = [
     description: "Detecting receipt boundaries and enhancing quality",
     icon: "crop-free",
     duration: 800,
+    color: "#007AFF",
   },
   {
     name: "OCR Processing",
     description: "Extracting text and numbers from your receipt",
     icon: "text-recognition",
     duration: 1200,
+    color: "#34C759",
   },
   {
     name: "Categorizing Items",
     description: "Organizing products by category",
     icon: "category",
     duration: 600,
+    color: "#FF9500",
   },
   {
     name: "Calculating Totals",
     description: "Summing up your spending",
     icon: "calculate",
     duration: 400,
+    color: "#AF52DE",
   },
   {
     name: "Saving Data",
     description: "Storing receipt information securely",
     icon: "save",
     duration: 500,
+    color: "#FF6B35",
   },
 ];
 
@@ -95,24 +106,32 @@ export default function ReceiptProcessingScreen() {
   const [showInsights, setShowInsights] = useState(false);
   const [correctedItems, setCorrectedItems] = useState<ReceiptItem[]>([]);
 
-  // Refined animation values
+  // Enhanced animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const stepAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
 
   useEffect(() => {
-    // Start entrance animations
+    // Start entrance animations with haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 600,
+        duration: interactions.transitions.normal,
         useNativeDriver: true,
       }),
       Animated.timing(slideAnim, {
         toValue: 0,
-        duration: 600,
+        duration: interactions.transitions.normal,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: interactions.transitions.normal,
         useNativeDriver: true,
       }),
     ]).start();
@@ -139,20 +158,24 @@ export default function ReceiptProcessingScreen() {
     };
   }, []);
 
-  // Animate progress bar
+  // Animate progress bar with smooth transitions
   useEffect(() => {
     Animated.timing(progressAnim, {
       toValue: progress / 100,
-      duration: 400,
+      duration: interactions.transitions.fast,
       useNativeDriver: false,
     }).start();
   }, [progress]);
 
-  // Animate current step
+  // Animate current step with haptic feedback
   useEffect(() => {
+    if (currentStep > 0) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+
     Animated.timing(stepAnim, {
       toValue: currentStep,
-      duration: 300,
+      duration: interactions.transitions.fast,
       useNativeDriver: true,
     }).start();
   }, [currentStep]);
@@ -171,6 +194,7 @@ export default function ReceiptProcessingScreen() {
         setError("Processing took too long. Please try again.");
         setProcessingComplete(true);
         setIsProcessing(false);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
     }, 30000); // 30 second overall timeout
 
@@ -194,53 +218,25 @@ export default function ReceiptProcessingScreen() {
         });
       }, 500);
 
-      // Check if OCR service is available with timeout
-      let isServiceHealthy = false;
-      try {
-        isServiceHealthy = await Promise.race([
-          ocrService.healthCheck(),
-          new Promise<boolean>(
-            (resolve) => setTimeout(() => resolve(false), 5000) // 5 second timeout
-          ),
-        ]);
-      } catch (error) {
-        console.warn("OCR health check failed:", error);
-        isServiceHealthy = false;
+      // Upload image to storage
+      const uploadResult = await storageService.uploadReceiptImage(
+        photoUri,
+        "receipt.jpg",
+        user?.id || "anonymous"
+      );
+
+      if (uploadResult.error) {
+        clearInterval(progressInterval);
+        clearTimeout(overallTimeout);
+        setError("Failed to upload image. Please try again.");
+        setProcessingComplete(true);
+        setIsProcessing(false);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        return;
       }
 
-      if (!isServiceHealthy) {
-        console.warn("OCR service unavailable, using fallback");
-      }
-
-      // Parse receipt with timeout
-      let parsed: any;
-      try {
-        parsed = await Promise.race([
-          ocrService.parseReceipt(photoUri!),
-          new Promise(
-            (_, reject) =>
-              setTimeout(
-                () => reject(new Error("OCR processing timeout")),
-                15000
-              ) // 15 second timeout
-          ),
-        ]);
-      } catch (error) {
-        console.error("OCR processing failed:", error);
-        // Use fallback data if OCR fails
-        parsed = {
-          store_name: "Unknown Store",
-          total: 0,
-          date: new Date().toISOString().split("T")[0],
-          items: [],
-          validation: {
-            is_valid: true,
-            confidence_score: 0.5,
-            issues: ["OCR service unavailable"],
-          },
-          processing_time: 0,
-        };
-      }
+      // Process with OCR
+      const ocrResult = await ocrService.parseReceipt(photoUri);
 
       clearInterval(progressInterval);
 
@@ -262,125 +258,131 @@ export default function ReceiptProcessingScreen() {
       setCurrentStep(4);
       setProgress(90);
 
-      // Save to database
-      try {
-        const receipt = await createReceipt({
-          store_name: parsed.store_name,
-          total_amount: parsed.total,
-          date: parsed.date,
-          ocr_data: parsed,
-        });
+      // Create receipt in database using OCR result directly
+      const receiptResult = await createReceipt({
+        store_name: ocrResult.store_name || "Unknown Store",
+        total_amount: ocrResult.total || 0,
+        date: new Date().toISOString(),
+        image_url: uploadResult.data?.fullPath || "",
+        ocr_data: ocrResult,
+      });
 
-        setReceiptData(receipt);
-        setProgress(100);
-        setProcessingComplete(true);
-        setShowConfetti(true);
-
-        // Auto-hide confetti after 3 seconds
-        setTimeout(() => {
-          setShowConfetti(false);
-        }, 3000);
-
+      if (receiptResult.error) {
         clearTimeout(overallTimeout);
-      } catch (error) {
-        console.error("Failed to save receipt:", error);
         setError("Failed to save receipt. Please try again.");
         setProcessingComplete(true);
+        setIsProcessing(false);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        return;
       }
-    } catch (error) {
-      console.error("Processing error:", error);
-      setError("An error occurred during processing. Please try again.");
+
+      setProgress(100);
+      await new Promise((resolve) =>
+        setTimeout(resolve, processingSteps[4].duration)
+      );
+
+      // Success!
+      clearTimeout(overallTimeout);
+      setReceiptData({
+        ...receiptResult.data,
+        items: ocrResult.items || [],
+      });
       setProcessingComplete(true);
-    } finally {
       setIsProcessing(false);
+      setShowConfetti(true);
+
+      // Success haptic feedback
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      // Hide confetti after 3 seconds
+      setTimeout(() => {
+        setShowConfetti(false);
+      }, 3000);
+    } catch (error) {
+      clearTimeout(overallTimeout);
+      console.error("Processing error:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred. Please try again."
+      );
+      setProcessingComplete(true);
+      setIsProcessing(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   };
 
+  // Start processing when component mounts
   useEffect(() => {
-    if (photoUri) {
-      processReceipt();
-    }
-  }, [photoUri]);
+    processReceipt();
+  }, []);
 
   const handleContinue = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setShowViralFeatures(false);
-    router.push("/");
+    router.replace("/(tabs)");
   };
 
   const handleViewReceipt = () => {
-    if (receiptData) {
-      router.push(`/receipt/${receiptData.id}`);
-    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push(`/receipt/${receiptData.id}`);
   };
 
   const handleScanAnother = () => {
-    router.push("/modals/camera");
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.replace("/modals/camera");
   };
 
   const handleGoToTrends = () => {
-    router.push("/(tabs)/trends");
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.replace("/(tabs)/trends");
   };
 
   const handleBackToHome = () => {
-    router.push("/");
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.replace("/(tabs)");
   };
 
   const handleRetry = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setError(null);
     setProcessingComplete(false);
-    setCurrentStep(0);
     setProgress(0);
+    setCurrentStep(0);
     processReceipt();
   };
 
   const handleTryAgain = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setNotAReceipt(false);
     setError(null);
     setProcessingComplete(false);
-    setCurrentStep(0);
     setProgress(0);
+    setCurrentStep(0);
     processReceipt();
   };
 
   const handleCorrectionSave = (items: ReceiptItem[]) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setCorrectedItems(items);
     setShowCorrectionModal(false);
-    setShowInsights(true);
+    // Here you would typically update the receipt with corrected items
   };
 
   const handleInsightsDismiss = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setShowInsights(false);
-    setShowViralFeatures(true);
   };
 
   const getInsightData = (): InsightData => {
-    if (!receiptData) {
-      return {
-        totalSpent: 0,
-        itemCount: 0,
-        categories: {},
-        storeName: "Unknown Store",
-        date: new Date().toISOString().split("T")[0],
-        items: [],
-      };
-    }
-
-    const categories: { [key: string]: number } = {};
-    receiptData.items?.forEach((item: any) => {
-      const category = item.category || "Uncategorized";
-      categories[category] = (categories[category] || 0) + item.price;
-    });
-
     return {
-      totalSpent: receiptData.total,
-      itemCount: receiptData.items?.length || 0,
-      categories,
-      storeName: receiptData.store_name,
-      date: receiptData.date,
-      items: receiptData.items || [],
+      totalSpent: receiptData?.total_amount || 0,
+      savings: 0,
+      weekNumber: 1,
     };
   };
 
+  // Show different screens based on state
   if (notAReceipt) {
     return (
       <NotReceiptScreen
@@ -390,12 +392,7 @@ export default function ReceiptProcessingScreen() {
     );
   }
 
-  if (
-    processingComplete &&
-    receiptData &&
-    !showViralFeatures &&
-    !showInsights
-  ) {
+  if (processingComplete && receiptData && !showViralFeatures) {
     return (
       <ReceiptSuccessScreen
         receipt={receiptData}
@@ -449,11 +446,11 @@ export default function ReceiptProcessingScreen() {
           styles.content,
           {
             opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }],
+            transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
           },
         ]}
       >
-        {/* Header */}
+        {/* Enhanced Header */}
         <View style={styles.header}>
           <Text style={[styles.title, { color: theme.colors.onSurface }]}>
             Processing Receipt
@@ -465,13 +462,15 @@ export default function ReceiptProcessingScreen() {
           </Text>
         </View>
 
-        {/* Progress Section */}
+        {/* Enhanced Progress Section */}
         <View style={styles.progressSection}>
           <View style={styles.progressContainer}>
             <ProgressBar
               progress={progress / 100}
-              color={theme.colors.primary}
-              style={styles.progressBar}
+              color={
+                processingSteps[currentStep]?.color || theme.colors.primary
+              }
+              style={[styles.progressBar, materialShadows.subtle]}
             />
             <Text
               style={[styles.progressText, { color: theme.colors.onSurface }]}
@@ -481,7 +480,7 @@ export default function ReceiptProcessingScreen() {
           </View>
         </View>
 
-        {/* Current Step */}
+        {/* Enhanced Current Step */}
         {currentStep < processingSteps.length && (
           <Animated.View
             style={[
@@ -495,7 +494,10 @@ export default function ReceiptProcessingScreen() {
             <Card
               style={[
                 styles.stepCard,
-                { backgroundColor: theme.colors.surface },
+                {
+                  backgroundColor: theme.colors.surface,
+                  ...materialShadows.medium,
+                },
               ]}
             >
               <Card.Content style={styles.stepContent}>
@@ -504,7 +506,9 @@ export default function ReceiptProcessingScreen() {
                     style={[
                       styles.stepIcon,
                       {
-                        backgroundColor: theme.colors.primary + "15",
+                        backgroundColor:
+                          (processingSteps[currentStep]?.color ||
+                            theme.colors.primary) + "15",
                         transform: [{ scale: pulseAnim }],
                       },
                     ]}
@@ -512,7 +516,10 @@ export default function ReceiptProcessingScreen() {
                     <MaterialIcons
                       name={processingSteps[currentStep].icon as any}
                       size={32}
-                      color={theme.colors.primary}
+                      color={
+                        processingSteps[currentStep]?.color ||
+                        theme.colors.primary
+                      }
                     />
                   </Animated.View>
                   <View style={styles.stepInfo}>
@@ -539,9 +546,17 @@ export default function ReceiptProcessingScreen() {
           </Animated.View>
         )}
 
-        {/* Error State */}
+        {/* Enhanced Error State */}
         {error && (
-          <View style={styles.errorContainer}>
+          <Animated.View
+            style={[
+              styles.errorContainer,
+              {
+                opacity: fadeAnim,
+                transform: [{ scale: scaleAnim }],
+              },
+            ]}
+          >
             <MaterialIcons name="error" size={48} color={theme.colors.error} />
             <Text
               style={[styles.errorTitle, { color: theme.colors.onSurface }]}
@@ -563,7 +578,7 @@ export default function ReceiptProcessingScreen() {
             >
               Try Again
             </Button>
-          </View>
+          </Animated.View>
         )}
 
         {/* Confetti */}
@@ -622,7 +637,6 @@ const styles = StyleSheet.create({
   },
   stepCard: {
     borderRadius: borderRadius.lg,
-    ...shadows.md,
   },
   stepContent: {
     padding: spacing.lg,
@@ -635,9 +649,9 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    justifyContent: "center",
     alignItems: "center",
-    marginRight: spacing.lg,
+    justifyContent: "center",
+    marginRight: spacing.md,
   },
   stepInfo: {
     flex: 1,
@@ -650,23 +664,22 @@ const styles = StyleSheet.create({
     ...typography.body2,
   },
   errorContainer: {
-    flex: 1,
-    justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xl,
   },
   errorTitle: {
-    ...typography.headline3,
-    marginTop: spacing.lg,
+    ...typography.title2,
+    marginTop: spacing.md,
     marginBottom: spacing.sm,
     textAlign: "center",
   },
   errorMessage: {
     ...typography.body1,
     textAlign: "center",
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.md,
   },
   retryButton: {
-    borderRadius: borderRadius.md,
+    marginTop: spacing.md,
   },
 });

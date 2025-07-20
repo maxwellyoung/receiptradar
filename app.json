@@ -12,7 +12,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.receiptradar.app",
@@ -36,7 +38,8 @@
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.POST_NOTIFICATIONS"
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -80,8 +83,15 @@
     "extra": {
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "566c9e4d-3fa7-46af-961a-d66020a7d6bf"
       }
     },
-    "jsEngine": "jsc"
+    "jsEngine": "jsc",
+    "developmentClient": {
+      "silenceDevMenu": true
+    },
+    "owner": "maxwellyoung"
   }
 }

@@ -30,6 +30,32 @@ households.post(
     const user = c.get("user");
     const supabaseClient = createSupabaseClient(c.env);
 
+    // First, ensure the user exists in the users table
+    const { data: existingUser, error: userCheckError } = await supabaseClient
+      .from("users")
+      .select("id")
+      .eq("id", user.id)
+      .single();
+
+    if (userCheckError && userCheckError.code === "PGRST116") {
+      // User doesn't exist in users table, create them
+      const { error: createUserError } = await supabaseClient
+        .from("users")
+        .insert({
+          id: user.id,
+          email: user.email,
+        });
+
+      if (createUserError) {
+        console.error("Failed to create user in users table:", createUserError);
+        return c.json({ error: "Failed to create user profile" }, 500);
+      }
+    } else if (userCheckError) {
+      console.error("Error checking user existence:", userCheckError);
+      return c.json({ error: "Database error" }, 500);
+    }
+
+    // Now create the household
     const { data: household, error } = await supabaseClient
       .from("households")
       .insert({ name: name, owner_id: user.id })
@@ -144,7 +170,12 @@ households.post(
       .eq("email", newMemberEmail)
       .single();
 
-    if (userError || !newMember) {
+    if (userError && userError.code === "PGRST116") {
+      return c.json(
+        { error: "User to be added not found. They need to sign up first." },
+        404
+      );
+    } else if (userError || !newMember) {
       return c.json({ error: "User to be added not found" }, 404);
     }
 

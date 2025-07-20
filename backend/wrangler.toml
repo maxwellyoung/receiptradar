@@ -49,18 +49,6 @@ OCR_SERVICE_URL = "https://receiptradar-ocr-staging.fly.dev" # or your local OCR
 STRIPE_SECRET_KEY = "<your_staging_stripe_secret_key>"
 STRIPE_WEBHOOK_SECRET = "<your_staging_webhook_secret>"
 
-[[env.production.r2_buckets]]
-binding = "RECEIPT_IMAGES"
-bucket_name = "receiptradar-images"
+# R2 buckets removed - not currently used
 
-[[env.staging.r2_buckets]]
-binding = "RECEIPT_IMAGES"
-bucket_name = "receiptradar-images-staging"
-
-[[env.production.kv_namespaces]]
-binding = "RATE_LIMITS"
-id = "your-kv-namespace-id"
-
-[[env.staging.kv_namespaces]]
-binding = "RATE_LIMITS"
-id = "your-staging-kv-namespace-id" 
+# KV namespaces removed - not currently used 

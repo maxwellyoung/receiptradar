@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { View, StyleSheet, ScrollView, Alert } from "react-native";
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 import {
   Button,
   Text,
@@ -118,233 +125,246 @@ export default function HouseholdScreen() {
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       edges={["top", "left", "right"]}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Text
-            variant="headlineLarge"
-            style={[styles.title, { color: theme.colors.onBackground }]}
-          >
-            Household
-          </Text>
-          <Text
-            variant="titleMedium"
-            style={[styles.subtitle, { color: theme.colors.onSurfaceVariant }]}
-          >
-            Share spending with your flatmates
-          </Text>
-        </View>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <Text
+              variant="headlineLarge"
+              style={[styles.title, { color: theme.colors.onBackground }]}
+            >
+              Household
+            </Text>
+            <Text
+              variant="titleMedium"
+              style={[
+                styles.subtitle,
+                { color: theme.colors.onSurfaceVariant },
+              ]}
+            >
+              Share spending with your flatmates
+            </Text>
+          </View>
 
-        {!household ? (
-          // No household - show create form or empty state
-          <View style={styles.content}>
-            <EdgeCaseRenderer
-              mood="suspicious"
-              title="No Household Found"
-              message="The worm grows suspicious of your solo grocery trips. Are you truly alone?"
-            />
+          {!household ? (
+            // No household - show create form or empty state
+            <View style={styles.content}>
+              <EdgeCaseRenderer
+                mood="suspicious"
+                title="No Household Found"
+                message="The worm grows suspicious of your solo grocery trips. Are you truly alone?"
+              />
 
-            {!showCreateForm ? (
-              <MotiView
-                from={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ type: "spring", damping: 15 }}
-              >
-                <Button
-                  mode="contained"
-                  icon="plus"
-                  onPress={() => setShowCreateForm(true)}
-                  style={styles.button}
+              {!showCreateForm ? (
+                <MotiView
+                  from={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ type: "spring", damping: 15 }}
                 >
-                  Create Household
-                </Button>
-              </MotiView>
-            ) : (
+                  <Button
+                    mode="contained"
+                    icon="plus"
+                    onPress={() => setShowCreateForm(true)}
+                    style={styles.button}
+                  >
+                    Create Household
+                  </Button>
+                </MotiView>
+              ) : (
+                <MotiView
+                  from={{ opacity: 0, translateY: 20 }}
+                  animate={{ opacity: 1, translateY: 0 }}
+                  transition={{ type: "spring", damping: 15 }}
+                >
+                  <Card style={styles.formCard}>
+                    <Card.Content>
+                      <Text variant="titleMedium" style={styles.formTitle}>
+                        Create Your Household
+                      </Text>
+                      <TextInput
+                        label="Household Name"
+                        value={newHouseholdName}
+                        onChangeText={setNewHouseholdName}
+                        mode="outlined"
+                        style={styles.input}
+                        placeholder="e.g., Flat 3B, The Smiths"
+                      />
+                      <View style={styles.formButtons}>
+                        <Button
+                          mode="outlined"
+                          onPress={() => {
+                            setShowCreateForm(false);
+                            setNewHouseholdName("");
+                          }}
+                          style={styles.formButton}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          mode="contained"
+                          onPress={handleCreateHousehold}
+                          loading={isCreating}
+                          disabled={isCreating || !newHouseholdName.trim()}
+                          style={styles.formButton}
+                        >
+                          Create
+                        </Button>
+                      </View>
+                    </Card.Content>
+                  </Card>
+                </MotiView>
+              )}
+            </View>
+          ) : (
+            // Has household - show members and details
+            <View style={styles.content}>
               <MotiView
                 from={{ opacity: 0, translateY: 20 }}
                 animate={{ opacity: 1, translateY: 0 }}
                 transition={{ type: "spring", damping: 15 }}
               >
-                <Card style={styles.formCard}>
+                <Card style={styles.householdCard}>
                   <Card.Content>
-                    <Text variant="titleMedium" style={styles.formTitle}>
-                      Create Your Household
-                    </Text>
-                    <TextInput
-                      label="Household Name"
-                      value={newHouseholdName}
-                      onChangeText={setNewHouseholdName}
-                      mode="outlined"
-                      style={styles.input}
-                      placeholder="e.g., Flat 3B, The Smiths"
-                    />
-                    <View style={styles.formButtons}>
-                      <Button
+                    <View style={styles.householdHeader}>
+                      <View>
+                        <Text
+                          variant="headlineSmall"
+                          style={styles.householdName}
+                        >
+                          {household.name}
+                        </Text>
+                        <Text
+                          variant="bodyMedium"
+                          style={[
+                            styles.memberCount,
+                            { color: theme.colors.onSurfaceVariant },
+                          ]}
+                        >
+                          {household.members.length} member
+                          {household.members.length !== 1 ? "s" : ""}
+                        </Text>
+                      </View>
+                      <Chip
+                        icon={
+                          household.owner_id === user?.id ? "crown" : "account"
+                        }
                         mode="outlined"
-                        onPress={() => {
-                          setShowCreateForm(false);
-                          setNewHouseholdName("");
-                        }}
-                        style={styles.formButton}
                       >
-                        Cancel
-                      </Button>
-                      <Button
-                        mode="contained"
-                        onPress={handleCreateHousehold}
-                        loading={isCreating}
-                        disabled={isCreating || !newHouseholdName.trim()}
-                        style={styles.formButton}
-                      >
-                        Create
-                      </Button>
+                        {household.owner_id === user?.id ? "Owner" : "Member"}
+                      </Chip>
                     </View>
                   </Card.Content>
                 </Card>
-              </MotiView>
-            )}
-          </View>
-        ) : (
-          // Has household - show members and details
-          <View style={styles.content}>
-            <MotiView
-              from={{ opacity: 0, translateY: 20 }}
-              animate={{ opacity: 1, translateY: 0 }}
-              transition={{ type: "spring", damping: 15 }}
-            >
-              <Card style={styles.householdCard}>
-                <Card.Content>
-                  <View style={styles.householdHeader}>
-                    <View>
-                      <Text
-                        variant="headlineSmall"
-                        style={styles.householdName}
-                      >
-                        {household.name}
-                      </Text>
-                      <Text
-                        variant="bodyMedium"
-                        style={[
-                          styles.memberCount,
-                          { color: theme.colors.onSurfaceVariant },
-                        ]}
-                      >
-                        {household.members.length} member
-                        {household.members.length !== 1 ? "s" : ""}
-                      </Text>
+
+                <Card style={styles.membersCard}>
+                  <Card.Content>
+                    <View style={styles.membersHeader}>
+                      <Text variant="titleMedium">Members</Text>
+                      {!showInviteForm && (
+                        <Button
+                          mode="text"
+                          icon="plus"
+                          onPress={() => setShowInviteForm(true)}
+                          compact
+                        >
+                          Invite
+                        </Button>
+                      )}
                     </View>
-                    <Chip
-                      icon={
-                        household.owner_id === user?.id ? "crown" : "account"
-                      }
-                      mode="outlined"
-                    >
-                      {household.owner_id === user?.id ? "Owner" : "Member"}
-                    </Chip>
-                  </View>
-                </Card.Content>
-              </Card>
 
-              <Card style={styles.membersCard}>
-                <Card.Content>
-                  <View style={styles.membersHeader}>
-                    <Text variant="titleMedium">Members</Text>
-                    {!showInviteForm && (
-                      <Button
-                        mode="text"
-                        icon="plus"
-                        onPress={() => setShowInviteForm(true)}
-                        compact
-                      >
-                        Invite
-                      </Button>
-                    )}
-                  </View>
-
-                  {household.members.map((member, index) => (
-                    <React.Fragment key={member.user.id}>
-                      <List.Item
-                        title={member.user.email}
-                        description={
-                          member.user.id === household.owner_id
-                            ? "Owner"
-                            : "Member"
-                        }
-                        left={(props) => (
-                          <Avatar.Text
-                            {...props}
-                            size={40}
-                            label={member.user.email.charAt(0).toUpperCase()}
-                            style={{
-                              backgroundColor: theme.colors.primaryContainer,
-                            }}
-                          />
-                        )}
-                        right={(props) =>
-                          member.user.id === household.owner_id ? (
-                            <List.Icon {...props} icon="crown" />
-                          ) : null
-                        }
-                      />
-                      {index < household.members.length - 1 && <Divider />}
-                    </React.Fragment>
-                  ))}
-
-                  {showInviteForm && (
-                    <MotiView
-                      from={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      transition={{ type: "spring", damping: 15 }}
-                    >
-                      <View style={styles.inviteForm}>
-                        <TextInput
-                          label="Email Address"
-                          value={newMemberEmail}
-                          onChangeText={setNewMemberEmail}
-                          mode="outlined"
-                          style={styles.input}
-                          keyboardType="email-address"
-                          autoCapitalize="none"
-                          placeholder="flatmate@example.com"
+                    {household.members.map((member, index) => (
+                      <React.Fragment key={member.user.id}>
+                        <List.Item
+                          title={member.user.email}
+                          description={
+                            member.user.id === household.owner_id
+                              ? "Owner"
+                              : "Member"
+                          }
+                          left={(props) => (
+                            <Avatar.Text
+                              {...props}
+                              size={40}
+                              label={member.user.email.charAt(0).toUpperCase()}
+                              style={{
+                                backgroundColor: theme.colors.primaryContainer,
+                              }}
+                            />
+                          )}
+                          right={(props) =>
+                            member.user.id === household.owner_id ? (
+                              <List.Icon {...props} icon="crown" />
+                            ) : null
+                          }
                         />
-                        <View style={styles.formButtons}>
-                          <Button
-                            mode="outlined"
-                            onPress={() => {
-                              setShowInviteForm(false);
-                              setNewMemberEmail("");
-                            }}
-                            style={styles.formButton}
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            mode="contained"
-                            onPress={handleInviteMember}
-                            loading={isInviting}
-                            disabled={isInviting || !newMemberEmail.trim()}
-                            style={styles.formButton}
-                          >
-                            Invite
-                          </Button>
-                        </View>
-                      </View>
-                    </MotiView>
-                  )}
-                </Card.Content>
-              </Card>
+                        {index < household.members.length - 1 && <Divider />}
+                      </React.Fragment>
+                    ))}
 
-              <Button
-                mode="outlined"
-                icon="cog"
-                onPress={handleManageHousehold}
-                style={styles.manageButton}
-              >
-                Manage Household
-              </Button>
-            </MotiView>
-          </View>
-        )}
-      </ScrollView>
+                    {showInviteForm && (
+                      <MotiView
+                        from={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        transition={{ type: "spring", damping: 15 }}
+                      >
+                        <View style={styles.inviteForm}>
+                          <TextInput
+                            label="Email Address"
+                            value={newMemberEmail}
+                            onChangeText={setNewMemberEmail}
+                            mode="outlined"
+                            style={styles.input}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            placeholder="flatmate@example.com"
+                          />
+                          <View style={styles.formButtons}>
+                            <Button
+                              mode="outlined"
+                              onPress={() => {
+                                setShowInviteForm(false);
+                                setNewMemberEmail("");
+                              }}
+                              style={styles.formButton}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              mode="contained"
+                              onPress={handleInviteMember}
+                              loading={isInviting}
+                              disabled={isInviting || !newMemberEmail.trim()}
+                              style={styles.formButton}
+                            >
+                              Invite
+                            </Button>
+                          </View>
+                        </View>
+                      </MotiView>
+                    )}
+                  </Card.Content>
+                </Card>
+
+                <Button
+                  mode="outlined"
+                  icon="cog"
+                  onPress={handleManageHousehold}
+                  style={styles.manageButton}
+                >
+                  Manage Household
+                </Button>
+              </MotiView>
+            </View>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

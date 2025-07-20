@@ -32,7 +32,8 @@ import {
 } from "@expo-google-fonts/inter";
 import * as SplashScreen from "expo-splash-screen";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { EnhancedOnboardingScreen } from "@/components/EnhancedOnboardingScreen";
+// Removed EnhancedOnboardingScreen import
+import { DevelopmentOverlay } from "@/components/DevelopmentOverlay";
 
 console.log("[LOG] app/_layout.tsx loaded");
 
@@ -79,29 +80,13 @@ function RootContent() {
   const { user, loading } = useAuthContext();
   const router = useRouter();
   const segments = useSegments();
-  const [showOnboarding, setShowOnboarding] = useState(false);
-
-  useEffect(() => {
-    const checkOnboarding = async () => {
-      if (loading || !user) return;
-
-      try {
-        const hasOnboarded = await AsyncStorage.getItem("@hasOnboarded");
-        if (!hasOnboarded) {
-          setShowOnboarding(true);
-        }
-      } catch (e) {
-        console.error("Failed to fetch onboarding status", e);
-      }
-    };
-
-    checkOnboarding();
-  }, [user, loading]);
+  // Removed onboarding overlay logic
 
   useEffect(() => {
     if (loading) return; // Wait until auth state is confirmed
 
     const inAuthGroup = segments[0] === "(auth)";
+    const inOnboarding = segments[0] === "onboarding";
 
     if (!user && !inAuthGroup) {
       // If the user is not signed in and not in the auth group,
@@ -111,19 +96,23 @@ function RootContent() {
       // If the user is signed in and in the auth group,
       // redirect them to the main app.
       router.replace("/(tabs)");
+    } else if (user && !inAuthGroup && !inOnboarding) {
+      // Check if user needs onboarding
+      const checkOnboarding = async () => {
+        try {
+          const hasOnboarded = await AsyncStorage.getItem("@hasOnboarded");
+          if (!hasOnboarded) {
+            router.replace("/onboarding");
+          }
+        } catch (e) {
+          console.error("Failed to check onboarding status", e);
+        }
+      };
+      checkOnboarding();
     }
   }, [user, loading, segments, router]);
 
-  const handleOnboardingDismiss = async () => {
-    try {
-      await AsyncStorage.setItem("@hasOnboarded", "true");
-      setShowOnboarding(false);
-    } catch (e) {
-      console.error("Failed to save onboarding status", e);
-      // Still dismiss the screen even if storage fails
-      setShowOnboarding(false);
-    }
-  };
+  // Removed onboarding dismiss handler
 
   // Show a loading indicator while we check for a user
   if (loading) {
@@ -148,6 +137,7 @@ function RootContent() {
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="onboarding" options={{ headerShown: false }} />
           <Stack.Screen
             name="modals/camera"
             options={{ presentation: "modal" }}
@@ -162,10 +152,7 @@ function RootContent() {
           />
           <Stack.Screen name="viral-demo" options={{ presentation: "modal" }} />
         </Stack>
-        <EnhancedOnboardingScreen
-          isVisible={showOnboarding}
-          onComplete={handleOnboardingDismiss}
-        />
+        <DevelopmentOverlay />
       </SafeAreaProvider>
     </PaperProvider>
   );

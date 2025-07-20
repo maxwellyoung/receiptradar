@@ -1,5 +1,6 @@
-import { AccessibilityInfo, Platform } from "react-native";
+import { AccessibilityInfo, Platform, findNodeHandle } from "react-native";
 import { logger } from "./logger";
+import React, { useState, useEffect } from "react";
 
 interface AccessibilityConfig {
   isScreenReaderEnabled: boolean;
@@ -315,40 +316,181 @@ export const accessibilityUtils = {
       role: "tab",
       isSelected,
     }),
-};
 
-/**
- * Accessibility hook for React components
- */
-export const useAccessibility = () => {
-  const announce = (message: string) => {
-    accessibilityManager.announce(message);
-  };
+  /**
+   * Announce to screen reader
+   */
+  announce: (announcement: string) => {
+    accessibilityManager.announce(announcement);
+  },
 
-  const setFocus = (ref: any) => {
-    accessibilityManager.setAccessibilityFocus(ref);
-  };
+  /**
+   * Set accessibility focus
+   */
+  setAccessibilityFocus: (reactTag: number) => {
+    AccessibilityInfo.setAccessibilityFocus(reactTag);
+  },
 
-  const getAnimationSettings = (baseDuration: number = 300) => {
-    return accessibilityManager.getAnimationSettings(baseDuration);
-  };
+  /**
+   * Get accessibility focus (platform specific)
+   */
+  getAccessibilityFocus: () => {
+    // This is platform specific and may not be available on all platforms
+    return Promise.resolve(0);
+  },
 
-  const isScreenReaderEnabled = () => {
-    return accessibilityManager.isScreenReaderEnabled();
-  };
+  /**
+   * Generate accessibility props
+   */
+  generateAccessibilityProps: (config: {
+    label?: string;
+    hint?: string;
+    role?: string;
+    state?: string[];
+    actions?: string[];
+    isAccessibilityElement?: boolean;
+    accessibilityElementsHidden?: boolean;
+    importantForAccessibility?: "auto" | "yes" | "no" | "no-hide-descendants";
+  }) => {
+    const {
+      label,
+      hint,
+      role,
+      state,
+      actions,
+      isAccessibilityElement = true,
+      accessibilityElementsHidden = false,
+      importantForAccessibility = "auto",
+    } = config;
 
-  const isReduceMotionEnabled = () => {
-    return accessibilityManager.isReduceMotionEnabled();
-  };
+    return {
+      accessible: isAccessibilityElement,
+      accessibilityLabel: label,
+      accessibilityHint: hint,
+      accessibilityRole: role,
+      accessibilityState: state?.reduce(
+        (acc, s) => ({ ...acc, [s]: true }),
+        {}
+      ),
+      accessibilityActions: actions?.map((action) => ({ name: action })),
+      accessibilityElementsHidden,
+      importantForAccessibility,
+    };
+  },
 
-  return {
-    announce,
-    setFocus,
-    getAnimationSettings,
-    isScreenReaderEnabled,
-    isReduceMotionEnabled,
-    utils: accessibilityUtils,
-  };
+  /**
+   * Generate button accessibility props
+   */
+  generateButtonProps: (label: string, hint?: string, disabled = false) => {
+    return accessibilityUtils.generateAccessibilityProps({
+      label,
+      hint,
+      role: "button",
+      state: disabled ? ["disabled"] : undefined,
+      actions: ["activate"],
+    });
+  },
+
+  /**
+   * Generate link accessibility props
+   */
+  generateLinkProps: (label: string, hint?: string) => {
+    return accessibilityUtils.generateAccessibilityProps({
+      label,
+      hint,
+      role: "link",
+      actions: ["activate"],
+    });
+  },
+
+  /**
+   * Generate image accessibility props
+   */
+  generateImageProps: (label: string, hint?: string) => {
+    return accessibilityUtils.generateAccessibilityProps({
+      label,
+      hint,
+      role: "image",
+    });
+  },
+
+  /**
+   * Generate header accessibility props
+   */
+  generateHeaderProps: (label: string, level: 1 | 2 | 3 | 4 | 5 | 6 = 1) => {
+    return accessibilityUtils.generateAccessibilityProps({
+      label,
+      role: "header",
+      state: [`level${level}`],
+    });
+  },
+
+  /**
+   * Generate list accessibility props
+   */
+  generateListProps: (label?: string) => {
+    return accessibilityUtils.generateAccessibilityProps({
+      label,
+      role: "list",
+    });
+  },
+
+  /**
+   * Generate list item accessibility props
+   */
+  generateListItemProps: (label: string, selected = false) => {
+    return accessibilityUtils.generateAccessibilityProps({
+      label,
+      role: "listitem",
+      state: selected ? ["selected"] : undefined,
+    });
+  },
+
+  /**
+   * Generate search accessibility props
+   */
+  generateSearchProps: (label: string, hint?: string) => {
+    return accessibilityUtils.generateAccessibilityProps({
+      label,
+      hint,
+      role: "search",
+    });
+  },
+
+  /**
+   * Generate tab accessibility props
+   */
+  generateTabProps: (label: string, selected = false) => {
+    return accessibilityUtils.generateAccessibilityProps({
+      label,
+      role: "tab",
+      state: selected ? ["selected"] : undefined,
+    });
+  },
+
+  /**
+   * Generate switch accessibility props
+   */
+  generateSwitchProps: (label: string, value: boolean, hint?: string) => {
+    return accessibilityUtils.generateAccessibilityProps({
+      label,
+      hint,
+      role: "switch",
+      state: [value ? "checked" : "unchecked"],
+    });
+  },
+
+  /**
+   * Generate checkbox accessibility props
+   */
+  generateCheckboxProps: (label: string, checked: boolean, hint?: string) => {
+    return accessibilityUtils.generateAccessibilityProps({
+      label,
+      hint,
+      role: "checkbox",
+      state: [checked ? "checked" : "unchecked"],
+    });
+  },
 };
 
 /**
@@ -378,6 +520,286 @@ export const accessibilityConstants = {
     SHORT: 100,
     MEDIUM: 300,
     LONG: 500,
+  },
+};
+
+// Accessibility constants
+export const ACCESSIBILITY_CONSTANTS = {
+  ROLE: {
+    BUTTON: "button",
+    LINK: "link",
+    IMAGE: "image",
+    HEADER: "header",
+    TEXT: "text",
+    SEARCH: "search",
+    TAB: "tab",
+    SWITCH: "switch",
+    SLIDER: "slider",
+    CHECKBOX: "checkbox",
+    RADIO: "radio",
+    SPINBUTTON: "spinbutton",
+    COMBOBOX: "combobox",
+    MENU: "menu",
+    MENUITEM: "menuitem",
+    TOOLBAR: "toolbar",
+    TABLIST: "tablist",
+    LIST: "list",
+    LISTITEM: "listitem",
+    GRID: "grid",
+    GRIDCELL: "gridcell",
+    ARTICLE: "article",
+    BANNER: "banner",
+    COMPLEMENTARY: "complementary",
+    CONTENTINFO: "contentinfo",
+    FORM: "form",
+    MAIN: "main",
+    NAVIGATION: "navigation",
+    REGION: "region",
+    SECTION: "section",
+  },
+  STATE: {
+    SELECTED: "selected",
+    DISABLED: "disabled",
+    CHECKED: "checked",
+    UNCHECKED: "unchecked",
+    EXPANDED: "expanded",
+    COLLAPSED: "collapsed",
+    BUSY: "busy",
+    REQUIRED: "required",
+    INVALID: "invalid",
+  },
+  ACTION: {
+    ACTIVATE: "activate",
+    LONGPRESS: "longpress",
+    MAGICTAP: "magictap",
+    INCREMENT: "increment",
+    DECREMENT: "decrement",
+  },
+};
+
+// Accessibility hook for screen reader status
+export const useScreenReader = () => {
+  const [isScreenReaderEnabled, setIsScreenReaderEnabled] = useState(false);
+
+  useEffect(() => {
+    const checkScreenReader = async () => {
+      const enabled = await AccessibilityInfo.isScreenReaderEnabled();
+      setIsScreenReaderEnabled(enabled);
+    };
+
+    const handleScreenReaderChanged = (enabled: boolean) => {
+      setIsScreenReaderEnabled(enabled);
+    };
+
+    checkScreenReader();
+    const subscription = AccessibilityInfo.addEventListener(
+      "screenReaderChanged",
+      handleScreenReaderChanged
+    );
+
+    return () => subscription?.remove();
+  }, []);
+
+  return { isScreenReaderEnabled };
+};
+
+// Accessibility hook for reduced motion
+export const useReducedMotion = () => {
+  const [isReduceMotionEnabled, setIsReduceMotionEnabled] = useState(false);
+
+  useEffect(() => {
+    const checkReduceMotion = async () => {
+      const enabled = await AccessibilityInfo.isReduceMotionEnabled();
+      setIsReduceMotionEnabled(enabled);
+    };
+
+    const handleReduceMotionChanged = (enabled: boolean) => {
+      setIsReduceMotionEnabled(enabled);
+    };
+
+    checkReduceMotion();
+    const subscription = AccessibilityInfo.addEventListener(
+      "reduceMotionChanged",
+      handleReduceMotionChanged
+    );
+
+    return () => subscription?.remove();
+  }, []);
+
+  return { isReduceMotionEnabled };
+};
+
+// Accessibility hook for bold text
+export const useBoldText = () => {
+  const [isBoldTextEnabled, setIsBoldTextEnabled] = useState(false);
+
+  useEffect(() => {
+    const checkBoldText = async () => {
+      const enabled = await AccessibilityInfo.isBoldTextEnabled();
+      setIsBoldTextEnabled(enabled);
+    };
+
+    const handleBoldTextChanged = (enabled: boolean) => {
+      setIsBoldTextEnabled(enabled);
+    };
+
+    checkBoldText();
+    const subscription = AccessibilityInfo.addEventListener(
+      "boldTextChanged",
+      handleBoldTextChanged
+    );
+
+    return () => subscription?.remove();
+  }, []);
+
+  return { isBoldTextEnabled };
+};
+
+// Accessibility hook for high contrast
+export const useHighContrast = () => {
+  const [isHighContrastEnabled, setIsHighContrastEnabled] = useState(false);
+
+  useEffect(() => {
+    const checkHighContrast = async () => {
+      const enabled = await AccessibilityInfo.isHighTextContrastEnabled();
+      setIsHighContrastEnabled(enabled);
+    };
+
+    const handleHighContrastChanged = (enabled: boolean) => {
+      setIsHighContrastEnabled(enabled);
+    };
+
+    checkHighContrast();
+    const subscription = AccessibilityInfo.addEventListener(
+      "highTextContrastChanged",
+      handleHighContrastChanged
+    );
+
+    return () => subscription?.remove();
+  }, []);
+
+  return { isHighContrastEnabled };
+};
+
+// Color contrast utilities
+export const colorContrastUtils = {
+  // Calculate relative luminance
+  getRelativeLuminance: (r: number, g: number, b: number): number => {
+    const [rs, gs, bs] = [r, g, b].map((c) => {
+      c = c / 255;
+      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+  },
+
+  // Calculate contrast ratio
+  getContrastRatio: (l1: number, l2: number): number => {
+    const lighter = Math.max(l1, l2);
+    const darker = Math.min(l1, l2);
+    return (lighter + 0.05) / (darker + 0.05);
+  },
+
+  // Check if contrast meets WCAG AA standards
+  meetsWCAGAA: (contrastRatio: number, isLargeText = false): boolean => {
+    return isLargeText ? contrastRatio >= 3 : contrastRatio >= 4.5;
+  },
+
+  // Check if contrast meets WCAG AAA standards
+  meetsWCAGAAA: (contrastRatio: number, isLargeText = false): boolean => {
+    return isLargeText ? contrastRatio >= 4.5 : contrastRatio >= 7;
+  },
+};
+
+// Keyboard navigation utilities
+export const keyboardNavigationUtils = {
+  // Generate keyboard navigation props
+  generateKeyboardProps: (config: {
+    onKeyPress?: (event: any) => void;
+    onKeyDown?: (event: any) => void;
+    onKeyUp?: (event: any) => void;
+    tabIndex?: number;
+    accessible?: boolean;
+  }) => {
+    const {
+      onKeyPress,
+      onKeyDown,
+      onKeyUp,
+      tabIndex = 0,
+      accessible = true,
+    } = config;
+
+    return {
+      accessible,
+      tabIndex,
+      onKeyPress,
+      onKeyDown,
+      onKeyUp,
+    };
+  },
+
+  // Generate focusable props
+  generateFocusableProps: (config: {
+    focusable?: boolean;
+    tabIndex?: number;
+    onFocus?: () => void;
+    onBlur?: () => void;
+  }) => {
+    const { focusable = true, tabIndex = 0, onFocus, onBlur } = config;
+
+    return {
+      focusable,
+      tabIndex,
+      onFocus,
+      onBlur,
+    };
+  },
+};
+
+// Accessibility announcement utilities
+export const announcementUtils = {
+  // Announce loading state
+  announceLoading: (message: string) => {
+    accessibilityUtils.announce(`${message} loading`);
+  },
+
+  // Announce success
+  announceSuccess: (message: string) => {
+    accessibilityUtils.announce(`${message} completed successfully`);
+  },
+
+  // Announce error
+  announceError: (message: string) => {
+    accessibilityUtils.announce(`Error: ${message}`);
+  },
+
+  // Announce navigation
+  announceNavigation: (screen: string) => {
+    accessibilityUtils.announce(`Navigated to ${screen}`);
+  },
+
+  // Announce action
+  announceAction: (action: string) => {
+    accessibilityUtils.announce(`${action} activated`);
+  },
+
+  // Announce selection
+  announceSelection: (item: string) => {
+    accessibilityUtils.announce(`${item} selected`);
+  },
+
+  // Announce refresh
+  announceRefresh: () => {
+    accessibilityUtils.announce("Refreshing content");
+  },
+
+  // Announce offline status
+  announceOffline: () => {
+    accessibilityUtils.announce("You are now offline");
+  },
+
+  // Announce online status
+  announceOnline: () => {
+    accessibilityUtils.announce("You are back online");
   },
 };
 

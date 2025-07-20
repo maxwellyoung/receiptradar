@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, StyleSheet, Alert, FlatList } from "react-native";
+import {
+  View,
+  StyleSheet,
+  Alert,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from "react-native";
 import {
   Button,
   Text,
@@ -143,70 +151,86 @@ export default function ManageHouseholdModal() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text variant="headlineMedium">
-          {household ? household.name : "Create Household"}
-        </Text>
-        <Button onPress={() => router.back()}>Close</Button>
-      </View>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        <View style={styles.header}>
+          <Text variant="headlineMedium">
+            {household ? household.name : "Create Household"}
+          </Text>
+          <Button onPress={() => router.back()}>Close</Button>
+        </View>
 
-      {household ? (
-        // Display household members and invite form
-        <View style={styles.content}>
-          <Card>
-            <Card.Content>
-              <List.Section title="Members">
-                {members.map((member) => (
-                  <List.Item
-                    key={member.user.id}
-                    title={<Text>{member.user.email}</Text>}
-                    description={<Text>{member.role}</Text>}
-                    left={(props) => (
-                      <List.Icon
-                        {...props}
-                        icon={
-                          member.role === "admin" ? "account-crown" : "account"
-                        }
-                      />
-                    )}
-                  />
-                ))}
-              </List.Section>
-              <TextInput
-                label="Invite new member by email"
-                value={newMemberEmail}
-                onChangeText={setNewMemberEmail}
-                mode="outlined"
-                style={styles.input}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-              <Button
-                mode="contained"
-                onPress={handleInviteMember}
-                loading={isInviting}
-                disabled={isInviting}
-              >
-                Invite Member
-              </Button>
-            </Card.Content>
-          </Card>
-        </View>
-      ) : (
-        // Display create household form
-        <View style={styles.content}>
-          <TextInput
-            label="Household Name"
-            value={newHouseholdName}
-            onChangeText={setNewHouseholdName}
-            mode="outlined"
-            style={styles.input}
-          />
-          <Button mode="contained" onPress={handleCreateHousehold}>
-            Create
-          </Button>
-        </View>
-      )}
+        {household ? (
+          // Display household members and invite form
+          <ScrollView
+            style={styles.content}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <Card>
+              <Card.Content>
+                <List.Section title="Members">
+                  {members.map((member) => (
+                    <List.Item
+                      key={member.user.id}
+                      title={<Text>{member.user.email}</Text>}
+                      description={<Text>{member.role}</Text>}
+                      left={(props) => (
+                        <List.Icon
+                          {...props}
+                          icon={
+                            member.role === "admin"
+                              ? "account-crown"
+                              : "account"
+                          }
+                        />
+                      )}
+                    />
+                  ))}
+                </List.Section>
+                <TextInput
+                  label="Invite new member by email"
+                  value={newMemberEmail}
+                  onChangeText={setNewMemberEmail}
+                  mode="outlined"
+                  style={styles.input}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+                <Button
+                  mode="contained"
+                  onPress={handleInviteMember}
+                  loading={isInviting}
+                  disabled={isInviting}
+                >
+                  Invite Member
+                </Button>
+              </Card.Content>
+            </Card>
+          </ScrollView>
+        ) : (
+          // Display create household form
+          <ScrollView
+            style={styles.content}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <TextInput
+              label="Household Name"
+              value={newHouseholdName}
+              onChangeText={setNewHouseholdName}
+              mode="outlined"
+              style={styles.input}
+            />
+            <Button mode="contained" onPress={handleCreateHousehold}>
+              Create
+            </Button>
+          </ScrollView>
+        )}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

@@ -29,8 +29,6 @@ interface OnboardingStep {
   id: string;
   title: string;
   subtitle: string;
-  wormMood: any;
-  wormMessage: string;
   content: React.ReactNode;
 }
 
@@ -138,31 +136,13 @@ export const EnhancedOnboardingScreen: React.FC<{
     }
   };
 
-  const getWormMood = () => {
-    if (currentStep === 0) return "insightful";
-    if (currentStep === 1) return toneMode === "gentle" ? "zen" : "dramatic";
-    return "calm";
-  };
-
-  const getWormMessage = () => {
-    if (currentStep === 0)
-      return "Hello! I'm Worm. I'll help you track groceries, spot waste, and save money.";
-    if (currentStep === 1) {
-      return toneMode === "gentle"
-        ? "I'll be kind and supportive with your spending insights."
-        : "I'll give it to you straight - no sugar coating!";
-    }
-    return "Perfect! You're all set to start scanning receipts and saving money.";
-  };
+  // Removed worm-related functions
 
   const steps: OnboardingStep[] = [
     {
       id: "welcome",
       title: "Welcome to ReceiptRadar",
       subtitle: "Your personal grocery spending companion",
-      wormMood: "insightful",
-      wormMessage:
-        "Hello! I'm Worm. I'll help you track groceries, spot waste, and save money.",
       content: (
         <View style={styles.stepContent}>
           <HolisticText variant="body.large" style={styles.stepDescription}>
@@ -196,9 +176,7 @@ export const EnhancedOnboardingScreen: React.FC<{
     {
       id: "tone",
       title: "Choose Your Experience",
-      subtitle: "How would you like Worm to communicate with you?",
-      wormMood: toneMode === "gentle" ? "zen" : "dramatic",
-      wormMessage: getWormMessage(),
+      subtitle: "How would you like ReceiptRadar to communicate with you?",
       content: (
         <View style={styles.stepContent}>
           <HolisticText variant="body.large" style={styles.stepDescription}>
@@ -234,9 +212,6 @@ export const EnhancedOnboardingScreen: React.FC<{
       id: "permission",
       title: "Camera Access",
       subtitle: "To scan your receipts, we need camera permission",
-      wormMood: "calm",
-      wormMessage:
-        "Perfect! You're all set to start scanning receipts and saving money.",
       content: (
         <View style={styles.stepContent}>
           <HolisticText variant="body.large" style={styles.stepDescription}>
@@ -298,16 +273,10 @@ export const EnhancedOnboardingScreen: React.FC<{
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Worm Character */}
-          <View style={styles.wormContainer}>
-            <RadarWorm
-              mood={getWormMood()}
-              message={getWormMessage()}
-              visible={true}
-              size="large"
-              showSpeechBubble={true}
-              animated={true}
-            />
+          {/* App Logo */}
+          <View style={styles.logoContainer}>
+            <Text style={styles.logo}>📱</Text>
+            <Text style={styles.appName}>ReceiptRadar</Text>
           </View>
 
           {/* Step Content */}
@@ -378,9 +347,18 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
   },
-  wormContainer: {
+  logoContainer: {
     alignItems: "center",
     paddingVertical: 40,
+  },
+  logo: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  appName: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#000",
   },
   stepHeader: {
     alignItems: "center",
