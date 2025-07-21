@@ -101,8 +101,10 @@ export function PriceComparisonModal({
   };
 
   const renderPriceCard = (data: PriceData, index: number) => {
-    const isBestPrice = data === getBestPrice();
-    const isWorstPrice = data === getWorstPrice();
+    const isBestPrice =
+      data && getBestPrice() && data.price === getBestPrice()?.price;
+    const isWorstPrice =
+      data && getWorstPrice() && data.price === getWorstPrice()?.price;
     const savings = calculateSavings(data.price);
     const isCurrentStore =
       currentStore &&
@@ -221,7 +223,7 @@ export function PriceComparisonModal({
   const renderPriceHistory = () => {
     if (!selectedStore) return null;
 
-    const storeData = priceData.find(
+    const storeData = priceComparisons.find(
       (data) => data.storeName === selectedStore
     );
     if (!storeData) return null;
