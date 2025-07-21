@@ -20,6 +20,7 @@ import * as Linking from "expo-linking";
 import { AppTheme, spacing, typography, borderRadius } from "@/constants/theme";
 import { getStoreImage, getProductImage } from "@/constants/storeImages";
 import { StoreLogo } from "@/components/StoreLogo";
+import MapView, { Marker, Callout, PROVIDER_DEFAULT } from "react-native-maps";
 
 interface StoreLocation {
   id: string;
@@ -227,47 +228,103 @@ export function StoreMap({
   };
 
   const renderMapView = () => {
-    // Always show fallback for now to avoid map errors
-    return (
-      <View style={styles.mapFallback}>
-        <View style={styles.mapPlaceholder}>
-          <MaterialIcons
-            name="map"
-            size={64}
-            color={theme.colors.onSurfaceVariant}
-          />
-          <Text
-            style={[
-              styles.mapPlaceholderText,
-              { color: theme.colors.onSurface },
-            ]}
-          >
-            Store Map
-          </Text>
-          <Text
-            style={[
-              styles.mapPlaceholderSubtext,
-              { color: theme.colors.onSurfaceVariant },
-            ]}
-          >
-            Map view coming soon
-          </Text>
-          <TouchableOpacity
-            style={[
-              styles.openMapsButton,
-              { backgroundColor: theme.colors.primary },
-            ]}
-            onPress={() => {
-              const url = `http://maps.apple.com/?ll=${
-                userLocation?.latitude || -41.2785
-              },${userLocation?.longitude || 174.7803}&z=13`;
-              Linking.openURL(url);
-            }}
-          >
-            <MaterialIcons name="open-in-new" size={20} color="white" />
-            <Text style={styles.openMapsButtonText}>Open in Apple Maps</Text>
-          </TouchableOpacity>
+    if (!mapAvailable) {
+      // fallback placeholder (keep your existing code here)
+      return (
+        <View style={styles.mapFallback}>
+          <View style={styles.mapPlaceholder}>
+            <MaterialIcons
+              name="map"
+              size={64}
+              color={theme.colors.onSurfaceVariant}
+            />
+            <Text
+              style={[
+                styles.mapPlaceholderText,
+                { color: theme.colors.onSurface },
+              ]}
+            >
+              Store Map
+            </Text>
+            <Text
+              style={[
+                styles.mapPlaceholderSubtext,
+                { color: theme.colors.onSurfaceVariant },
+              ]}
+            >
+              Map view coming soon
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.openMapsButton,
+                { backgroundColor: theme.colors.primary },
+              ]}
+              onPress={() => {
+                const url = `http://maps.apple.com/?ll=${
+                  userLocation?.latitude || -41.2785
+                },${userLocation?.longitude || 174.7803}&z=13`;
+                Linking.openURL(url);
+              }}
+            >
+              <MaterialIcons name="open-in-new" size={20} color="white" />
+              <Text style={styles.openMapsButtonText}>Open in Apple Maps</Text>
+            </TouchableOpacity>
+          </View>
         </View>
+      );
+    }
+
+    // Calculate initial region
+    const region = {
+      latitude: userLocation?.latitude || -41.2785,
+      longitude: userLocation?.longitude || 174.7803,
+      latitudeDelta: LATITUDE_DELTA,
+      longitudeDelta: LONGITUDE_DELTA,
+    };
+
+    return (
+      <View style={styles.mapContainer}>
+        <MapView
+          provider={PROVIDER_DEFAULT}
+          style={styles.map}
+          region={region}
+          showsUserLocation={true}
+          showsMyLocationButton={true}
+          showsCompass={true}
+          showsScale={true}
+          mapType="standard"
+        >
+          {stores.map((store) => (
+            <Marker
+              key={store.id}
+              coordinate={store.coordinates}
+              title={store.name}
+              description={`${store.address}, ${store.city}`}
+              pinColor={getStoreColor(store.name)}
+              onPress={() => handleStorePress(store)}
+            >
+              <Callout tooltip>
+                <View style={styles.calloutContainer}>
+                  <Text style={styles.calloutTitle}>{store.name}</Text>
+                  <Text style={styles.calloutAddress}>{store.address}</Text>
+                  <Text style={styles.calloutHours}>{store.openingHours}</Text>
+                  <View style={styles.calloutActions}>
+                    <TouchableOpacity onPress={() => handleDirections(store)}>
+                      <MaterialIcons name="directions" size={16} />
+                      <Text>Directions</Text>
+                    </TouchableOpacity>
+                    {store.phone && (
+                      <TouchableOpacity onPress={() => handleCall(store)}>
+                        <MaterialIcons name="phone" size={16} />
+                        <Text>Call</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              </Callout>
+            </Marker>
+          ))}
+        </MapView>
       </View>
     );
   };

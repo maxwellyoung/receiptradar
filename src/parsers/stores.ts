@@ -9,7 +9,8 @@ export const STORES = {
 };
 
 export const STORE_IDENTIFIERS: { [key: string]: RegExp } = {
-  [STORES.COUNTDOWN]: /countdown/i,
+  [STORES.COUNTDOWN]:
+    /countdown|count down|c0untdown|coundown|countd0wn|countdoun|countdonw/i,
   [STORES.NEW_WORLD]: /new world/i,
   [STORES.PAKNSAVE]: /pak'n'save|paknsave|pak n save/i,
   [STORES.FOUR_SQUARE]: /four square/i,

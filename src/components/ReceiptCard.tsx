@@ -43,6 +43,14 @@ export const ReceiptCard: React.FC<ReceiptCardProps> = ({
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const elevationAnim = useRef(new Animated.Value(0)).current;
 
+  // Runtime type checks for debugging
+  if (typeof receipt !== "object" || receipt === null) {
+    console.error("ReceiptCard: receipt is not an object", receipt);
+  }
+  if (!Array.isArray(items)) {
+    console.error("ReceiptCard: items is not an array", items);
+  }
+
   const handlePressIn = () => {
     if (onPress) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

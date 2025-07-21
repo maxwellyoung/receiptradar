@@ -16,6 +16,9 @@ prepare_react_native_project!
 target 'ReceiptRadar' do
   use_expo_modules!
 
+  # Add RCTDeprecation pod for react-native-maps compatibility
+  pod 'RCTDeprecation', :path => '../node_modules/react-native/ReactApple/Libraries/RCTFoundation/RCTDeprecation'
+
   if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
     config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"];
   else

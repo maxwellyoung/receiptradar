@@ -209,13 +209,17 @@ export default function TrendsScreen() {
     // Use real analytics insights when available
     if (savingsAnalytics) {
       if (savingsAnalytics.savingsPercentage > 10) {
-        return `Great job! You've saved ${savingsAnalytics.savingsPercentage.toFixed(
-          1
-        )}% on your spending`;
+        return `Great job! You've saved ${
+          typeof savingsAnalytics.savingsPercentage === "number"
+            ? savingsAnalytics.savingsPercentage.toFixed(1)
+            : "0"
+        }% on your spending`;
       } else if (savingsAnalytics.savingsPercentage > 5) {
-        return `You're saving money! ${savingsAnalytics.savingsPercentage.toFixed(
-          1
-        )}% savings so far`;
+        return `You're saving money! ${
+          typeof savingsAnalytics.savingsPercentage === "number"
+            ? savingsAnalytics.savingsPercentage.toFixed(1)
+            : "0"
+        }% savings so far`;
       }
     }
 
@@ -235,9 +239,9 @@ export default function TrendsScreen() {
     const percentage = (topAmount / trendsData.totalSpent) * 100;
 
     if (percentage > 50) {
-      return `${
-        trendsData.topCategory
-      } dominates your spending at ${percentage.toFixed(0)}%`;
+      return `${trendsData.topCategory} dominates your spending at ${
+        typeof percentage === "number" ? percentage.toFixed(0) : "0"
+      }%`;
     }
 
     return `${trendsData.topCategory} is your top spending category`;
@@ -324,7 +328,10 @@ export default function TrendsScreen() {
               color={theme.colors.primary}
             />
             <HolisticText variant="title.large" style={styles.statValue}>
-              ${trendsData.totalSpent.toFixed(0)}
+              $
+              {typeof trendsData.totalSpent === "number"
+                ? trendsData.totalSpent.toFixed(0)
+                : "0"}
             </HolisticText>
             <HolisticText variant="body.small" color="secondary">
               Total Spent
@@ -356,7 +363,10 @@ export default function TrendsScreen() {
               color={theme.colors.primary}
             />
             <HolisticText variant="title.large" style={styles.statValue}>
-              ${trendsData.averageSpend.toFixed(0)}
+              $
+              {typeof trendsData.averageSpend === "number"
+                ? trendsData.averageSpend.toFixed(0)
+                : "0"}
             </HolisticText>
             <HolisticText variant="body.small" color="secondary">
               Average
@@ -441,10 +451,13 @@ export default function TrendsScreen() {
                       variant="title.large"
                       style={styles.categoryAmount}
                     >
-                      ${amount.toFixed(0)}
+                      ${typeof amount === "number" ? amount.toFixed(0) : "0"}
                     </HolisticText>
                     <HolisticText variant="body.small" color="secondary">
-                      {percentage.toFixed(0)}%
+                      {typeof percentage === "number"
+                        ? percentage.toFixed(0)
+                        : "0"}
+                      %
                     </HolisticText>
                   </View>
                 </HolisticCard>

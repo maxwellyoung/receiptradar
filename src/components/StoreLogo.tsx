@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Image, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Image, StyleSheet, ActivityIndicator, Text } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "react-native-paper";
 import { getStoreImage } from "@/constants/storeImages";
@@ -33,6 +33,7 @@ export function StoreLogo({
 
   // Check if we have an official logo for this store
   const lowerName = storeName.toLowerCase();
+  const isUnknownStore = lowerName === "unknown store";
   const hasOfficialLogo =
     lowerName.includes("countdown") ||
     lowerName.includes("pak'n'save") ||
@@ -41,6 +42,23 @@ export function StoreLogo({
     lowerName.includes("new world") ||
     lowerName.includes("warehouse") ||
     lowerName.includes("fresh choice");
+
+  if (isUnknownStore) {
+    return (
+      <View style={[styles.fallbackContainer, dimensions, style]}>
+        <MaterialIcons
+          name="store"
+          size={dimensions.width * 0.5}
+          color={theme.colors.onSurfaceVariant}
+        />
+        <View style={{ marginTop: 4 }}>
+          <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 12 }}>
+            Store not recognized
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   // Use official logo if available
   if (hasOfficialLogo) {
