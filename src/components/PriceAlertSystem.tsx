@@ -16,6 +16,7 @@ import { useStoreTracking } from "@/hooks/useStoreTracking";
 import { AppTheme, borderRadius, spacing } from "@/constants/theme";
 
 import { API_CONFIG } from "@/constants/api";
+import { logger } from "@/utils/logger";
 
 interface PriceAlert {
   id: string;
@@ -73,7 +74,9 @@ export const PriceAlertSystem: React.FC = () => {
         setAlerts(data);
       }
     } catch (error) {
-      console.error("Failed to fetch alerts:", error);
+      logger.error("Failed to fetch alerts", error as Error, {
+        component: "PriceAlertSystem",
+      });
     } finally {
       setLoading(false);
     }
@@ -92,7 +95,9 @@ export const PriceAlertSystem: React.FC = () => {
         setPriceDrops(data);
       }
     } catch (error) {
-      console.error("Failed to fetch price drops:", error);
+      logger.error("Failed to fetch price drops", error as Error, {
+        component: "PriceAlertSystem",
+      });
     }
   };
 
@@ -124,7 +129,9 @@ export const PriceAlertSystem: React.FC = () => {
         setShowAddForm(false);
       }
     } catch (error) {
-      console.error("Failed to create alert:", error);
+      logger.error("Failed to create alert", error as Error, {
+        component: "PriceAlertSystem",
+      });
     } finally {
       setLoading(false);
     }
@@ -157,7 +164,9 @@ export const PriceAlertSystem: React.FC = () => {
         );
       }
     } catch (error) {
-      console.error("Failed to toggle alert:", error);
+      logger.error("Failed to toggle alert", error as Error, {
+        component: "PriceAlertSystem",
+      });
     }
   };
 
@@ -176,7 +185,9 @@ export const PriceAlertSystem: React.FC = () => {
         setAlerts((prev) => prev.filter((alert) => alert.id !== alertId));
       }
     } catch (error) {
-      console.error("Failed to delete alert:", error);
+      logger.error("Failed to delete alert", error as Error, {
+        component: "PriceAlertSystem",
+      });
     }
   };
 

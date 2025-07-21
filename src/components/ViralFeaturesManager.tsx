@@ -14,6 +14,7 @@ import { ConfettiBarcodeRain } from "./ConfettiBarcodeRain";
 import { GroceryAura } from "./GroceryAura";
 import * as Haptics from "expo-haptics";
 import { MaterialIcons } from "@expo/vector-icons";
+import { logger } from "@/utils/logger";
 
 interface ViralFeaturesManagerProps {
   totalSpend?: number;
@@ -111,7 +112,7 @@ export const ViralFeaturesManager: React.FC<ViralFeaturesManagerProps> = ({
 
   const handleCritterShare = () => {
     // Share critter as GIF or image
-    console.log("Sharing critter!");
+    logger.info("Sharing critter", { component: "ViralFeaturesManager" });
   };
 
   const handleContinue = () => {

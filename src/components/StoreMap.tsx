@@ -21,6 +21,7 @@ import { AppTheme, spacing, typography, borderRadius } from "@/constants/theme";
 import { getStoreImage, getProductImage } from "@/constants/storeImages";
 import { StoreLogo } from "@/components/StoreLogo";
 import MapView, { Marker, Callout, PROVIDER_DEFAULT } from "react-native-maps";
+import { logger } from "@/utils/logger";
 
 interface StoreLocation {
   id: string;
@@ -130,7 +131,9 @@ export function StoreMap({
       require("react-native-maps");
       setMapAvailable(true);
     } catch (error) {
-      console.log("react-native-maps not available, using list view");
+      logger.info("react-native-maps not available, using list view", {
+        component: "StoreMap",
+      });
       setMapAvailable(false);
     }
   }, []);

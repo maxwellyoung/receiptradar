@@ -21,6 +21,7 @@ import {
   CommunityTip,
   UserReview,
 } from "@/services/CommunityService";
+import { logger } from "@/utils/logger";
 
 interface CommunityFeaturesProps {
   variant?: "demo" | "full";
@@ -94,7 +95,9 @@ export const CommunityFeatures: React.FC<CommunityFeaturesProps> = ({
       setTips(tipsData);
       setReviews(reviewsData);
     } catch (error) {
-      console.error("Error loading community data:", error);
+      logger.error("Error loading community data", error as Error, {
+        component: "CommunityFeatures",
+      });
     }
   };
 
@@ -131,7 +134,9 @@ export const CommunityFeatures: React.FC<CommunityFeaturesProps> = ({
       });
       loadData();
     } catch (error) {
-      console.error("Error sharing deal:", error);
+      logger.error("Error sharing deal", error as Error, {
+        component: "CommunityFeatures",
+      });
     }
   };
 

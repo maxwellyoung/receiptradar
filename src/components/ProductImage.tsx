@@ -4,6 +4,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "react-native-paper";
 import { getProductImage } from "@/constants/storeImages";
 import { AppTheme, spacing, borderRadius } from "@/constants/theme";
+import { logger } from "@/utils/logger";
 
 interface ProductImageProps {
   productName: string;
@@ -41,7 +42,11 @@ export function ProductImage({
   };
 
   const handleError = () => {
-    console.log(`❌ ProductImage error for: ${productName}, URL: ${imageUrl}`);
+    logger.error(`ProductImage error for: ${productName}`, undefined, {
+      component: "ProductImage",
+      productName,
+      imageUrl,
+    });
     setLoading(false);
     setError(true);
   };

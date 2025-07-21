@@ -33,6 +33,7 @@ import {
   useScreenReader,
   useReducedMotion,
 } from "@/utils/accessibility";
+import { logger } from "@/utils/logger";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -955,31 +956,51 @@ export function HolisticDesignSystemShowcase() {
           <View style={styles.buttonGrid}>
             <HolisticButton
               title="Primary Button"
-              onPress={() => console.log("Primary pressed")}
+              onPress={() =>
+                logger.info("Primary button pressed", {
+                  component: "HolisticDesignSystem",
+                })
+              }
               variant="primary"
             />
 
             <HolisticButton
               title="Secondary Button"
-              onPress={() => console.log("Secondary pressed")}
+              onPress={() =>
+                logger.info("Secondary button pressed", {
+                  component: "HolisticDesignSystem",
+                })
+              }
               variant="secondary"
             />
 
             <HolisticButton
               title="Outline Button"
-              onPress={() => console.log("Outline pressed")}
+              onPress={() =>
+                logger.info("Outline button pressed", {
+                  component: "HolisticDesignSystem",
+                })
+              }
               variant="outline"
             />
 
             <HolisticButton
               title="Ghost Button"
-              onPress={() => console.log("Ghost pressed")}
+              onPress={() =>
+                logger.info("Ghost button pressed", {
+                  component: "HolisticDesignSystem",
+                })
+              }
               variant="ghost"
             />
 
             <HolisticButton
               title="Minimal Button"
-              onPress={() => console.log("Minimal pressed")}
+              onPress={() =>
+                logger.info("Minimal button pressed", {
+                  component: "HolisticDesignSystem",
+                })
+              }
               variant="minimal"
             />
           </View>
@@ -1015,7 +1036,11 @@ export function HolisticDesignSystemShowcase() {
               title="Interactive Card"
               subtitle="Tap to interact"
               content="This card can be pressed and will respond to touch interactions."
-              onPress={() => console.log("Card pressed")}
+              onPress={() =>
+                logger.info("Card pressed", {
+                  component: "HolisticDesignSystem",
+                })
+              }
             />
           </View>
         </HolisticSection>

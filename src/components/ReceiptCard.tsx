@@ -20,6 +20,7 @@ import {
   interactions,
 } from "@/constants/holisticDesignSystem";
 import * as Haptics from "expo-haptics";
+import { logger } from "@/utils/logger";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -45,10 +46,16 @@ export const ReceiptCard: React.FC<ReceiptCardProps> = ({
 
   // Runtime type checks for debugging
   if (typeof receipt !== "object" || receipt === null) {
-    console.error("ReceiptCard: receipt is not an object", receipt);
+    logger.error("ReceiptCard: receipt is not an object", undefined, {
+      component: "ReceiptCard",
+      receipt,
+    });
   }
   if (!Array.isArray(items)) {
-    console.error("ReceiptCard: items is not an array", items);
+    logger.error("ReceiptCard: items is not an array", undefined, {
+      component: "ReceiptCard",
+      items,
+    });
   }
 
   const handlePressIn = () => {

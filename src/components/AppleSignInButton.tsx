@@ -8,6 +8,7 @@ import { MotiView } from "moti";
 import { useThemeContext } from "@/contexts/ThemeContext";
 import Constants from "expo-constants";
 import { borderRadius, shadows } from "@/constants/theme";
+import { logger } from "@/utils/logger";
 
 interface AppleSignInButtonProps {
   onSuccess?: (user: any) => void;
@@ -39,7 +40,11 @@ export const AppleSignInButton: React.FC<AppleSignInButtonProps> = ({
       const available = await AppleAuthentication.isAvailableAsync();
       setIsAvailable(available);
     } catch (error) {
-      console.error("Error checking Apple authentication availability:", error);
+      logger.error(
+        "Error checking Apple authentication availability",
+        error as Error,
+        { component: "AppleSignInButton" }
+      );
       setIsAvailable(false);
     } finally {
       // Ensure we always set a state to prevent infinite loading
@@ -76,7 +81,9 @@ export const AppleSignInButton: React.FC<AppleSignInButtonProps> = ({
                   await signInWithApple();
                   onSuccess?.({});
                 } catch (error: any) {
-                  console.error("Apple Sign-In error:", error);
+                  logger.error("Apple Sign-In error", error as Error, {
+                    component: "AppleSignInButton",
+                  });
 
                   if (error.message?.includes("Unacceptable audience")) {
                     Alert.alert(
@@ -107,7 +114,9 @@ export const AppleSignInButton: React.FC<AppleSignInButtonProps> = ({
         onSuccess?.({});
       }
     } catch (error) {
-      console.error("Apple Sign-In error:", error);
+      logger.error("Apple Sign-In error", error as Error, {
+        component: "AppleSignInButton",
+      });
       onError?.(error);
 
       if (

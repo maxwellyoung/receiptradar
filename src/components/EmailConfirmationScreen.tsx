@@ -14,6 +14,7 @@ import * as Haptics from "expo-haptics";
 import { spacing, borderRadius, shadows } from "@/constants/theme";
 import { supabase } from "@/services/supabase";
 import { useThemeContext } from "@/contexts/ThemeContext";
+import { logger } from "@/utils/logger";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -66,7 +67,9 @@ export const EmailConfirmationScreen: React.FC<
         [{ text: "OK" }]
       );
     } catch (error: any) {
-      console.error("Resend email error:", error);
+      logger.error("Resend email error", error as Error, {
+        component: "EmailConfirmationScreen",
+      });
       Alert.alert(
         "Error",
         error.message ||
@@ -101,7 +104,9 @@ export const EmailConfirmationScreen: React.FC<
         );
       }
     } catch (error: any) {
-      console.error("Check email error:", error);
+      logger.error("Check email error", error as Error, {
+        component: "EmailConfirmationScreen",
+      });
       Alert.alert("Error", "Failed to check email status. Please try again.");
     }
   };

@@ -9,6 +9,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { authService } from "@/services/supabase";
 import { appleAuthService } from "@/services/appleAuth";
 import { AuthChangeEvent, Session } from "@supabase/supabase-js";
+import { logger } from "@/utils/logger";
 
 interface User {
   id: string;
@@ -79,15 +80,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setPendingEmail(currentUser.email);
         }
       } else {
-        console.log(
-          `🔧 AuthContext[${instanceId}] - loadUser - No current user found`
+        logger.info(
+          `AuthContext[${instanceId}] - loadUser - No current user found`,
+          { component: "AuthContext" }
         );
       }
     } catch (error) {
-      console.error(`🔧 AuthContext[${instanceId}] - loadUser - Error:`, error);
+      logger.error(
+        `AuthContext[${instanceId}] - loadUser - Error`,
+        error as Error,
+        { component: "AuthContext" }
+      );
     } finally {
-      console.log(
-        `🔧 AuthContext[${instanceId}] - loadUser - Setting loading to false from loadUser`
+      logger.info(
+        `AuthContext[${instanceId}] - loadUser - Setting loading to false from loadUser`,
+        { component: "AuthContext" }
       );
       setLoading(false);
     }
@@ -128,15 +135,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setPendingEmail(null);
           }
         } else if (event === "SIGNED_OUT") {
-          console.log(
-            `🔧 AuthContext[${instanceId}] - SIGNED_OUT - Clearing user`
+          logger.info(
+            `AuthContext[${instanceId}] - SIGNED_OUT - Clearing user`,
+            { component: "AuthContext" }
           );
           setUser(null);
           setEmailConfirmationPending(false);
           setPendingEmail(null);
         } else if (event === "INITIAL_SESSION" && user) {
-          console.log(
-            `🔧 AuthContext[${instanceId}] - INITIAL_SESSION - Session exists`
+          logger.info(
+            `AuthContext[${instanceId}] - INITIAL_SESSION - Session exists`,
+            { component: "AuthContext" }
           );
           // Handle initial session
           const emailConfirmed = !!user.email_confirmed_at;
@@ -163,8 +172,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const timeout = setTimeout(() => {
       setLoading((currentLoading) => {
         if (currentLoading) {
-          console.log(
-            `🔧 AuthContext[${instanceId}] - TIMEOUT (5s) - forcing loading to false`
+          logger.warn(
+            `AuthContext[${instanceId}] - TIMEOUT (5s) - forcing loading to false`,
+            { component: "AuthContext" }
           );
           return false;
         }
@@ -173,8 +183,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }, 5000); // 5 second fallback
 
     return () => {
-      console.log(
-        `🔧 AuthContext[${instanceId}] - CLEANUP - unsubscribing and clearing timeouts`
+      logger.info(
+        `AuthContext[${instanceId}] - CLEANUP - unsubscribing and clearing timeouts`,
+        { component: "AuthContext" }
       );
       subscription.unsubscribe();
       clearTimeout(timeout);

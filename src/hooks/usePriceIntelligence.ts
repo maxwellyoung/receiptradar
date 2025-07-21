@@ -130,10 +130,14 @@ export const usePriceIntelligence = (
         const data = await response.json();
         setAnalysis(data);
       } else {
-        console.error("Failed to analyze savings");
+        logger.error("Failed to analyze savings", undefined, {
+          component: "usePriceIntelligence",
+        });
       }
     } catch (error) {
-      console.error("Error analyzing savings:", error);
+      logger.error("Error analyzing savings", error as Error, {
+        component: "usePriceIntelligence",
+      });
     } finally {
       setLoading(false);
     }
@@ -153,7 +157,9 @@ export const usePriceIntelligence = (
         setSelectedItem(itemName);
       }
     } catch (error) {
-      console.error("Error fetching price history:", error);
+      logger.error("Error fetching price history", error as Error, {
+        component: "usePriceIntelligence",
+      });
     }
   };
 

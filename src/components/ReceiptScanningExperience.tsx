@@ -34,6 +34,7 @@ import {
   animation,
 } from "@/constants/theme";
 import { AppTheme } from "@/constants/theme";
+import { logger } from "@/utils/logger";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -236,7 +237,9 @@ export function ReceiptScanningExperience({
         title: "ReceiptRadar",
       });
     } catch (error) {
-      console.log("Share failed:", error);
+      logger.error("Share failed", error as Error, {
+        component: "ReceiptScanningExperience",
+      });
     }
   };
 

@@ -26,6 +26,7 @@ import {
   shadows,
 } from "@/constants/theme";
 import { API_CONFIG } from "@/constants/api";
+import { logger } from "@/utils/logger";
 
 interface PriceInsight {
   id: string;
@@ -228,7 +229,9 @@ export function EnhancedPriceIntelligence({
         setIsAnalyzing(false);
       }, 2000);
     } catch (error) {
-      console.error("Price analysis failed:", error);
+      logger.error("Price analysis failed", error as Error, {
+        component: "EnhancedPriceIntelligence",
+      });
       setIsAnalyzing(false);
     }
   };
@@ -441,7 +444,9 @@ export function EnhancedPriceIntelligence({
           </View>
 
           <View style={styles.opportunityFooter}>
-            <Text style={styles.storeName}>at {opportunity.storeName}</Text>
+            <Text style={styles.opportunityStoreName}>
+              at {opportunity.storeName}
+            </Text>
             <Text style={styles.historyPoints}>
               {opportunity.priceHistoryPoints} price points
             </Text>
@@ -800,7 +805,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  storeName: {
+  opportunityStoreName: {
     ...typography.body2,
     color: "#6B7280",
   },

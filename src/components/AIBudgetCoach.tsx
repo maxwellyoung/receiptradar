@@ -26,6 +26,7 @@ import {
   shadows,
 } from "@/constants/theme";
 import { API_CONFIG } from "@/constants/api";
+import { logger } from "@/utils/logger";
 
 interface BudgetCoaching {
   weekly_analysis: string;
@@ -82,7 +83,9 @@ export function AIBudgetCoach({
       const data = await response.json();
       setCoaching(data);
     } catch (error) {
-      console.error("Failed to generate coaching:", error);
+      logger.error("Failed to generate coaching", error as Error, {
+        component: "AIBudgetCoach",
+      });
       // Fallback to mock coaching for demo
       setCoaching(getMockCoaching());
     } finally {

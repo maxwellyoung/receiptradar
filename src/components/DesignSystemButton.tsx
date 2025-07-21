@@ -9,6 +9,7 @@ import {
   borderRadius,
   shadows,
 } from "@/utils/designSystem";
+import { logger } from "@/utils/logger";
 
 interface DesignSystemButtonProps {
   title: string;
@@ -71,49 +72,81 @@ export function ButtonExamples() {
     <div style={{ padding: spacing.lg, gap: spacing.md }}>
       <DesignSystemButton
         title="Primary Button"
-        onPress={() => console.log("Primary pressed")}
+        onPress={() =>
+          logger.info("Primary button pressed", {
+            component: "DesignSystemButton",
+          })
+        }
         variant="primary"
       />
 
       <DesignSystemButton
         title="Secondary Button"
-        onPress={() => console.log("Secondary pressed")}
+        onPress={() =>
+          logger.info("Secondary button pressed", {
+            component: "DesignSystemButton",
+          })
+        }
         variant="secondary"
       />
 
       <DesignSystemButton
         title="Outline Button"
-        onPress={() => console.log("Outline pressed")}
+        onPress={() =>
+          logger.info("Outline button pressed", {
+            component: "DesignSystemButton",
+          })
+        }
         variant="outline"
       />
 
       <DesignSystemButton
         title="Ghost Button"
-        onPress={() => console.log("Ghost pressed")}
+        onPress={() =>
+          logger.info("Ghost button pressed", {
+            component: "DesignSystemButton",
+          })
+        }
         variant="ghost"
       />
 
       <DesignSystemButton
         title="Small Button"
-        onPress={() => console.log("Small pressed")}
+        onPress={() =>
+          logger.info("Small button pressed", {
+            component: "DesignSystemButton",
+          })
+        }
         size="small"
       />
 
       <DesignSystemButton
         title="Large Button"
-        onPress={() => console.log("Large pressed")}
+        onPress={() =>
+          logger.info("Large button pressed", {
+            component: "DesignSystemButton",
+          })
+        }
         size="large"
       />
 
       <DesignSystemButton
         title="Disabled Button"
-        onPress={() => console.log("Disabled pressed")}
+        onPress={() =>
+          logger.info("Disabled button pressed", {
+            component: "DesignSystemButton",
+          })
+        }
         disabled={true}
       />
 
       <DesignSystemButton
         title="Full Width Button"
-        onPress={() => console.log("Full width pressed")}
+        onPress={() =>
+          logger.info("Full width button pressed", {
+            component: "DesignSystemButton",
+          })
+        }
         fullWidth={true}
       />
     </div>

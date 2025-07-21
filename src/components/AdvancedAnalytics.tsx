@@ -22,6 +22,7 @@ import {
   SeasonalTrend,
   StoreComparison,
 } from "@/services/AnalyticsService";
+import { logger } from "@/utils/logger";
 
 interface AdvancedAnalyticsProps {
   variant?: "demo" | "full";
@@ -96,7 +97,9 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({
       setSeasonalTrends(seasonalData);
       setStoreComparison(storeData);
     } catch (error) {
-      console.error("Error loading analytics data:", error);
+      logger.error("Error loading analytics data", error as Error, {
+        component: "AdvancedAnalytics",
+      });
     }
   };
 
@@ -582,7 +585,9 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({
   );
 
   // Helper functions
-  const getInsightIcon = (type: string): string => {
+  const getInsightIcon = (
+    type: string
+  ): keyof typeof MaterialIcons.glyphMap => {
     switch (type) {
       case "opportunity":
         return "trending-up";

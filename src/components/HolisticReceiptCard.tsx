@@ -13,6 +13,7 @@ import {
   animation,
 } from "@/constants/holisticDesignSystem";
 import { StoreLogo } from "./StoreLogo";
+import { logger } from "@/utils/logger";
 
 interface Receipt {
   id: string;
@@ -323,10 +324,18 @@ export function HolisticReceiptCardExample() {
     <View style={{ padding: spacing.large }}>
       <HolisticReceiptCard
         receipt={sampleReceipt}
-        onPress={() => console.log("Receipt pressed")}
-        onEdit={() => console.log("Edit receipt")}
-        onShare={() => console.log("Share receipt")}
-        onDelete={() => console.log("Delete receipt")}
+        onPress={() =>
+          logger.info("Receipt pressed", { component: "HolisticReceiptCard" })
+        }
+        onEdit={() =>
+          logger.info("Edit receipt", { component: "HolisticReceiptCard" })
+        }
+        onShare={() =>
+          logger.info("Share receipt", { component: "HolisticReceiptCard" })
+        }
+        onDelete={() =>
+          logger.info("Delete receipt", { component: "HolisticReceiptCard" })
+        }
         variant="elevated"
       />
     </View>

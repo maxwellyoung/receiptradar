@@ -7,6 +7,7 @@ import { FourSquareParser } from "./FourSquareParser";
 import { MooreWilsonsParser } from "./MooreWilsonsParser";
 import { WarehouseParser } from "./WarehouseParser";
 import { FreshChoiceParser } from "./FreshChoiceParser";
+import { logger } from "@/utils/logger";
 
 export class ParserManager {
   private parsers: IReceiptParser[];
@@ -43,14 +44,18 @@ export class ParserManager {
 
   async parse(text: string): Promise<ParsedReceiptData | null> {
     if (!this.isReceipt(text)) {
-      console.log("Text does not appear to be a receipt.");
+      logger.info("Text does not appear to be a receipt.", {
+        component: "ParserManager",
+      });
       return null;
     }
 
     // Try store-specific parsers first
     for (const parser of this.parsers) {
       if (parser.canParse && parser.canParse(text)) {
-        console.log(`Using ${parser.constructor.name} for parsing`);
+        logger.info(`Using ${parser.constructor.name} for parsing`, {
+          component: "ParserManager",
+        });
         const result = await parser.parse(text);
         if (result) {
           return result;
@@ -61,7 +66,9 @@ export class ParserManager {
     // Fallback to store name detection
     const storeName = this.getStoreName(text);
     if (storeName) {
-      console.log(`Falling back to store name detection: ${storeName}`);
+      logger.info(`Falling back to store name detection: ${storeName}`, {
+        component: "ParserManager",
+      });
       // Try to find a parser for this store
       for (const parser of this.parsers) {
         if (
@@ -77,7 +84,9 @@ export class ParserManager {
       }
     }
 
-    console.log("No suitable parser found, using fallback data");
+    logger.info("No suitable parser found, using fallback data", {
+      component: "ParserManager",
+    });
     return this.getFallbackResult();
   }
 

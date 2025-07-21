@@ -11,6 +11,7 @@ import {
 import { Text } from "react-native-paper";
 // import { LinearGradient } from "expo-linear-gradient";
 import ViewShot from "react-native-view-shot";
+import { logger } from "@/utils/logger";
 
 // Fallback share function since react-native-share might not be properly linked
 const fallbackShare = async (uri: string, title: string, message: string) => {
@@ -115,7 +116,10 @@ export const GroceryAura: React.FC<GroceryAuraProps> = ({
         );
       }
     } catch (error) {
-      console.log("Share cancelled or failed:", error);
+      logger.info("Share cancelled or failed", {
+        component: "GroceryAura",
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   };
 

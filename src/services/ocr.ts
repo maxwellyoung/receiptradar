@@ -1,5 +1,14 @@
 import { logger } from "@/utils/logger";
 import { handleAsyncError } from "@/utils/error-handler";
+import {
+  OCRData,
+  NormalizedProduct,
+  ShoppingInsight,
+  BudgetCoaching,
+  AIHealthCheck,
+  PriceHistoryEntry,
+  SavingsAnalysis,
+} from "@/types/ocr";
 
 const OCR_SERVICE_URL =
   process.env.EXPO_PUBLIC_OCR_URL || "http://localhost:8000";
@@ -34,7 +43,7 @@ export interface SaveReceiptRequest {
   total_amount: number;
   date: string;
   image_url?: string;
-  ocr_data: any;
+  ocr_data: OCRData;
   savings_identified?: number;
   cashback_earned?: number;
 }
@@ -166,7 +175,7 @@ class OCRService {
     }
   }
 
-  async normalizeProducts(products: string[]): Promise<any[]> {
+  async normalizeProducts(products: string[]): Promise<NormalizedProduct[]> {
     try {
       logger.info("Normalizing products with AI", {
         productCount: products.length,
@@ -204,9 +213,9 @@ class OCRService {
   }
 
   async generateShoppingInsights(
-    userHistory: any[],
-    currentBasket: any[]
-  ): Promise<any> {
+    userHistory: OCRItem[],
+    currentBasket: OCRItem[]
+  ): Promise<ShoppingInsight> {
     try {
       logger.info("Generating AI shopping insights", {
         historyCount: userHistory.length,
@@ -247,9 +256,9 @@ class OCRService {
   }
 
   async generateBudgetCoaching(
-    userData: any,
+    userData: { receipts: OCRItem[]; spending: number; categories: string[] },
     toneMode: "gentle" | "direct" = "gentle"
-  ): Promise<any> {
+  ): Promise<BudgetCoaching> {
     try {
       logger.info("Generating AI budget coaching", { toneMode });
 
@@ -291,23 +300,25 @@ class OCRService {
     }
   }
 
-  private validateOCRResult(result: any): boolean {
+  private validateOCRResult(result: unknown): boolean {
     // Basic validation of OCR result structure
     if (!result || typeof result !== "object") {
       return false;
     }
 
+    const resultObj = result as Record<string, unknown>;
+
     // Check for required fields
-    if (!result.validation || typeof result.validation !== "object") {
+    if (!resultObj.validation || typeof resultObj.validation !== "object") {
       return false;
     }
 
-    if (!Array.isArray(result.items)) {
+    if (!Array.isArray(resultObj.items)) {
       return false;
     }
 
     // Validate items structure
-    for (const item of result.items) {
+    for (const item of resultObj.items as OCRItem[]) {
       if (!item.name || typeof item.price !== "number" || item.price < 0) {
         return false;
       }
@@ -389,7 +400,7 @@ class OCRService {
     }
   }
 
-  async aiHealthCheck(): Promise<any> {
+  async aiHealthCheck(): Promise<AIHealthCheck> {
     try {
       const response = await fetch(`${this.baseUrl}/ai-health`, {
         method: "GET",

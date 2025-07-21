@@ -26,6 +26,7 @@ import {
   shadows,
 } from "@/constants/theme";
 import { API_CONFIG } from "@/constants/api";
+import { logger } from "@/utils/logger";
 
 interface PriceAnomaly {
   item: string;
@@ -104,7 +105,9 @@ export function AIShoppingInsights({
       const data = await response.json();
       setInsights(data);
     } catch (error) {
-      console.error("Failed to generate insights:", error);
+      logger.error("Failed to generate insights", error as Error, {
+        component: "AIShoppingInsights",
+      });
       // Fallback to mock insights for demo
       setInsights(getMockInsights());
     } finally {

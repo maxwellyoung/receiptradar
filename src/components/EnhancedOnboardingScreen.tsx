@@ -20,6 +20,7 @@ import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { logger } from "@/utils/logger";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -96,7 +97,9 @@ export const EnhancedOnboardingScreen: React.FC<{
         return false;
       }
     } catch (error) {
-      console.error("Permission request failed:", error);
+      logger.error("Permission request failed", error as Error, {
+        component: "EnhancedOnboardingScreen",
+      });
       return false;
     }
   };
@@ -109,7 +112,9 @@ export const EnhancedOnboardingScreen: React.FC<{
     try {
       await AsyncStorage.setItem("@toneMode", mode);
     } catch (error) {
-      console.error("Failed to save tone mode:", error);
+      logger.error("Failed to save tone mode", error as Error, {
+        component: "EnhancedOnboardingScreen",
+      });
     }
 
     setCurrentStep(1);
@@ -129,7 +134,9 @@ export const EnhancedOnboardingScreen: React.FC<{
       await AsyncStorage.setItem("@onboardingCompleted", "true");
       onComplete();
     } catch (error) {
-      console.error("Failed to save onboarding status:", error);
+      logger.error("Failed to save onboarding status", error as Error, {
+        component: "EnhancedOnboardingScreen",
+      });
       onComplete(); // Still complete even if storage fails
     } finally {
       setIsLoading(false);

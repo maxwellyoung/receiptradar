@@ -20,6 +20,7 @@ import {
   MarketSegment,
   RevenueMetrics,
 } from "@/services/MonetizationService";
+import { logger } from "@/utils/logger";
 
 interface MonetizationFeaturesProps {
   variant?: "demo" | "full";
@@ -84,7 +85,9 @@ export const MonetizationFeatures: React.FC<MonetizationFeaturesProps> = ({
       setMarketSegments(segmentsData);
       setRevenueMetrics(revenueData);
     } catch (error) {
-      console.error("Error loading monetization data:", error);
+      logger.error("Error loading monetization data", error as Error, {
+        component: "MonetizationFeatures",
+      });
     }
   };
 
@@ -102,7 +105,9 @@ export const MonetizationFeatures: React.FC<MonetizationFeaturesProps> = ({
         loadData(); // Reload to get updated subscription
       }
     } catch (error) {
-      console.error("Subscription failed:", error);
+      logger.error("Subscription failed", error as Error, {
+        component: "MonetizationFeatures",
+      });
     }
   };
 

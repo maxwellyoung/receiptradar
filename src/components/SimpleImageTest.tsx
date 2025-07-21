@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, Image, StyleSheet, Alert } from "react-native";
 import { Text, Button, useTheme } from "react-native-paper";
 import { AppTheme, spacing, borderRadius } from "@/constants/theme";
+import { logger } from "@/utils/logger";
 
 export function SimpleImageTest() {
   const theme = useTheme<AppTheme>();
@@ -12,20 +13,28 @@ export function SimpleImageTest() {
     "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=200&h=200&fit=crop";
 
   const handleImageLoad = () => {
-    console.log("✅ Image loaded successfully!");
+    logger.info("Image loaded successfully", { component: "SimpleImageTest" });
     setImageLoaded(true);
     setImageError(false);
   };
 
   const handleImageError = () => {
-    console.log("❌ Image failed to load");
+    logger.error("Image failed to load", undefined, {
+      component: "SimpleImageTest",
+    });
     setImageError(true);
     setImageLoaded(false);
   };
 
   const testNetwork = () => {
     Alert.alert("Network Test", `Testing image loading from: ${testImageUrl}`, [
-      { text: "OK", onPress: () => console.log("Network test initiated") },
+      {
+        text: "OK",
+        onPress: () =>
+          logger.info("Network test initiated", {
+            component: "SimpleImageTest",
+          }),
+      },
     ]);
   };
 

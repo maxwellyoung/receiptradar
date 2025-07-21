@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { logger } from "@/utils/logger";
 
 const BUCKET_NAME = "receipt-images";
 
@@ -28,7 +29,9 @@ export const storageService = {
         });
 
       if (error) {
-        console.error("Storage upload error:", error);
+        logger.error("Storage upload error", error as Error, {
+          component: "Storage",
+        });
         return { path: "", error };
       }
 
@@ -39,7 +42,9 @@ export const storageService = {
 
       return { path: urlData.publicUrl, error: null };
     } catch (error) {
-      console.error("Storage service error:", error);
+      logger.error("Storage service error", error as Error, {
+        component: "Storage",
+      });
       return { path: "", error };
     }
   },
@@ -63,7 +68,9 @@ export const storageService = {
 
       return { error };
     } catch (error) {
-      console.error("Storage delete error:", error);
+      logger.error("Storage delete error", error as Error, {
+        component: "Storage",
+      });
       return { error };
     }
   },

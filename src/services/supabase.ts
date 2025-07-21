@@ -1,7 +1,12 @@
 // Import polyfills first to ensure compatibility, especially for structuredClone.
 import "@/utils/polyfills";
 
-import { createClient, Session, AuthChangeEvent } from "@supabase/supabase-js";
+import {
+  createClient,
+  Session,
+  AuthChangeEvent,
+  PostgrestError,
+} from "@supabase/supabase-js";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SUPABASE_CONFIG } from "@/constants/supabase";
 import { ReceiptOCRData } from "@/types/ocr";
@@ -327,7 +332,9 @@ export const dbService = {
 
       return { success: true };
     } catch (error) {
-      console.error("Error initializing database:", error);
+      logger.error("Error initializing database", error as Error, {
+        component: "Database",
+      });
       return { success: false, error };
     }
   },
@@ -339,7 +346,7 @@ export const storageService = {
     imageUri: string,
     fileName: string,
     userId: string
-  ): Promise<{ data: any; error: any }> {
+  ): Promise<{ data: { path: string } | null; error: unknown }> {
     try {
       logger.info("Uploading receipt image", { fileName, userId });
 
@@ -360,17 +367,23 @@ export const storageService = {
         });
 
       if (error) {
-        logger.error("Image upload failed", { error: error.message, filePath });
+        logger.error("Image upload failed", new Error(error.message), {
+          filePath,
+        });
         return { data: null, error };
       }
 
       logger.info("Image uploaded successfully", { filePath });
       return { data, error: null };
     } catch (error) {
-      logger.error("Image upload error", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return { data: null, error: error as any };
+      logger.error(
+        "Image upload error",
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: "Storage",
+        }
+      );
+      return { data: null, error };
     }
   },
 
@@ -382,7 +395,11 @@ export const storageService = {
 
       return data.publicUrl;
     } catch (error) {
-      logger.error("Failed to get image URL", { error, filePath });
+      logger.error(
+        "Failed to get image URL",
+        error instanceof Error ? error : new Error(String(error)),
+        { filePath }
+      );
       return null;
     }
   },
@@ -394,12 +411,17 @@ export const storageService = {
         .remove([filePath]);
 
       if (error) {
-        logger.error("Failed to delete image", { error, filePath });
+        logger.error("Failed to delete image", new Error(error.message), {
+          filePath,
+        });
       }
 
       return { error };
     } catch (error) {
-      logger.error("Image deletion error", { error });
+      logger.error(
+        "Image deletion error",
+        error instanceof Error ? error : new Error(String(error))
+      );
       return { error: error as Error };
     }
   },

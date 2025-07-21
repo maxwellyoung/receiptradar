@@ -4,6 +4,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "react-native-paper";
 import { getStoreImage } from "@/constants/storeImages";
 import { AppTheme, spacing, borderRadius } from "@/constants/theme";
+import { logger } from "@/utils/logger";
 import { OfficialStoreLogo } from "./OfficialStoreLogo";
 
 interface StoreLogoProps {
@@ -90,7 +91,11 @@ export function StoreLogo({
   };
 
   const handleError = () => {
-    console.log(`❌ StoreLogo error for: ${storeName}, URL: ${imageUrl}`);
+    logger.error(`StoreLogo error for: ${storeName}`, undefined, {
+      component: "StoreLogo",
+      storeName,
+      imageUrl,
+    });
     setLoading(false);
     setError(true);
   };

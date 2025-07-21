@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { logger } from "@/utils/logger";
 
 export type ToneMode = "gentle" | "hard" | "silly" | "wise";
 
@@ -27,7 +28,9 @@ export const useToneMode = (): UseToneModeReturn => {
         setToneModeState(savedTone as ToneMode);
       }
     } catch (error) {
-      console.error("Failed to load tone mode:", error);
+      logger.error("Failed to load tone mode", error as Error, {
+        component: "useToneMode",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -38,7 +41,9 @@ export const useToneMode = (): UseToneModeReturn => {
       await AsyncStorage.setItem("@toneMode", mode);
       setToneModeState(mode);
     } catch (error) {
-      console.error("Failed to save tone mode:", error);
+      logger.error("Failed to save tone mode", error as Error, {
+        component: "useToneMode",
+      });
     }
   };
 

@@ -20,6 +20,7 @@ import { useReceipts } from "@/hooks/useReceipts";
 import * as Haptics from "expo-haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MaterialIcons } from "@expo/vector-icons";
+import { logger } from "@/utils/logger";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -77,7 +78,9 @@ export const WeeklyWormDigest: React.FC<{
         setToneMode(savedTone as "gentle" | "hard");
       }
     } catch (error) {
-      console.error("Failed to load tone mode:", error);
+      logger.error("Failed to load tone mode", error as Error, {
+        component: "WeeklyWormDigest",
+      });
     }
   };
 
