@@ -10,6 +10,7 @@ import { authService } from "@/services/supabase";
 import { appleAuthService } from "@/services/appleAuth";
 import { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { logger } from "@/utils/logger";
+import { BUSINESS_RULES } from "@/constants/business-rules";
 
 interface User {
   id: string;
@@ -180,7 +181,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
         return currentLoading;
       });
-    }, 5000); // 5 second fallback
+    }, BUSINESS_RULES.TIMEOUTS.AUTH_TIMEOUT); // 5 second fallback
 
     return () => {
       logger.info(

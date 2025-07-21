@@ -67,7 +67,9 @@ export const StoreAnalytics: React.FC = () => {
 
       existing.totalSpent += receipt.total;
       existing.visitCount += 1;
-      existing.savingsIdentified += 0; // TODO: Add savings tracking
+      // TODO: Implement real savings calculation from price intelligence
+      // This would integrate with the price intelligence service to calculate actual savings
+      existing.savingsIdentified += 0;
       existing.lastVisit =
         receipt.ts > existing.lastVisit ? receipt.ts : existing.lastVisit;
 

@@ -4,6 +4,7 @@ import { useReceipts } from "@/hooks/useReceipts";
 import { Receipt } from "@/types";
 import { API_CONFIG } from "@/constants/api";
 import { logger } from "@/utils/logger";
+import { BUSINESS_RULES } from "@/constants/business-rules";
 
 export interface StoreInsight {
   storeName: string;
@@ -54,7 +55,10 @@ export const useStoreTracking = () => {
   const calculatePriceCompetitiveness = (store: StoreInsight): number => {
     // Simple algorithm based on savings ratio
     const savingsRatio = store.savingsIdentified / store.totalSpent;
-    return Math.min(100, Math.max(0, savingsRatio * 1000));
+    return Math.min(
+      BUSINESS_RULES.ACHIEVEMENTS.PROGRESS_PERCENTAGE_MULTIPLIER,
+      Math.max(0, savingsRatio * 1000)
+    );
   };
 
   const calculatePriceTrend = (
@@ -79,7 +83,9 @@ export const useStoreTracking = () => {
     const olderAvg =
       olderReceipts.reduce((sum, r) => sum + r.total, 0) / olderReceipts.length;
 
-    const change = ((recentAvg - olderAvg) / olderAvg) * 100;
+    const change =
+      ((recentAvg - olderAvg) / olderAvg) *
+      BUSINESS_RULES.ACHIEVEMENTS.PROGRESS_PERCENTAGE_MULTIPLIER;
 
     if (change > 5) return "increasing";
     if (change < -5) return "decreasing";
@@ -180,12 +186,17 @@ export const useStoreTracking = () => {
 
     const averageWeeklySpend = totalSpent / (receipts.length * 7); // Rough estimate
 
+    // TODO: Extract top items from receipt items for better analytics
+    // Currently, items are not available in the Receipt interface
+    // This would require fetching items separately or extending the Receipt interface
+    const topItems: Array<{ name: string; frequency: number }> = [];
+
     return {
       preferredStore,
       averageWeeklySpend,
       mostFrequentDay,
       mostFrequentTime,
-      topItems: [], // TODO: Extract from receipt items
+      topItems,
     };
   }, [receipts]);
 
@@ -229,7 +240,7 @@ export const useStoreTracking = () => {
       percentage:
         (store.totalSpent /
           storeInsights.reduce((sum, s) => sum + s.totalSpent, 0)) *
-        100,
+        BUSINESS_RULES.ACHIEVEMENTS.PROGRESS_PERCENTAGE_MULTIPLIER,
       totalSpent: store.totalSpent,
     }));
   }, [storeInsights]);

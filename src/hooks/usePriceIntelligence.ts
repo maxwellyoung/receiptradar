@@ -3,43 +3,14 @@ import { useAuthContext } from "@/contexts/AuthContext";
 import { useTheme } from "react-native-paper";
 import { API_CONFIG } from "@/constants/api";
 import { logger } from "@/utils/logger";
-
-// TODO: Consolidate these types, they are duplicated or similar in PriceIntelligence.tsx
-interface SavingsOpportunity {
-  item_name: string;
-  current_price: number;
-  best_price: number;
-  savings: number;
-  store_name: string;
-  confidence: number;
-  price_history_points: number;
-}
-
-interface BasketAnalysis {
-  total_savings: number;
-  savings_opportunities: SavingsOpportunity[];
-  store_recommendation?: string;
-  cashback_available: number;
-}
-
-interface PriceHistoryPoint {
-  price: number;
-  date: string;
-  store_name: string;
-  confidence: number;
-}
-
-type PriceHistory = {
-  price: number;
-  date: string;
-  store_name: string;
-};
-
-type PriceInsight = {
-  message: string;
-  icon: "trending-up" | "trending-down" | "trending-flat" | "info-outline";
-  color: string;
-};
+import { BUSINESS_RULES } from "@/constants/business-rules";
+import {
+  SavingsOpportunity,
+  BasketAnalysis,
+  PriceHistoryPoint,
+  PriceHistory,
+  PriceInsight,
+} from "@/types/price-intelligence";
 
 export const usePriceIntelligence = (
   itemName: string,
@@ -71,7 +42,7 @@ export const usePriceIntelligence = (
           }/api/v1/receipts/price-history/${encodeURIComponent(itemName)}`
         );
 
-        if (response.status === 404) {
+        if (response.status === BUSINESS_RULES.API.NOT_FOUND_STATUS) {
           setInsight({
             message: "First time seeing this item!",
             icon: "info-outline",

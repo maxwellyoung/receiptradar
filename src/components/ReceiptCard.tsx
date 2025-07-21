@@ -21,6 +21,7 @@ import {
 } from "@/constants/holisticDesignSystem";
 import * as Haptics from "expo-haptics";
 import { logger } from "@/utils/logger";
+import { BUSINESS_RULES } from "@/constants/business-rules";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -106,7 +107,7 @@ export const ReceiptCard: React.FC<ReceiptCardProps> = ({
     const date = new Date(dateString);
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffDays = Math.ceil(diffTime / BUSINESS_RULES.TIME.ONE_DAY_MS);
 
     if (diffDays === 0) return "Today";
     if (diffDays === 1) return "Yesterday";

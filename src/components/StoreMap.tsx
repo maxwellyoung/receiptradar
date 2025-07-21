@@ -22,6 +22,7 @@ import { getStoreImage, getProductImage } from "@/constants/storeImages";
 import { StoreLogo } from "@/components/StoreLogo";
 import MapView, { Marker, Callout, PROVIDER_DEFAULT } from "react-native-maps";
 import { logger } from "@/utils/logger";
+import { BUSINESS_RULES } from "@/constants/business-rules";
 
 interface StoreLocation {
   id: string;
@@ -163,7 +164,7 @@ export function StoreMap({
     lat2: number,
     lon2: number
   ): number => {
-    const R = 6371; // Earth's radius in kilometers
+    const R = BUSINESS_RULES.LOCATIONS.EARTH_RADIUS_KM; // Earth's radius in kilometers
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
     const dLon = ((lon2 - lon1) * Math.PI) / 180;
     const a =
@@ -216,7 +217,8 @@ export function StoreMap({
 
   const formatDistance = (distance?: number): string => {
     if (!distance) return "Unknown";
-    if (distance < 1) return `${Math.round(distance * 1000)}m`;
+    if (distance < BUSINESS_RULES.LOCATIONS.METERS_THRESHOLD)
+      return `${Math.round(distance * 1000)}m`;
     return `${distance.toFixed(1)}km`;
   };
 
@@ -264,8 +266,12 @@ export function StoreMap({
               ]}
               onPress={() => {
                 const url = `http://maps.apple.com/?ll=${
-                  userLocation?.latitude || -41.2785
-                },${userLocation?.longitude || 174.7803}&z=13`;
+                  userLocation?.latitude ||
+                  BUSINESS_RULES.LOCATIONS.WELLINGTON.lat
+                },${
+                  userLocation?.longitude ||
+                  BUSINESS_RULES.LOCATIONS.WELLINGTON.lon
+                }&z=13`;
                 Linking.openURL(url);
               }}
             >
@@ -279,8 +285,10 @@ export function StoreMap({
 
     // Calculate initial region
     const region = {
-      latitude: userLocation?.latitude || -41.2785,
-      longitude: userLocation?.longitude || 174.7803,
+      latitude:
+        userLocation?.latitude || BUSINESS_RULES.LOCATIONS.WELLINGTON.lat,
+      longitude:
+        userLocation?.longitude || BUSINESS_RULES.LOCATIONS.WELLINGTON.lon,
       latitudeDelta: LATITUDE_DELTA,
       longitudeDelta: LONGITUDE_DELTA,
     };

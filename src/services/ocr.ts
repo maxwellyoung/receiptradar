@@ -10,8 +10,10 @@ import {
   SavingsAnalysis,
 } from "@/types/ocr";
 
+import { BUSINESS_RULES } from "@/constants/business-rules";
+
 const OCR_SERVICE_URL =
-  process.env.EXPO_PUBLIC_OCR_URL || "http://localhost:8000";
+  process.env.EXPO_PUBLIC_OCR_URL || BUSINESS_RULES.API.DEFAULT_OCR_URL;
 
 export interface OCRItem {
   name: string;
@@ -390,7 +392,7 @@ class OCRService {
     try {
       const response = await fetch(`${this.baseUrl}/health`, {
         method: "GET",
-        timeout: 5000,
+        timeout: BUSINESS_RULES.TIMEOUTS.OCR_HEALTH_CHECK,
       } as any);
 
       return response.ok;
@@ -404,7 +406,7 @@ class OCRService {
     try {
       const response = await fetch(`${this.baseUrl}/ai-health`, {
         method: "GET",
-        timeout: 5000,
+        timeout: BUSINESS_RULES.TIMEOUTS.OCR_HEALTH_CHECK,
       } as any);
 
       if (!response.ok) {
@@ -471,7 +473,7 @@ class OCRService {
 
       const response = await fetch(`${this.baseUrl}/price-history?${params}`, {
         method: "GET",
-        timeout: 10000,
+        timeout: BUSINESS_RULES.TIMEOUTS.OCR_PROCESSING,
       } as any);
 
       if (!response.ok) {

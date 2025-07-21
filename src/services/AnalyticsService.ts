@@ -1,4 +1,5 @@
 import { Receipt, Product, Store } from "@/types";
+import { BUSINESS_RULES } from "@/constants/business-rules";
 
 export interface SpendingPattern {
   category: string;
@@ -149,7 +150,10 @@ export class AnalyticsService {
 
     // Analyze spending patterns for opportunities
     patterns.forEach((pattern) => {
-      if (pattern.totalSpent > 200) {
+      if (
+        pattern.totalSpent >
+        BUSINESS_RULES.PRICE_ANALYSIS.HIGH_SPENDING_THRESHOLD
+      ) {
         insights.push({
           type: "opportunity",
           title: `High ${pattern.category} Spending`,
@@ -223,7 +227,11 @@ export class AnalyticsService {
     const userReceipts = this.receipts.filter((r) => r.user_id === userId);
     const totalSpent = userReceipts.reduce((sum, r) => sum + r.total, 0);
     const totalSaved = userReceipts.reduce((sum, r) => sum + r.total * 0.15, 0); // Mock 15% savings
-    const savingsRate = totalSpent > 0 ? (totalSaved / totalSpent) * 100 : 0;
+    const savingsRate =
+      totalSpent > 0
+        ? (totalSaved / totalSpent) *
+          BUSINESS_RULES.ACHIEVEMENTS.PROGRESS_PERCENTAGE_MULTIPLIER
+        : 0;
 
     const patterns = await this.getSpendingPatterns(
       userId,
@@ -439,7 +447,7 @@ export class AnalyticsService {
         id: "1",
         user_id: "current-user",
         store_id: "1",
-        ts: new Date(Date.now() - 86400000).toISOString(),
+        ts: new Date(Date.now() - BUSINESS_RULES.TIME.ONE_DAY_MS).toISOString(),
         total: 85.5,
         raw_url: "",
         created_at: new Date().toISOString(),
@@ -456,8 +464,10 @@ export class AnalyticsService {
         id: "2",
         user_id: "current-user",
         store_id: "2",
-        ts: new Date(Date.now() - 172800000).toISOString(),
-        total: 120.75,
+        ts: new Date(
+          Date.now() - BUSINESS_RULES.TIME.TWO_DAYS_MS
+        ).toISOString(),
+        total: BUSINESS_RULES.MOCK.DEFAULT_TOTAL,
         raw_url: "",
         created_at: new Date().toISOString(),
         store: {
@@ -473,7 +483,9 @@ export class AnalyticsService {
         id: "3",
         user_id: "current-user",
         store_id: "3",
-        ts: new Date(Date.now() - 259200000).toISOString(),
+        ts: new Date(
+          Date.now() - BUSINESS_RULES.TIME.THREE_DAYS_MS
+        ).toISOString(),
         total: 95.3,
         raw_url: "",
         created_at: new Date().toISOString(),
@@ -530,24 +542,24 @@ export class AnalyticsService {
         id: "1",
         name: "Countdown",
         chain: "Countdown",
-        lat: -36.8485,
-        lon: 174.7633,
+        lat: BUSINESS_RULES.LOCATIONS.AUCKLAND.lat,
+        lon: BUSINESS_RULES.LOCATIONS.AUCKLAND.lon,
         created_at: new Date().toISOString(),
       },
       {
         id: "2",
         name: "New World",
         chain: "New World",
-        lat: -41.2866,
-        lon: 174.7756,
+        lat: BUSINESS_RULES.LOCATIONS.WELLINGTON.lat,
+        lon: BUSINESS_RULES.LOCATIONS.WELLINGTON.lon,
         created_at: new Date().toISOString(),
       },
       {
         id: "3",
         name: "Pak'nSave",
         chain: "Pak'nSave",
-        lat: -43.532,
-        lon: 172.6306,
+        lat: BUSINESS_RULES.LOCATIONS.CHRISTCHURCH.lat,
+        lon: BUSINESS_RULES.LOCATIONS.CHRISTCHURCH.lon,
         created_at: new Date().toISOString(),
       },
     ];
@@ -680,7 +692,10 @@ export class AnalyticsService {
     const recommendations: string[] = [];
 
     // High spending categories
-    const highSpending = patterns.filter((p) => p.totalSpent > 100);
+    const highSpending = patterns.filter(
+      (p) =>
+        p.totalSpent > BUSINESS_RULES.PRICE_ANALYSIS.STORE_COMPARISON_THRESHOLD
+    );
     if (highSpending.length > 0) {
       recommendations.push(
         `Consider bulk buying for ${highSpending[0].category} to save money`
