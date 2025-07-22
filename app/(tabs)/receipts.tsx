@@ -100,12 +100,14 @@ export default function ReceiptsScreen() {
 
   // Animate list when data changes
   useEffect(() => {
+    // Reset animation when receipts change
+    listAnim.setValue(0);
     Animated.timing(listAnim, {
       toValue: 1,
-      duration: 400,
+      duration: 600,
       useNativeDriver: true,
     }).start();
-  }, [receipts]);
+  }, [receipts, listAnim]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);

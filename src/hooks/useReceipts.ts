@@ -66,46 +66,25 @@ export const useReceipts = (userId: string) => {
   };
 
   const fetchReceipts = async () => {
-    console.log("🔍 fetchReceipts called with userId:", userId);
-
     if (!userId) {
-      console.log("❌ No userId, returning early");
       setState((prev) => ({ ...prev, loading: false }));
       return;
     }
 
-    console.log("🔄 Setting loading state");
     setState((prev) => ({ ...prev, loading: true, error: null }));
 
     try {
-      console.log("📡 Fetching receipts from database...");
       const { data, error } = await handleAsyncError(
         dbService.getReceipts(userId, searchTerm),
         "useReceipts.fetchReceipts"
       );
 
       if (error) {
-        console.log("❌ Database error:", error.message);
         setState((prev) => ({ ...prev, loading: false, error: error.message }));
         return;
       }
 
-      console.log(
-        "📊 Database returned data:",
-        data ? data.length : 0,
-        "receipts"
-      );
-
       const appReceipts: Receipt[] = (data || []).map((dbReceipt: any) => {
-        // Debug: Log the raw receipt data
-        console.log("Raw receipt data:", {
-          id: dbReceipt.id,
-          store_name: dbReceipt.store_name,
-          total_amount: dbReceipt.total_amount,
-          date: dbReceipt.date,
-          ocr_data: dbReceipt.ocr_data ? "Has OCR data" : "No OCR data",
-        });
-
         const improvedStoreName = improveStoreName(dbReceipt);
 
         return {
@@ -141,18 +120,11 @@ export const useReceipts = (userId: string) => {
 
       // If no receipts, add some sample data for demonstration
       let finalReceipts = appReceipts;
-      console.log(
-        "📋 Processing receipts. appReceipts.length:",
-        appReceipts.length
-      );
 
       if (appReceipts.length === 0) {
-        console.log(
-          "🎯 No receipts found, adding sample data for demonstration"
-        );
         const sampleReceipts: Receipt[] = [
           {
-            id: "sample-1",
+            id: "00000000-0000-0000-0000-000000000001",
             user_id: userId,
             store_id: "countdown",
             ts: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
@@ -169,7 +141,7 @@ export const useReceipts = (userId: string) => {
             },
           },
           {
-            id: "sample-2",
+            id: "00000000-0000-0000-0000-000000000002",
             user_id: userId,
             store_id: "new_world",
             ts: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
@@ -186,7 +158,7 @@ export const useReceipts = (userId: string) => {
             },
           },
           {
-            id: "sample-3",
+            id: "00000000-0000-0000-0000-000000000003",
             user_id: userId,
             store_id: "paknsave",
             ts: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
@@ -204,13 +176,8 @@ export const useReceipts = (userId: string) => {
           },
         ];
         finalReceipts = sampleReceipts;
-        console.log(
-          "✅ Sample data added. finalReceipts.length:",
-          finalReceipts.length
-        );
       }
 
-      console.log("💾 Setting state with receipts:", finalReceipts.length);
       setState({
         receipts: finalReceipts,
         loading: false,
@@ -228,7 +195,6 @@ export const useReceipts = (userId: string) => {
   };
 
   useEffect(() => {
-    console.log("🔄 useEffect triggered, calling fetchReceipts");
     fetchReceipts();
   }, [userId, searchTerm]);
 
