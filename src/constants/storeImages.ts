@@ -9,56 +9,56 @@ export interface StoreImageConfig {
 
 export const STORE_IMAGES: Record<string, StoreImageConfig> = {
   Countdown: {
-    logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Countdown_logo.svg/1200px-Countdown_logo.svg.png",
-    icon: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Countdown_logo.svg/200px-Countdown_logo.svg.png",
+    logo: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&h=200&fit=crop&q=80",
+    icon: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=100&h=100&fit=crop&q=80",
     color: "#007AFF",
     backgroundColor: "#E3F2FD",
     description:
       "New Zealand's largest supermarket chain with competitive prices and wide selection",
   },
   "New World": {
-    logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/New_World_logo.svg/1200px-New_World_logo.svg.png",
-    icon: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/New_World_logo.svg/200px-New_World_logo.svg.png",
+    logo: "https://images.unsplash.com/photo-1519996529931-28324d5a630e?w=400&h=200&fit=crop&q=80",
+    icon: "https://images.unsplash.com/photo-1519996529931-28324d5a630e?w=100&h=100&fit=crop&q=80",
     color: "#34C759",
     backgroundColor: "#E8F5E8",
     description:
       "Premium supermarket chain known for quality products and fresh produce",
   },
   "Pak'nSave": {
-    logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Pak%27nSave_logo.svg/1200px-Pak%27nSave_logo.svg.png",
-    icon: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Pak%27nSave_logo.svg/200px-Pak%27nSave_logo.svg.png",
+    logo: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&h=200&fit=crop&q=80",
+    icon: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=100&h=100&fit=crop&q=80",
     color: "#FF9500",
     backgroundColor: "#FFF3E0",
     description:
       "Budget-friendly supermarket with bulk buying options and great deals",
   },
   "Four Square": {
-    logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Four_Square_logo.svg/1200px-Four_Square_logo.svg.png",
-    icon: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Four_Square_logo.svg/200px-Four_Square_logo.svg.png",
+    logo: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=200&fit=crop&q=80",
+    icon: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=100&h=100&fit=crop&q=80",
     color: "#FF3B30",
     backgroundColor: "#FFEBEE",
     description:
       "Convenient neighborhood stores with essential groceries and local products",
   },
   "Moore Wilson's Fresh": {
-    logo: "https://www.moorewilsons.co.nz/wp-content/uploads/2021/03/moore-wilsons-logo.png",
-    icon: "https://www.moorewilsons.co.nz/wp-content/uploads/2021/03/moore-wilsons-icon.png",
+    logo: "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400&h=200&fit=crop&q=80",
+    icon: "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=100&h=100&fit=crop&q=80",
     color: "#AF52DE",
     backgroundColor: "#F3E5F5",
     description:
       "Premium gourmet supermarket with specialty foods and fresh produce",
   },
   "The Warehouse": {
-    logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/The_Warehouse_logo.svg/1200px-The_Warehouse_logo.svg.png",
-    icon: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/The_Warehouse_logo.svg/200px-The_Warehouse_logo.svg.png",
+    logo: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=200&fit=crop&q=80",
+    icon: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=100&h=100&fit=crop&q=80",
     color: "#FF9500",
     backgroundColor: "#FFF3E0",
     description:
       "General merchandise store with grocery section and household items",
   },
   "Fresh Choice": {
-    logo: "https://www.freshchoice.co.nz/wp-content/uploads/2021/03/fresh-choice-logo.png",
-    icon: "https://www.freshchoice.co.nz/wp-content/uploads/2021/03/fresh-choice-icon.png",
+    logo: "https://images.unsplash.com/photo-1519996529931-28324d5a630e?w=400&h=200&fit=crop&q=80",
+    icon: "https://images.unsplash.com/photo-1519996529931-28324d5a630e?w=100&h=100&fit=crop&q=80",
     color: "#FF3B30",
     backgroundColor: "#FFEBEE",
     description:

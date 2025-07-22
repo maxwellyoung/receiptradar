@@ -83,10 +83,10 @@ export default function ReceiptDetailScreen() {
       if (data) {
         setReceipt(data);
       } else {
-        setError("Receipt not found");
+        setError("Receipt not found" as any);
       }
     } catch (err) {
-      setError("Failed to load receipt");
+      setError("Failed to load receipt" as any);
     } finally {
       setLoading(false);
     }

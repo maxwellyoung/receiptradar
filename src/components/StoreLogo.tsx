@@ -40,6 +40,7 @@ export function StoreLogo({
     lowerName.includes("pak'n'save") ||
     lowerName.includes("paknsave") ||
     lowerName.includes("pak n save") ||
+    lowerName.includes("pak'nsave") ||
     lowerName.includes("new world") ||
     lowerName.includes("warehouse") ||
     lowerName.includes("fresh choice");
@@ -78,6 +79,19 @@ export function StoreLogo({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
+  // Double-check that we're not trying to load images for stores with official logos
+  if (hasOfficialLogo) {
+    return (
+      <View style={[styles.officialLogoContainer, dimensions, style]}>
+        <OfficialStoreLogo
+          storeName={storeName}
+          size={sizeValue}
+          showFallback={showFallback}
+        />
+      </View>
+    );
+  }
+
   const storeConfig = getStoreImage(storeName);
   const imageUrl = variant === "logo" ? storeConfig.logo : storeConfig.icon;
 
@@ -91,10 +105,12 @@ export function StoreLogo({
   };
 
   const handleError = () => {
-    logger.error(`StoreLogo error for: ${storeName}`, undefined, {
+    logger.error(`StoreLogo image load error for: ${storeName}`, undefined, {
       component: "StoreLogo",
       storeName,
       imageUrl,
+      variant,
+      hasOfficialLogo,
     });
     setLoading(false);
     setError(true);

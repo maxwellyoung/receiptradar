@@ -42,12 +42,18 @@ interface ReceiptCardProps {
     price: number;
     quantity: number;
   }>;
+  isSelectionMode?: boolean;
+  isSelected?: boolean;
+  onSelectionToggle?: () => void;
 }
 
 export const ReceiptCard: React.FC<ReceiptCardProps> = ({
   receipt,
   onPress,
   items = [],
+  isSelectionMode = false,
+  isSelected = false,
+  onSelectionToggle,
 }) => {
   // Ensure items is always an array
   const safeItems = items || [];
@@ -170,11 +176,32 @@ export const ReceiptCard: React.FC<ReceiptCardProps> = ({
     >
       <TouchableOpacity
         style={styles.touchable}
-        onPress={handlePress}
+        onPress={isSelectionMode ? onSelectionToggle : handlePress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         activeOpacity={1}
       >
+        {isSelectionMode && (
+          <View style={styles.selectionOverlay}>
+            <View
+              style={[
+                styles.selectionCheckbox,
+                {
+                  backgroundColor: isSelected
+                    ? theme.colors.primary
+                    : "transparent",
+                  borderColor: isSelected
+                    ? theme.colors.primary
+                    : theme.colors.outline,
+                },
+              ]}
+            >
+              {isSelected && (
+                <MaterialIcons name="check" size={16} color="white" />
+              )}
+            </View>
+          </View>
+        )}
         <Animated.View
           style={[
             styles.content,
@@ -373,5 +400,20 @@ const styles = StyleSheet.create({
   },
   savingsText: {
     ...typography.label.small,
+  },
+  selectionOverlay: {
+    position: "absolute",
+    top: spacing.small,
+    left: spacing.small,
+    zIndex: 1,
+  },
+  selectionCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "white",
   },
 });

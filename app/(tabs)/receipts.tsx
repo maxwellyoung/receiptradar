@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Animated,
   RefreshControl,
+  Alert,
 } from "react-native";
 import { Text, useTheme, Chip, Searchbar } from "react-native-paper";
 import { useRouter } from "expo-router";
@@ -51,7 +52,9 @@ export default function ReceiptsScreen() {
   const router = useRouter();
   const theme = useTheme<AppTheme>();
   const { user } = useAuthContext();
-  const { receipts, loading, search, refresh } = useReceipts(user?.id ?? "");
+  const { receipts, loading, search, refresh, deleteReceipt } = useReceipts(
+    user?.id ?? ""
+  );
   const insets = useSafeAreaInsets();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -59,6 +62,10 @@ export default function ReceiptsScreen() {
   const [selectedSort, setSelectedSort] = useState("date-desc");
   const [showFilters, setShowFilters] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedReceipts, setSelectedReceipts] = useState<Set<string>>(
+    new Set()
+  );
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
 
   // Animation values for delightful interactions
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -134,6 +141,48 @@ export default function ReceiptsScreen() {
     router.push("/modals/camera");
   };
 
+  const toggleSelectionMode = () => {
+    setIsSelectionMode(!isSelectionMode);
+    setSelectedReceipts(new Set());
+  };
+
+  const toggleReceiptSelection = (receiptId: string) => {
+    const newSelected = new Set(selectedReceipts);
+    if (newSelected.has(receiptId)) {
+      newSelected.delete(receiptId);
+    } else {
+      newSelected.add(receiptId);
+    }
+    setSelectedReceipts(newSelected);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedReceipts.size === 0) return;
+
+    Alert.alert(
+      "Delete Receipts",
+      `Are you sure you want to delete ${selectedReceipts.size} receipt${
+        selectedReceipts.size > 1 ? "s" : ""
+      }? This action cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            const deletePromises = Array.from(selectedReceipts).map((id) =>
+              deleteReceipt(id)
+            );
+            await Promise.all(deletePromises);
+            setSelectedReceipts(new Set());
+            setIsSelectionMode(false);
+            refresh();
+          },
+        },
+      ]
+    );
+  };
+
   // Filter and sort receipts
   const filteredAndSortedReceipts = receipts
     .filter((receipt) => {
@@ -187,19 +236,56 @@ export default function ReceiptsScreen() {
       <View style={styles.headerTop}>
         <View>
           <HolisticText variant="headline.medium" style={styles.title}>
-            Receipts
+            {isSelectionMode
+              ? `Selected (${selectedReceipts.size})`
+              : "Receipts"}
           </HolisticText>
           <HolisticText
             variant="body.medium"
             color="secondary"
             style={styles.subtitle}
           >
-            {getStatsMessage()}
+            {isSelectionMode
+              ? `${selectedReceipts.size} receipt${
+                  selectedReceipts.size !== 1 ? "s" : ""
+                } selected`
+              : getStatsMessage()}
           </HolisticText>
         </View>
-        <TouchableOpacity style={styles.scanButton} onPress={handleScanNew}>
-          <MaterialIcons name="camera-alt" size={24} color="white" />
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          {isSelectionMode ? (
+            <>
+              <TouchableOpacity
+                style={[styles.headerButton, styles.deleteButton]}
+                onPress={handleBulkDelete}
+                disabled={selectedReceipts.size === 0}
+              >
+                <MaterialIcons name="delete" size={20} color="white" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.headerButton}
+                onPress={toggleSelectionMode}
+              >
+                <MaterialIcons name="close" size={20} color="white" />
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={styles.headerButton}
+                onPress={toggleSelectionMode}
+              >
+                <MaterialIcons name="select-all" size={20} color="white" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.scanButton}
+                onPress={handleScanNew}
+              >
+                <MaterialIcons name="camera-alt" size={24} color="white" />
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
       </View>
 
       {/* Stats Cards */}
@@ -360,19 +446,23 @@ export default function ReceiptsScreen() {
         color={theme.colors.onSurfaceVariant}
       />
       <HolisticText variant="title.large" style={styles.emptyTitle}>
-        No receipts yet
+        {receipts.length === 0 ? "No receipts yet" : "No matching receipts"}
       </HolisticText>
       <HolisticText
         variant="body.medium"
         color="secondary"
         style={styles.emptyMessage}
       >
-        Start by scanning your first receipt to track your spending
+        {receipts.length === 0
+          ? "Start by scanning your first receipt to track your spending"
+          : "Try adjusting your search or filters to find what you're looking for"}
       </HolisticText>
-      <TouchableOpacity style={styles.emptyButton} onPress={handleScanNew}>
-        <MaterialIcons name="camera-alt" size={20} color="white" />
-        <Text style={styles.emptyButtonText}>Scan Receipt</Text>
-      </TouchableOpacity>
+      {receipts.length === 0 && (
+        <TouchableOpacity style={styles.emptyButton} onPress={handleScanNew}>
+          <MaterialIcons name="camera-alt" size={20} color="white" />
+          <Text style={styles.emptyButtonText}>Scan Receipt</Text>
+        </TouchableOpacity>
+      )}
     </Animated.View>
   );
 
@@ -401,6 +491,11 @@ export default function ReceiptsScreen() {
             <ReceiptCard
               receipt={item as unknown as ReceiptWithExtraFields}
               onPress={() => handleReceiptPress(item.id.toString())}
+              isSelectionMode={isSelectionMode}
+              isSelected={selectedReceipts.has(item.id.toString())}
+              onSelectionToggle={() =>
+                toggleReceiptSelection(item.id.toString())
+              }
             />
           </Animated.View>
         )}
@@ -454,6 +549,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     ...shadows.md,
+  },
+  headerButtons: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#007AFF",
+    justifyContent: "center",
+    alignItems: "center",
+    ...shadows.sm,
+  },
+  deleteButton: {
+    backgroundColor: "#FF3B30",
   },
   statsContainer: {
     marginBottom: spacing.lg,
