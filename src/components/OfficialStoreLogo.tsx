@@ -241,8 +241,9 @@ export const OfficialStoreLogo: React.FC<OfficialStoreLogoProps> = ({
         <View style={[styles.container, { width: size, height: size }, style]}>
           <MaterialIcons
             name={
-              (storeConfig.fallbackIcon as keyof typeof MaterialIcons.glyphMap) ||
-              "store"
+              (typeof storeConfig.fallbackIcon === "string"
+                ? (storeConfig.fallbackIcon as keyof typeof MaterialIcons.glyphMap)
+                : "store") || "store"
             }
             size={size * 0.6}
             color={storeConfig.color}

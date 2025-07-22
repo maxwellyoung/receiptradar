@@ -51,7 +51,6 @@ export const useReceipts = (userId: string) => {
       // Check for store identifiers
       for (const [storeName, identifier] of Object.entries(STORE_IDENTIFIERS)) {
         if (identifier.test(text)) {
-          console.log(`Found store name in OCR: ${storeName}`);
           return storeName;
         }
       }
