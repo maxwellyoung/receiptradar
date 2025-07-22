@@ -185,6 +185,7 @@
   ```
 
 - [ ] **Integrate with price comparison**
+
   ```python
   # ocr/price_intelligence.py
   async def get_normalized_price_comparison(self, item_name: str):
@@ -481,6 +482,7 @@
 #### Implementation Tasks
 
 - [ ] **Create competitive analysis service**
+
   ```python
   # ocr/competitive_analysis.py
   class AICompetitiveAnalysis:
