@@ -65,24 +65,36 @@ export const useReceipts = (userId: string) => {
     return "Unknown Store";
   };
 
-  const fetchReceipts = useCallback(async () => {
+  const fetchReceipts = async () => {
+    console.log("🔍 fetchReceipts called with userId:", userId);
+
     if (!userId) {
+      console.log("❌ No userId, returning early");
       setState((prev) => ({ ...prev, loading: false }));
       return;
     }
 
+    console.log("🔄 Setting loading state");
     setState((prev) => ({ ...prev, loading: true, error: null }));
 
     try {
+      console.log("📡 Fetching receipts from database...");
       const { data, error } = await handleAsyncError(
         dbService.getReceipts(userId, searchTerm),
         "useReceipts.fetchReceipts"
       );
 
       if (error) {
+        console.log("❌ Database error:", error.message);
         setState((prev) => ({ ...prev, loading: false, error: error.message }));
         return;
       }
+
+      console.log(
+        "📊 Database returned data:",
+        data ? data.length : 0,
+        "receipts"
+      );
 
       const appReceipts: Receipt[] = (data || []).map((dbReceipt: any) => {
         // Debug: Log the raw receipt data
@@ -129,8 +141,15 @@ export const useReceipts = (userId: string) => {
 
       // If no receipts, add some sample data for demonstration
       let finalReceipts = appReceipts;
+      console.log(
+        "📋 Processing receipts. appReceipts.length:",
+        appReceipts.length
+      );
+
       if (appReceipts.length === 0) {
-        console.log("No receipts found, adding sample data for demonstration");
+        console.log(
+          "🎯 No receipts found, adding sample data for demonstration"
+        );
         const sampleReceipts: Receipt[] = [
           {
             id: "sample-1",
@@ -185,8 +204,13 @@ export const useReceipts = (userId: string) => {
           },
         ];
         finalReceipts = sampleReceipts;
+        console.log(
+          "✅ Sample data added. finalReceipts.length:",
+          finalReceipts.length
+        );
       }
 
+      console.log("💾 Setting state with receipts:", finalReceipts.length);
       setState({
         receipts: finalReceipts,
         loading: false,
@@ -201,11 +225,12 @@ export const useReceipts = (userId: string) => {
         error: error.message,
       }));
     }
-  }, [userId, searchTerm]);
+  };
 
   useEffect(() => {
+    console.log("🔄 useEffect triggered, calling fetchReceipts");
     fetchReceipts();
-  }, [fetchReceipts]);
+  }, [userId, searchTerm]);
 
   const createReceipt = async (receiptData: Omit<ReceiptInsert, "user_id">) => {
     if (!userId) return { error: "User not authenticated" };

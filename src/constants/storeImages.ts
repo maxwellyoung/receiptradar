@@ -186,12 +186,21 @@ export const getProductImage = (productName: string): string => {
 export const getStoreImage = (storeName: string): StoreImageConfig => {
   const lowerName = storeName.toLowerCase();
 
+  // Direct key matching first (case-insensitive)
+  for (const [key, config] of Object.entries(STORE_IMAGES)) {
+    if (lowerName === key.toLowerCase()) {
+      return config;
+    }
+  }
+
+  // Partial matching for variations
   if (lowerName.includes("countdown")) return STORE_IMAGES["Countdown"];
   if (lowerName.includes("new world")) return STORE_IMAGES["New World"];
   if (
     lowerName.includes("pak'n'save") ||
     lowerName.includes("paknsave") ||
-    lowerName.includes("pak n save")
+    lowerName.includes("pak n save") ||
+    lowerName.includes("pak'nsave")
   )
     return STORE_IMAGES["Pak'nSave"];
   if (lowerName.includes("four square")) return STORE_IMAGES["Four Square"];
