@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Image, StyleSheet, ActivityIndicator } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "react-native-paper";
-import { getProductImage } from "@/constants/storeImages";
+import { getProductImage } from "@/services/ProductImageService";
 import { AppTheme, spacing, borderRadius } from "@/constants/theme";
 import { logger } from "@/utils/logger";
 
@@ -28,9 +28,43 @@ export function ProductImage({
   const theme = useTheme<AppTheme>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
-  const imageUrl = getProductImage(productName);
   const dimensions = SIZES[size];
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadImage = async () => {
+      try {
+        setLoading(true);
+        setError(false);
+
+        const url = await getProductImage(productName, size);
+
+        if (mounted) {
+          setImageUrl(url);
+          setLoading(false);
+        }
+      } catch (error) {
+        if (mounted) {
+          logger.error(`ProductImage error for: ${productName}`, undefined, {
+            component: "ProductImage",
+            productName,
+            error,
+          });
+          setError(true);
+          setLoading(false);
+        }
+      }
+    };
+
+    loadImage();
+
+    return () => {
+      mounted = false;
+    };
+  }, [productName, size]);
 
   const handleLoadStart = () => {
     setLoading(true);
@@ -42,7 +76,7 @@ export function ProductImage({
   };
 
   const handleError = () => {
-    logger.error(`ProductImage error for: ${productName}`, undefined, {
+    logger.error(`ProductImage load error for: ${productName}`, undefined, {
       component: "ProductImage",
       productName,
       imageUrl,
@@ -66,6 +100,21 @@ export function ProductImage({
           size={dimensions.width * 0.4}
           color={theme.colors.onSurfaceVariant}
         />
+      </View>
+    );
+  }
+
+  if (!imageUrl) {
+    return (
+      <View
+        style={[
+          styles.loadingContainer,
+          dimensions,
+          { backgroundColor: theme.colors.surfaceVariant },
+          style,
+        ]}
+      >
+        <ActivityIndicator size="small" color={theme.colors.primary} />
       </View>
     );
   }
@@ -107,6 +156,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.8)",
     justifyContent: "center",
     alignItems: "center",
+  },
+  loadingContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: borderRadius.sm,
   },
   fallbackContainer: {
     justifyContent: "center",

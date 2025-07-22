@@ -297,5 +297,142 @@ async function populateProducts() {
   }
 }
 
-// Run the script
-populateProducts();
+async function populateFromScrapedData() {
+  console.log("Starting to populate products from scraped data...");
+
+  try {
+    // Get unique products with images from price_history
+    const { data: scrapedProducts, error: scrapedError } = await supabase
+      .from("price_history")
+      .select("item_name, image_url, store_id")
+      .not("image_url", "is", null)
+      .not("image_url", "eq", "")
+      .order("date", { ascending: false });
+
+    if (scrapedError) {
+      console.error("Error fetching scraped data:", scrapedError);
+      return;
+    }
+
+    console.log(`Found ${scrapedProducts.length} scraped products with images`);
+
+    // Group by item_name and get the most recent image for each
+    const productMap = new Map();
+
+    for (const product of scrapedProducts) {
+      if (!productMap.has(product.item_name)) {
+        productMap.set(product.item_name, {
+          name: product.item_name,
+          image_url: product.image_url,
+          store_id: product.store_id,
+        });
+      }
+    }
+
+    console.log(`Unique products with images: ${productMap.size}`);
+
+    // Insert into products table
+    let insertedCount = 0;
+    for (const [name, product] of productMap) {
+      // Determine category based on product name
+      const category = determineCategory(name);
+
+      const { error } = await supabase.from("products").upsert(
+        {
+          name: product.name,
+          category: category,
+          image_url: product.image_url,
+          description: `Product from ${product.store_id}`,
+          brand: extractBrand(name),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: "name",
+        }
+      );
+
+      if (error) {
+        console.error(`Error inserting ${product.name}:`, error);
+      } else {
+        insertedCount++;
+        console.log(`✅ Inserted scraped product: ${product.name}`);
+      }
+    }
+
+    console.log(`✅ Inserted ${insertedCount} products from scraped data`);
+  } catch (error) {
+    console.error("❌ Error populating from scraped data:", error);
+  }
+}
+
+function determineCategory(productName) {
+  const lowerName = productName.toLowerCase();
+
+  if (
+    lowerName.includes("milk") ||
+    lowerName.includes("cheese") ||
+    lowerName.includes("yoghurt") ||
+    lowerName.includes("butter")
+  ) {
+    return "dairy";
+  }
+  if (
+    lowerName.includes("banana") ||
+    lowerName.includes("apple") ||
+    lowerName.includes("tomato") ||
+    lowerName.includes("lettuce")
+  ) {
+    return "fresh-produce";
+  }
+  if (
+    lowerName.includes("bread") ||
+    lowerName.includes("pasta") ||
+    lowerName.includes("rice")
+  ) {
+    return "pantry";
+  }
+  if (
+    lowerName.includes("beef") ||
+    lowerName.includes("chicken") ||
+    lowerName.includes("fish")
+  ) {
+    return "meat-seafood";
+  }
+  if (
+    lowerName.includes("toilet") ||
+    lowerName.includes("paper") ||
+    lowerName.includes("detergent")
+  ) {
+    return "household";
+  }
+
+  return "other";
+}
+
+function extractBrand(productName) {
+  const lowerName = productName.toLowerCase();
+
+  if (lowerName.includes("anchor")) return "Anchor";
+  if (lowerName.includes("mainland")) return "Mainland";
+  if (lowerName.includes("vogel")) return "Vogel's";
+  if (lowerName.includes("san remo")) return "San Remo";
+  if (lowerName.includes("quilton")) return "Quilton";
+  if (lowerName.includes("woolworths")) return "Woolworths";
+
+  return null;
+}
+
+async function main() {
+  console.log("🚀 Starting product image population...");
+
+  // First populate from scraped data
+  await populateFromScrapedData();
+
+  // Then populate with sample data (will not overwrite existing)
+  await populateProducts();
+
+  console.log("🎉 Product image population completed!");
+}
+
+main().catch(console.error);

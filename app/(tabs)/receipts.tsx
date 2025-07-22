@@ -10,6 +10,15 @@ import {
 import { Text, useTheme, Chip, Searchbar } from "react-native-paper";
 import { useRouter } from "expo-router";
 import { useReceipts } from "@/hooks/useReceipts";
+import { Receipt as DatabaseReceipt } from "@/types/database";
+
+type ReceiptWithExtraFields = DatabaseReceipt & {
+  store_name?: string;
+  total_amount?: number;
+  date?: string;
+  savings_identified?: number;
+  cashback_earned?: number;
+};
 import { AppTheme } from "@/constants/theme";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { ReceiptCard } from "@/components/ReceiptCard";
@@ -390,7 +399,7 @@ export default function ReceiptsScreen() {
             }}
           >
             <ReceiptCard
-              receipt={item}
+              receipt={item as unknown as ReceiptWithExtraFields}
               onPress={() => handleReceiptPress(item.id.toString())}
             />
           </Animated.View>

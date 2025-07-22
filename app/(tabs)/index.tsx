@@ -30,7 +30,7 @@ import {
 } from "react-native-safe-area-context";
 
 import { EdgeCaseRenderer } from "@/components/EdgeCaseRenderer";
-import { WeeklyWormDigest } from "@/components/WeeklyWormDigest";
+
 import { useToneMode } from "@/hooks/useToneMode";
 import { HolisticButton } from "@/components/HolisticDesignSystem";
 import { HolisticText } from "@/components/HolisticDesignSystem";
@@ -75,7 +75,7 @@ export default function DashboardScreen() {
   const { toneMode } = useToneMode();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [searchQuery, setSearchQuery] = useState("");
-  const [showWeeklyDigest, setShowWeeklyDigest] = useState(false);
+
   const [refreshing, setRefreshing] = useState(false);
   const insets = useSafeAreaInsets();
 
@@ -116,7 +116,7 @@ export default function DashboardScreen() {
 
   const handleViewInsights = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setShowWeeklyDigest(true);
+    router.push("/(tabs)/trends");
   };
 
   const handleRetry = () => {
@@ -334,16 +334,6 @@ export default function DashboardScreen() {
         <OfflineBanner
           message="No internet connection. Receipts may not sync properly."
           onRetry={handleRetry}
-        />
-
-        {/* Weekly Insights Modal */}
-        <WeeklyWormDigest
-          isVisible={showWeeklyDigest}
-          onDismiss={() => setShowWeeklyDigest(false)}
-          onScanReceipt={() => {
-            setShowWeeklyDigest(false);
-            router.push("/modals/camera");
-          }}
         />
       </SafeAreaView>
     </ErrorBoundary>

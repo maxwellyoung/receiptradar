@@ -10,7 +10,16 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { useTheme } from "react-native-paper";
 import { AppTheme } from "@/constants/theme";
-import { Receipt } from "@/types/database";
+import { Receipt as DatabaseReceipt } from "@/types/database";
+import { Receipt as AppReceipt } from "@/types";
+
+type ReceiptCardReceipt = DatabaseReceipt & {
+  store_name?: string;
+  total_amount?: number;
+  date?: string;
+  savings_identified?: number;
+  cashback_earned?: number;
+};
 import { formatCurrency } from "@/utils/formatters";
 import { StoreLogo } from "@/components/StoreLogo";
 import {
@@ -26,7 +35,7 @@ import { BUSINESS_RULES } from "@/constants/business-rules";
 const { width: screenWidth } = Dimensions.get("window");
 
 interface ReceiptCardProps {
-  receipt: Receipt;
+  receipt: ReceiptCardReceipt;
   onPress?: () => void;
   items?: Array<{
     name: string;
@@ -40,22 +49,32 @@ export const ReceiptCard: React.FC<ReceiptCardProps> = ({
   onPress,
   items = [],
 }) => {
+  // Ensure items is always an array
+  const safeItems = items || [];
+
+  // Ensure receipt is valid
+  if (!receipt) {
+    console.log("ReceiptCard: receipt is null or undefined");
+    return null;
+  }
+
   const theme = useTheme<AppTheme>();
   const [isPressed, setIsPressed] = useState(false);
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const elevationAnim = useRef(new Animated.Value(0)).current;
 
   // Runtime type checks for debugging
-  if (typeof receipt !== "object" || receipt === null) {
-    logger.error("ReceiptCard: receipt is not an object", undefined, {
+  if (!receipt || typeof receipt !== "object") {
+    logger.error("ReceiptCard: receipt is not a valid object", undefined, {
       component: "ReceiptCard",
       receipt,
     });
+    return null;
   }
-  if (!Array.isArray(items)) {
+  if (!Array.isArray(safeItems)) {
     logger.error("ReceiptCard: items is not an array", undefined, {
       component: "ReceiptCard",
-      items,
+      items: safeItems,
     });
   }
 
@@ -104,26 +123,39 @@ export const ReceiptCard: React.FC<ReceiptCardProps> = ({
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / BUSINESS_RULES.TIME.ONE_DAY_MS);
+    try {
+      if (!dateString || typeof dateString !== "string") {
+        return "Unknown date";
+      }
 
-    if (diffDays === 0) return "Today";
-    if (diffDays === 1) return "Yesterday";
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    return date.toLocaleDateString();
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return "Unknown date";
+      }
+
+      const now = new Date();
+      const diffTime = Math.abs(now.getTime() - date.getTime());
+      const diffDays = Math.ceil(diffTime / BUSINESS_RULES.TIME.ONE_DAY_MS);
+
+      if (diffDays === 0) return "Today";
+      if (diffDays === 1) return "Yesterday";
+      if (diffDays < 7) return `${diffDays} days ago`;
+      if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+      return date.toLocaleDateString();
+    } catch (error) {
+      return "Unknown date";
+    }
   };
 
-  const getStoreIcon = (storeName: string) => {
-    const name = storeName.toLowerCase();
-    if (name.includes("countdown")) return "shopping-cart";
-    if (name.includes("new world")) return "store";
-    if (name.includes("pak")) return "local-grocery-store";
-    if (name.includes("four square")) return "local-convenience-store";
-    return "receipt";
-  };
+  // This function is no longer used since we're using StoreLogo component
+  // const getStoreIcon = (storeName: string) => {
+  //   const name = storeName.toLowerCase();
+  //   if (name.includes("countdown")) return "shopping-cart";
+  //   if (name.includes("new world")) return "store";
+  //   if (name.includes("pak")) return "local-grocery-store";
+  //   if (name.includes("four square")) return "local-convenience-store";
+  //   return "receipt";
+  // };
 
   return (
     <Animated.View
@@ -161,17 +193,26 @@ export const ReceiptCard: React.FC<ReceiptCardProps> = ({
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.storeInfo}>
-              <StoreLogo
-                storeName={receipt.store_name}
-                size="small"
-                variant="icon"
-              />
+              {(() => {
+                const storeName = receipt?.store_name || "Unknown Store";
+                console.log("ReceiptCard: StoreLogo props", {
+                  storeName,
+                  type: typeof storeName,
+                });
+                return (
+                  <StoreLogo
+                    storeName={storeName}
+                    size="small"
+                    variant="icon"
+                  />
+                );
+              })()}
               <View style={styles.storeDetails}>
                 <Text
                   style={[styles.storeName, { color: theme.colors.onSurface }]}
                   numberOfLines={1}
                 >
-                  {receipt.store_name}
+                  {receipt?.store_name || "Unknown Store"}
                 </Text>
                 <Text
                   style={[
@@ -179,19 +220,19 @@ export const ReceiptCard: React.FC<ReceiptCardProps> = ({
                     { color: theme.colors.onSurfaceVariant },
                   ]}
                 >
-                  {formatDate(receipt.date)}
+                  {receipt?.date ? formatDate(receipt.date) : "Unknown date"}
                 </Text>
               </View>
             </View>
             <View style={styles.amountContainer}>
               <Text style={[styles.amount, { color: theme.colors.onSurface }]}>
-                {formatCurrency(receipt.total_amount)}
+                {formatCurrency(Number(receipt?.total_amount) || 0)}
               </Text>
             </View>
           </View>
 
           {/* Items Preview */}
-          {items.length > 0 && (
+          {safeItems.length > 0 ? (
             <View style={styles.itemsPreview}>
               <Text
                 style={[
@@ -199,10 +240,10 @@ export const ReceiptCard: React.FC<ReceiptCardProps> = ({
                   { color: theme.colors.onSurfaceVariant },
                 ]}
               >
-                {items.length} item{items.length !== 1 ? "s" : ""}
+                {safeItems.length} item{safeItems.length !== 1 ? "s" : ""}
               </Text>
               <View style={styles.itemsList}>
-                {items.slice(0, 3).map((item, index) => (
+                {safeItems.slice(0, 3).map((item, index) => (
                   <Text
                     key={index}
                     style={[
@@ -211,27 +252,27 @@ export const ReceiptCard: React.FC<ReceiptCardProps> = ({
                     ]}
                     numberOfLines={1}
                   >
-                    {item.name}
+                    {item.name || "Unknown item"}
                   </Text>
                 ))}
-                {items.length > 3 && (
+                {safeItems.length > 3 ? (
                   <Text
                     style={[
                       styles.moreItems,
                       { color: theme.colors.onSurfaceVariant },
                     ]}
                   >
-                    +{items.length - 3} more
+                    +{safeItems.length - 3} more
                   </Text>
-                )}
+                ) : null}
               </View>
             </View>
-          )}
+          ) : null}
 
           {/* Footer */}
           <View style={styles.footer}>
             <View style={styles.metadata}>
-              {receipt.savings_identified && receipt.savings_identified > 0 && (
+              {receipt?.savings_identified && receipt.savings_identified > 0 ? (
                 <View style={styles.savingsBadge}>
                   <MaterialIcons
                     name="trending-down"
@@ -244,10 +285,11 @@ export const ReceiptCard: React.FC<ReceiptCardProps> = ({
                       { color: theme.colors.primary },
                     ]}
                   >
-                    Saved {formatCurrency(receipt.savings_identified)}
+                    Saved{" "}
+                    {formatCurrency(Number(receipt.savings_identified) || 0)}
                   </Text>
                 </View>
-              )}
+              ) : null}
             </View>
             <MaterialIcons
               name="chevron-right"

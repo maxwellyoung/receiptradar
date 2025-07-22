@@ -7,6 +7,7 @@ import {
   Dimensions,
   ScrollView,
   TouchableOpacity,
+  StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -51,17 +52,18 @@ export const WeeklyWormDigest: React.FC<{
 }> = ({ isVisible, onDismiss, onScanReceipt }) => {
   const [insights, setInsights] = useState<WeeklyInsight[]>([]);
   const [stats, setStats] = useState<WeeklyStats | null>(null);
-
   const [toneMode, setToneMode] = useState<"gentle" | "hard">("gentle");
   const [currentChallenge, setCurrentChallenge] = useState<string | null>(null);
 
   const { user } = useAuthContext();
   const { receipts, loading } = useReceipts(user?.id || "");
 
-  // Animation values
+  // Enhanced animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
-  const scaleAnim = useRef(new Animated.Value(0.95)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const scaleAnim = useRef(new Animated.Value(0.98)).current;
+  const headerScaleAnim = useRef(new Animated.Value(0.95)).current;
+  const cardAnimationsRef = useRef<Animated.Value[]>([]);
 
   useEffect(() => {
     if (isVisible) {
@@ -239,98 +241,191 @@ export const WeeklyWormDigest: React.FC<{
     }
 
     setInsights(newInsights);
+
+    // Initialize card animations
+    cardAnimationsRef.current = newInsights.map(() => new Animated.Value(0));
   };
 
   const animateEntrance = () => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        tension: 100,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 100,
-        friction: 8,
-        useNativeDriver: true,
-      }),
+    // Reset animations
+    fadeAnim.setValue(0);
+    slideAnim.setValue(30);
+    scaleAnim.setValue(0.98);
+    headerScaleAnim.setValue(0.95);
+    cardAnimationsRef.current.forEach((anim: Animated.Value) =>
+      anim.setValue(0)
+    );
+
+    // Staggered entrance animation
+    Animated.sequence([
+      // Header animation
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.spring(headerScaleAnim, {
+          toValue: 1,
+          tension: 100,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+      ]),
+      // Content animation
+      Animated.parallel([
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          tension: 100,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          tension: 100,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+      ]),
+      // Staggered card animations
+      Animated.stagger(
+        100,
+        cardAnimationsRef.current.map((anim: Animated.Value) =>
+          Animated.spring(anim, {
+            toValue: 1,
+            tension: 100,
+            friction: 8,
+            useNativeDriver: true,
+          })
+        )
+      ),
     ]).start();
   };
 
-  const renderInsightCard = (insight: WeeklyInsight, index: number) => (
-    <Animated.View
-      key={index}
-      style={[
-        styles.insightCard,
-        {
-          opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
-        },
-      ]}
-    >
-      <HolisticCard
-        title={insight.title}
-        content={insight.message}
-        variant="elevated"
+  const renderInsightCard = (insight: WeeklyInsight, index: number) => {
+    const cardAnim = cardAnimationsRef.current[index] || new Animated.Value(0);
+
+    return (
+      <Animated.View
+        key={index}
+        style={[
+          styles.insightCard,
+          {
+            opacity: cardAnim,
+            transform: [
+              {
+                translateY: cardAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [20, 0],
+                }),
+              },
+              {
+                scale: cardAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.95, 1],
+                }),
+              },
+            ],
+          },
+        ]}
       >
-        <View style={styles.insightHeader}>
-          <Text style={styles.insightIcon}>{insight.icon}</Text>
-          {insight.value !== undefined && (
-            <HolisticText
-              variant="title.medium"
-              style={{
-                color: insight.color,
-                fontWeight: insight.value > 0 ? "600" : "400",
-              }}
-            >
-              {insight.value > 0 ? "+" : ""}
-              {insight.value.toFixed(1)}%
-            </HolisticText>
+        <View style={styles.insightCardInner}>
+          <View style={styles.insightHeader}>
+            <View style={styles.insightIconContainer}>
+              <Text style={styles.insightIcon}>{insight.icon}</Text>
+            </View>
+            <View style={styles.insightContent}>
+              <HolisticText variant="title.medium" style={styles.insightTitle}>
+                {insight.title}
+              </HolisticText>
+              <HolisticText
+                variant="body.medium"
+                color="secondary"
+                style={styles.insightMessage}
+              >
+                {insight.message}
+              </HolisticText>
+            </View>
+            {insight.value !== undefined && (
+              <View style={styles.insightValue}>
+                <HolisticText
+                  variant="title.large"
+                  style={[styles.insightValueText, { color: insight.color }]}
+                >
+                  {insight.value > 0 ? "+" : ""}
+                  {insight.value.toFixed(1)}%
+                </HolisticText>
+              </View>
+            )}
+          </View>
+          {insight.action && (
+            <View style={styles.insightAction}>
+              <HolisticButton
+                title={insight.action}
+                onPress={insight.onAction || (() => {})}
+                variant="outline"
+                size="small"
+              />
+            </View>
           )}
         </View>
-        {insight.action && (
-          <View style={styles.actionContainer}>
-            <HolisticButton
-              title={insight.action}
-              onPress={insight.onAction || (() => {})}
-              variant="outline"
-              size="small"
-            />
-          </View>
-        )}
-      </HolisticCard>
-    </Animated.View>
-  );
+      </Animated.View>
+    );
+  };
 
   const renderStatsSummary = () => {
     if (!stats) return null;
 
     return (
-      <View style={styles.statsContainer}>
-        <HolisticText variant="headline.medium" style={styles.statsTitle}>
-          This Week's Summary
-        </HolisticText>
+      <Animated.View
+        style={[
+          styles.statsContainer,
+          {
+            opacity: fadeAnim,
+            transform: [{ scale: headerScaleAnim }],
+          },
+        ]}
+      >
+        <View style={styles.statsHeader}>
+          <HolisticText variant="headline.large" style={styles.statsTitle}>
+            Weekly Digest
+          </HolisticText>
+          <HolisticText
+            variant="body.large"
+            color="secondary"
+            style={styles.statsSubtitle}
+          >
+            Your spending insights for the past 7 days
+          </HolisticText>
+        </View>
 
         <View style={styles.statsGrid}>
-          <View style={styles.statItem}>
+          <View style={styles.statCard}>
+            <View style={styles.statIconContainer}>
+              <MaterialIcons
+                name="account-balance-wallet"
+                size={24}
+                color="#4CAF50"
+              />
+            </View>
             <Text style={styles.statValue}>${stats.totalSpent.toFixed(2)}</Text>
             <HolisticText variant="body.small" color="secondary">
               Total Spent
             </HolisticText>
           </View>
-          <View style={styles.statItem}>
+          <View style={styles.statCard}>
+            <View style={styles.statIconContainer}>
+              <MaterialIcons name="receipt" size={24} color="#2196F3" />
+            </View>
             <Text style={styles.statValue}>{stats.receiptsCount}</Text>
             <HolisticText variant="body.small" color="secondary">
               Receipts
             </HolisticText>
           </View>
-          <View style={styles.statItem}>
+          <View style={styles.statCard}>
+            <View style={styles.statIconContainer}>
+              <MaterialIcons name="trending-up" size={24} color="#FF9800" />
+            </View>
             <Text style={styles.statValue}>
               ${stats.averagePerReceipt.toFixed(2)}
             </Text>
@@ -339,71 +434,88 @@ export const WeeklyWormDigest: React.FC<{
             </HolisticText>
           </View>
         </View>
-      </View>
+      </Animated.View>
     );
   };
 
   if (!isVisible) return null;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Animated.View
-        style={[
-          styles.content,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
-          },
-        ]}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <SafeAreaView style={styles.safeArea}>
+        <Animated.View
+          style={[
+            styles.content,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
+            },
+          ]}
         >
-          <HolisticContainer padding="large">
-            {/* Weekly Stats */}
-            {renderStatsSummary()}
-
-            {/* Insights */}
-            {insights.length > 0 && (
-              <View style={styles.insightsContainer}>
-                <HolisticText
-                  variant="title.large"
-                  style={styles.insightsTitle}
-                >
-                  Weekly Insights
-                </HolisticText>
-                {insights.map((insight, index) =>
-                  renderInsightCard(insight, index)
-                )}
-              </View>
-            )}
-
-            {/* Action Buttons */}
-            <View style={styles.actionContainer}>
-              <HolisticButton
-                title="Scan New Receipt"
-                onPress={onScanReceipt}
-                variant="primary"
-                size="large"
-                fullWidth
-                icon={
-                  <MaterialIcons name="camera-alt" size={20} color="white" />
-                }
-              />
-
-              <HolisticButton
-                title="Close Digest"
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+          >
+            <View style={styles.header}>
+              <TouchableOpacity
+                style={styles.closeButton}
                 onPress={onDismiss}
-                variant="ghost"
-                size="medium"
-                icon={<MaterialIcons name="close" size={18} color="#666" />}
-              />
+                activeOpacity={0.7}
+              >
+                <MaterialIcons name="close" size={24} color="#666" />
+              </TouchableOpacity>
             </View>
-          </HolisticContainer>
-        </ScrollView>
-      </Animated.View>
-    </SafeAreaView>
+
+            <View style={styles.mainContent}>
+              {/* Weekly Stats */}
+              {renderStatsSummary()}
+
+              {/* Insights */}
+              {insights.length > 0 && (
+                <View style={styles.insightsContainer}>
+                  <View style={styles.insightsHeader}>
+                    <HolisticText
+                      variant="headline.medium"
+                      style={styles.insightsTitle}
+                    >
+                      Insights & Trends
+                    </HolisticText>
+                    <HolisticText
+                      variant="body.medium"
+                      color="secondary"
+                      style={styles.insightsSubtitle}
+                    >
+                      Personalized recommendations based on your spending
+                    </HolisticText>
+                  </View>
+                  <View style={styles.insightsList}>
+                    {insights.map((insight, index) =>
+                      renderInsightCard(insight, index)
+                    )}
+                  </View>
+                </View>
+              )}
+
+              {/* Action Buttons */}
+              <View style={styles.actionContainer}>
+                <HolisticButton
+                  title="Scan New Receipt"
+                  onPress={onScanReceipt}
+                  variant="primary"
+                  size="large"
+                  fullWidth
+                  icon={
+                    <MaterialIcons name="camera-alt" size={20} color="white" />
+                  }
+                />
+              </View>
+            </View>
+          </ScrollView>
+        </Animated.View>
+      </SafeAreaView>
+    </View>
   );
 };
 
@@ -412,56 +524,150 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FFFFFF",
   },
+  safeArea: {
+    flex: 1,
+  },
   content: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
   },
-
+  header: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 16,
+  },
+  closeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0,0,0,0.05)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mainContent: {
+    paddingHorizontal: 24,
+  },
   statsContainer: {
+    marginBottom: 48,
+  },
+  statsHeader: {
     alignItems: "center",
     marginBottom: 32,
   },
   statsTitle: {
     textAlign: "center",
-    marginBottom: 16,
+    marginBottom: 8,
+    fontWeight: "300",
+    letterSpacing: -0.5,
+  },
+  statsSubtitle: {
+    textAlign: "center",
+    opacity: 0.7,
   },
   statsGrid: {
     flexDirection: "row",
-    justifyContent: "space-around",
-    width: "100%",
-    paddingHorizontal: 20,
+    justifyContent: "space-between",
+    gap: 16,
   },
-  statItem: {
+  statCard: {
+    flex: 1,
     alignItems: "center",
-    gap: 4,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    backgroundColor: "rgba(0,0,0,0.02)",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.05)",
+  },
+  statIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(0,0,0,0.05)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
   },
   statValue: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "600",
-    color: "#333",
+    color: "#1A1A1A",
+    marginBottom: 4,
   },
   insightsContainer: {
-    marginBottom: 32,
+    marginBottom: 48,
+  },
+  insightsHeader: {
+    marginBottom: 24,
   },
   insightsTitle: {
     textAlign: "center",
-    marginBottom: 16,
+    marginBottom: 8,
+    fontWeight: "300",
+    letterSpacing: -0.5,
+  },
+  insightsSubtitle: {
+    textAlign: "center",
+    opacity: 0.7,
+  },
+  insightsList: {
+    gap: 16,
   },
   insightCard: {
-    marginBottom: 12,
+    marginBottom: 0,
+  },
+  insightCardInner: {
+    backgroundColor: "rgba(0,0,0,0.02)",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.05)",
+    padding: 20,
   },
   insightHeader: {
     flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 16,
+  },
+  insightIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(0,0,0,0.05)",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 8,
+    justifyContent: "center",
+    flexShrink: 0,
   },
   insightIcon: {
-    fontSize: 24,
+    fontSize: 20,
+  },
+  insightContent: {
+    flex: 1,
+  },
+  insightTitle: {
+    marginBottom: 4,
+    fontWeight: "500",
+  },
+  insightMessage: {
+    lineHeight: 20,
+  },
+  insightValue: {
+    alignItems: "flex-end",
+    flexShrink: 0,
+  },
+  insightValueText: {
+    fontWeight: "600",
+  },
+  insightAction: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,0,0,0.05)",
   },
   actionContainer: {
-    gap: 12,
+    marginBottom: 32,
   },
 });
