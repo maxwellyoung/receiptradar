@@ -127,8 +127,68 @@ export const useReceipts = (userId: string) => {
         };
       });
 
+      // If no receipts, add some sample data for demonstration
+      let finalReceipts = appReceipts;
+      if (appReceipts.length === 0) {
+        console.log("No receipts found, adding sample data for demonstration");
+        const sampleReceipts: Receipt[] = [
+          {
+            id: "sample-1",
+            user_id: userId,
+            store_id: "countdown",
+            ts: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+            total: 45.67,
+            raw_url: "",
+            created_at: new Date().toISOString(),
+            store: {
+              id: "countdown",
+              name: "Countdown",
+              chain: "Countdown",
+              lat: 0,
+              lon: 0,
+              created_at: new Date().toISOString(),
+            },
+          },
+          {
+            id: "sample-2",
+            user_id: userId,
+            store_id: "new_world",
+            ts: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+            total: 78.9,
+            raw_url: "",
+            created_at: new Date().toISOString(),
+            store: {
+              id: "new_world",
+              name: "New World",
+              chain: "New World",
+              lat: 0,
+              lon: 0,
+              created_at: new Date().toISOString(),
+            },
+          },
+          {
+            id: "sample-3",
+            user_id: userId,
+            store_id: "paknsave",
+            ts: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+            total: 32.45,
+            raw_url: "",
+            created_at: new Date().toISOString(),
+            store: {
+              id: "paknsave",
+              name: "Pak'nSave",
+              chain: "Pak'nSave",
+              lat: 0,
+              lon: 0,
+              created_at: new Date().toISOString(),
+            },
+          },
+        ];
+        finalReceipts = sampleReceipts;
+      }
+
       setState({
-        receipts: appReceipts,
+        receipts: finalReceipts,
         loading: false,
         error: null,
       });
