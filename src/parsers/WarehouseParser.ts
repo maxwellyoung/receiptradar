@@ -181,58 +181,10 @@ export class WarehouseParser implements IReceiptParser {
   }
 
   private categorizeItem(itemName: string): string {
-    const lowerName = itemName.toLowerCase();
-
-    // Grocery items
-    if (
-      lowerName.includes("milk") ||
-      lowerName.includes("bread") ||
-      lowerName.includes("pasta") ||
-      lowerName.includes("rice") ||
-      lowerName.includes("cereal") ||
-      lowerName.includes("yoghurt") ||
-      lowerName.includes("cheese") ||
-      lowerName.includes("butter") ||
-      lowerName.includes("eggs") ||
-      lowerName.includes("pams")
-    ) {
-      return "grocery";
-    }
-
-    // Household items
-    if (
-      lowerName.includes("toilet") ||
-      lowerName.includes("paper") ||
-      lowerName.includes("detergent") ||
-      lowerName.includes("soap") ||
-      lowerName.includes("cleaning") ||
-      lowerName.includes("dish") ||
-      lowerName.includes("laundry")
-    ) {
-      return "household";
-    }
-
-    // Personal care
-    if (
-      lowerName.includes("shampoo") ||
-      lowerName.includes("toothpaste") ||
-      lowerName.includes("deodorant") ||
-      lowerName.includes("soap") ||
-      lowerName.includes("cream")
-    ) {
-      return "personal-care";
-    }
-
-    // General merchandise
-    if (
-      lowerName.includes("warehouse") ||
-      lowerName.includes("brand") ||
-      lowerName.includes("pams")
-    ) {
-      return "general-merchandise";
-    }
-
-    return "general";
+    // Use the new comprehensive categorization system
+    const { categorizeProduct } = require("@/constants/productCategories");
+    const category = categorizeProduct(itemName);
+    return category.id;
   }
 
   canParse(receiptText: string): boolean {

@@ -32,9 +32,6 @@ export function StoreLogo({
   const dimensions = SIZES[size];
   const sizeValue = dimensions.width;
 
-  // Debug logging
-  console.log("StoreLogo: rendering", { storeName, type: typeof storeName });
-
   // Check if we have an official logo for this store
   const lowerName = storeName.toLowerCase();
   const isUnknownStore = lowerName === "unknown store";
@@ -48,7 +45,6 @@ export function StoreLogo({
     lowerName.includes("fresh choice");
 
   if (isUnknownStore) {
-    console.log("StoreLogo: rendering unknown store fallback");
     return (
       <View style={[styles.fallbackContainer, dimensions, style]}>
         <MaterialIcons
@@ -67,7 +63,6 @@ export function StoreLogo({
 
   // Use official logo if available
   if (hasOfficialLogo) {
-    console.log("StoreLogo: rendering official logo");
     return (
       <View style={[styles.officialLogoContainer, dimensions, style]}>
         <OfficialStoreLogo

@@ -164,67 +164,10 @@ export class MooreWilsonsParser implements IReceiptParser {
   }
 
   private categorizeItem(itemName: string): string {
-    const lowerName = itemName.toLowerCase();
-
-    // Fresh produce
-    if (
-      lowerName.includes("banana") ||
-      lowerName.includes("apple") ||
-      lowerName.includes("orange") ||
-      lowerName.includes("tomato") ||
-      lowerName.includes("lettuce") ||
-      lowerName.includes("carrot") ||
-      lowerName.includes("onion") ||
-      lowerName.includes("potato")
-    ) {
-      return "fresh-produce";
-    }
-
-    // Dairy
-    if (
-      lowerName.includes("milk") ||
-      lowerName.includes("cheese") ||
-      lowerName.includes("yoghurt") ||
-      lowerName.includes("butter") ||
-      lowerName.includes("cream") ||
-      lowerName.includes("egg")
-    ) {
-      return "dairy";
-    }
-
-    // Meat
-    if (
-      lowerName.includes("beef") ||
-      lowerName.includes("chicken") ||
-      lowerName.includes("pork") ||
-      lowerName.includes("lamb") ||
-      lowerName.includes("fish") ||
-      lowerName.includes("salmon")
-    ) {
-      return "meat";
-    }
-
-    // Bread
-    if (
-      lowerName.includes("bread") ||
-      lowerName.includes("sourdough") ||
-      lowerName.includes("roll") ||
-      lowerName.includes("bun")
-    ) {
-      return "bread";
-    }
-
-    // Gourmet/Artisan
-    if (
-      lowerName.includes("artisan") ||
-      lowerName.includes("gourmet") ||
-      lowerName.includes("organic") ||
-      lowerName.includes("free range")
-    ) {
-      return "gourmet";
-    }
-
-    return "general";
+    // Use the new comprehensive categorization system
+    const { categorizeProduct } = require("@/constants/productCategories");
+    const category = categorizeProduct(itemName);
+    return category.id;
   }
 
   private extractBrand(itemName: string): string | undefined {

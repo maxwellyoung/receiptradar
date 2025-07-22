@@ -9,6 +9,7 @@ import { Receipt } from "@/types";
 import { BUSINESS_RULES } from "@/constants/business-rules";
 import { OCRItem } from "@/types/ocr";
 import { handleAsyncError, logError } from "@/utils/error-handler";
+import { STORE_IDENTIFIERS } from "@/parsers/stores";
 
 interface ReceiptsState {
   receipts: Receipt[];
@@ -36,6 +37,34 @@ export const useReceipts = (userId: string) => {
   });
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Function to improve store name detection
+  const improveStoreName = (receipt: any): string => {
+    // If store name is already good, return it
+    if (receipt.store_name && receipt.store_name !== "Unknown Store") {
+      return receipt.store_name;
+    }
+
+    // Try to extract store name from OCR data
+    if (receipt.ocr_data && receipt.ocr_data.text) {
+      const text = receipt.ocr_data.text.toLowerCase();
+
+      // Check for store identifiers
+      for (const [storeName, identifier] of Object.entries(STORE_IDENTIFIERS)) {
+        if (identifier.test(text)) {
+          console.log(`Found store name in OCR: ${storeName}`);
+          return storeName;
+        }
+      }
+    }
+
+    // Fallback based on amount or other heuristics
+    if (receipt.total_amount > 0) {
+      return "Local Store";
+    }
+
+    return "Unknown Store";
+  };
+
   const fetchReceipts = useCallback(async () => {
     if (!userId) {
       setState((prev) => ({ ...prev, loading: false }));
@@ -55,35 +84,48 @@ export const useReceipts = (userId: string) => {
         return;
       }
 
-      const appReceipts: Receipt[] = (data || []).map((dbReceipt: any) => ({
-        id: dbReceipt.id,
-        user_id: dbReceipt.user_id,
-        store_id:
-          dbReceipt.store_id ||
-          dbReceipt.store_name?.toLowerCase().replace(/\s+/g, "_"),
-        ts: dbReceipt.date,
-        total: dbReceipt.total_amount,
-        raw_url: dbReceipt.image_url || "",
-        created_at: dbReceipt.created_at,
-        store: {
-          id:
+      const appReceipts: Receipt[] = (data || []).map((dbReceipt: any) => {
+        // Debug: Log the raw receipt data
+        console.log("Raw receipt data:", {
+          id: dbReceipt.id,
+          store_name: dbReceipt.store_name,
+          total_amount: dbReceipt.total_amount,
+          date: dbReceipt.date,
+          ocr_data: dbReceipt.ocr_data ? "Has OCR data" : "No OCR data",
+        });
+
+        const improvedStoreName = improveStoreName(dbReceipt);
+
+        return {
+          id: dbReceipt.id,
+          user_id: dbReceipt.user_id,
+          store_id:
             dbReceipt.store_id ||
-            dbReceipt.store_name?.toLowerCase().replace(/\s+/g, "_"),
-          name: dbReceipt.store_name,
-          chain: dbReceipt.store_name,
-          lat: 0,
-          lon: 0,
-          created_at: dbReceipt.created_at || "",
-        },
-        // Add additional fields for receipt detail view
-        store_name: dbReceipt.store_name,
-        total_amount: dbReceipt.total_amount,
-        date: dbReceipt.date,
-        image_url: dbReceipt.image_url,
-        ocr_data: dbReceipt.ocr_data,
-        savings_identified: dbReceipt.savings_identified || 0,
-        cashback_earned: dbReceipt.cashback_earned || 0,
-      }));
+            improvedStoreName.toLowerCase().replace(/\s+/g, "_"),
+          ts: dbReceipt.date,
+          total: dbReceipt.total_amount,
+          raw_url: dbReceipt.image_url || "",
+          created_at: dbReceipt.created_at,
+          store: {
+            id:
+              dbReceipt.store_id ||
+              improvedStoreName.toLowerCase().replace(/\s+/g, "_"),
+            name: improvedStoreName,
+            chain: improvedStoreName,
+            lat: 0,
+            lon: 0,
+            created_at: dbReceipt.created_at || "",
+          },
+          // Add additional fields for receipt detail view
+          store_name: improvedStoreName,
+          total_amount: dbReceipt.total_amount,
+          date: dbReceipt.date,
+          image_url: dbReceipt.image_url,
+          ocr_data: dbReceipt.ocr_data,
+          savings_identified: dbReceipt.savings_identified || 0,
+          cashback_earned: dbReceipt.cashback_earned || 0,
+        };
+      });
 
       setState({
         receipts: appReceipts,

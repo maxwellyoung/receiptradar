@@ -193,20 +193,11 @@ export const ReceiptCard: React.FC<ReceiptCardProps> = ({
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.storeInfo}>
-              {(() => {
-                const storeName = receipt?.store_name || "Unknown Store";
-                console.log("ReceiptCard: StoreLogo props", {
-                  storeName,
-                  type: typeof storeName,
-                });
-                return (
-                  <StoreLogo
-                    storeName={storeName}
-                    size="small"
-                    variant="icon"
-                  />
-                );
-              })()}
+              <StoreLogo
+                storeName={receipt?.store_name || "Unknown Store"}
+                size="small"
+                variant="icon"
+              />
               <View style={styles.storeDetails}>
                 <Text
                   style={[styles.storeName, { color: theme.colors.onSurface }]}
