@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks
+from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
@@ -16,6 +16,7 @@ from receipt_parser import ReceiptParser, ReceiptData, ReceiptItem
 from price_intelligence import PriceIntelligenceService, BasketAnalysis
 from openai_service import OpenAIReceiptService, ReceiptParseResult
 import re
+import asyncpg
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -42,8 +43,8 @@ try:
     receipt_parser = ReceiptParser()
     
     # Initialize price intelligence service
-    db_url = os.getenv('DATABASE_URL', 'postgresql://localhost/receiptradar')
-    price_intelligence = PriceIntelligenceService(db_url)
+    DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://localhost/receiptradar")
+    price_intelligence = PriceIntelligenceService(DATABASE_URL)
     
     # Initialize OpenAI service
     openai_service = OpenAIReceiptService()
@@ -345,7 +346,19 @@ async def process_receipt_ocr(file: UploadFile = File(...)):
         )
         
     except Exception as e:
-        logger.error(f"Error processing image: {e}")
+        # Enhanced error logging for OCR failures
+        try:
+            file_info = f"filename={getattr(file, 'filename', 'unknown')}"
+            image_info = ''
+            if 'image_bytes' in locals():
+                try:
+                    img = Image.open(io.BytesIO(image_bytes))
+                    image_info = f", image_size={img.size}, format={img.format}"
+                except Exception:
+                    image_info = ''
+            logger.error(f"OCR FAILURE: {file_info}{image_info}, error={e}")
+        except Exception as log_error:
+            logger.error(f"Failed to log OCR failure details: {log_error}")
         raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
 
 @app.post("/parse", response_model=ReceiptResponse)
@@ -424,8 +437,20 @@ async def parse_receipt(file: UploadFile = File(...)):
         )
         
     except Exception as e:
-        logger.error(f"Error parsing receipt: {e}")
-        raise HTTPException(status_code=500, detail=f"Error parsing receipt: {str(e)}")
+        # Enhanced error logging for parse failures
+        try:
+            file_info = f"filename={getattr(file, 'filename', 'unknown')}"
+            image_info = ''
+            if 'image_bytes' in locals():
+                try:
+                    img = Image.open(io.BytesIO(image_bytes))
+                    image_info = f", image_size={img.size}, format={img.format}"
+                except Exception:
+                    image_info = ''
+            logger.error(f"PARSE FAILURE: {file_info}{image_info}, error={e}")
+        except Exception as log_error:
+            logger.error(f"Failed to log parse failure details: {log_error}")
+        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
 
 @app.post("/parse/ocr-results")
 async def parse_ocr_results(ocr_results: List[Dict]):
@@ -858,6 +883,58 @@ async def ai_health_check():
             "status": "error",
             "error": str(e)
         }
+
+@app.post("/receipts/{receipt_id}/corrections")
+async def submit_receipt_corrections(receipt_id: str, corrections: dict = Body(...)):
+    """Accept corrected items for a receipt. Store in item_corrections table. If item_id is missing, match by name, price, and quantity."""
+    items = corrections.get("items", [])
+    user_id = corrections.get("user_id")
+    if not user_id or not items:
+        return {"success": False, "error": "Missing user_id or items"}
+    try:
+        pool = await asyncpg.create_pool(DATABASE_URL)
+        async with pool.acquire() as conn:
+            for item in items:
+                item_id = item.get("item_id")
+                # If item_id is missing, try to look it up
+                if not item_id:
+                    found = await conn.fetchrow(
+                        """
+                        SELECT id FROM items
+                        WHERE receipt_id = $1 AND name = $2 AND price = $3 AND quantity = $4
+                        LIMIT 1
+                        """,
+                        receipt_id,
+                        item.get("name"),
+                        item.get("price"),
+                        item.get("quantity"),
+                    )
+                    if found:
+                        item_id = found["id"]
+                    else:
+                        logger.warning(f"Could not find item for correction: {item}")
+                        continue  # Skip this correction
+                await conn.execute(
+                    """
+                    INSERT INTO item_corrections (
+                        item_id, receipt_id, user_id, corrected_name, corrected_price, corrected_quantity, corrected_category, confirmed
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    """,
+                    item_id,
+                    receipt_id,
+                    user_id,
+                    item.get("name"),
+                    item.get("price"),
+                    item.get("quantity"),
+                    item.get("category"),
+                    item.get("confirmed", False),
+                )
+        await pool.close()
+        logger.info(f"Corrections stored for receipt {receipt_id} by user {user_id}")
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"Failed to store corrections: {e}")
+        return {"success": False, "error": str(e)}
 
 if __name__ == "__main__":
     import uvicorn

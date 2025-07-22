@@ -4,6 +4,7 @@ from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
 from datetime import datetime
 import logging
+import rapidfuzz
 
 logger = logging.getLogger(__name__)
 
@@ -295,13 +296,36 @@ class ReceiptParser:
         return any(keyword in line_lower for keyword in total_keywords)
 
     def _categorize_item(self, item_name: str) -> Optional[str]:
-        """Categorize item based on keywords"""
+        """Categorize item based on keywords and fuzzy matching"""
         item_lower = item_name.lower()
-        
-        for category, keywords in self.category_keywords.items():
-            if any(keyword in item_lower for keyword in keywords):
-                return category
-        
+        best_category = None
+        best_score = 0.0
+        # Expanded category keywords
+        expanded_category_keywords = {
+            'Fresh Produce': self.category_keywords['Fresh Produce'] + ['grapes', 'kiwi', 'mandarin', 'pear', 'plum', 'spinach', 'broccoli', 'cauliflower', 'pumpkin', 'lemon', 'lime', 'orange', 'blueberry', 'strawberry'],
+            'Dairy': self.category_keywords['Dairy'] + ['cream cheese', 'custard', 'evaporated milk', 'condensed milk', 'ice cream'],
+            'Meat': self.category_keywords['Meat'] + ['turkey', 'duck', 'venison', 'salami', 'meatballs', 'ribs', 'wings', 'drumsticks'],
+            'Pantry': self.category_keywords['Pantry'] + ['muesli', 'granola', 'jam', 'honey', 'spices', 'herbs', 'baking powder', 'yeast', 'vinegar', 'mustard', 'mayonnaise', 'ketchup', 'tomato paste', 'beans', 'lentils', 'chickpeas', 'couscous', 'quinoa'],
+            'Beverages': self.category_keywords['Beverages'] + ['smoothie', 'energy drink', 'sports drink', 'kombucha', 'lemonade', 'ginger beer', 'tonic', 'syrup'],
+            'Snacks': self.category_keywords['Snacks'] + ['popcorn', 'muesli bar', 'granola bar', 'rice cracker', 'pretzel', 'fruit snack', 'trail mix', 'ice block'],
+            'Frozen': self.category_keywords['Frozen'] + ['frozen berries', 'frozen veg', 'frozen meal', 'frozen fish', 'frozen chicken', 'frozen dessert'],
+            'Household': self.category_keywords['Household'] + ['dishwasher', 'laundry', 'bleach', 'sponges', 'bin liner', 'foil', 'cling film', 'air freshener', 'insect spray', 'light bulb'],
+        }
+        # Fuzzy match against expanded keywords
+        for category, keywords in expanded_category_keywords.items():
+            for keyword in keywords:
+                score = rapidfuzz.fuzz.partial_ratio(item_lower, keyword)
+                if score > best_score and score > 80:  # 80+ is a strong match
+                    best_score = score
+                    best_category = category
+        if best_category:
+            return best_category
+        # Fallback: try OpenAI normalization if available and confidence is low
+        # (Pseudo-code, as this would require async and service access)
+        # if hasattr(self, 'openai_service') and best_score < 85:
+        #     normalized = await self.openai_service.normalize_products([item_name])
+        #     if normalized and normalized[0].category:
+        #         return normalized[0].category
         return None
 
     def _extract_totals(self, lines: List[str]) -> Tuple[Optional[float], Optional[float], Optional[float]]:

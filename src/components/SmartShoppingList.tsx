@@ -231,10 +231,7 @@ export const SmartShoppingList: React.FC = () => {
               ]}
             >
               <Text
-                style={[
-                  styles.priorityText,
-                  { color: getPriorityColor(item.priority) },
-                ]}
+                style={[styles.priorityText, { color: theme.colors.onSurface }]}
               >
                 {item.priority}
               </Text>

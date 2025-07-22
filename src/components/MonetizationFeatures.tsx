@@ -347,10 +347,7 @@ export const MonetizationFeatures: React.FC<MonetizationFeaturesProps> = ({
           ]}
         >
           <Text
-            style={[
-              styles.strategyText,
-              { color: getStrategyColor(segment.pricingStrategy) },
-            ]}
+            style={[styles.strategyText, { color: theme.colors.onSurface }]}
           >
             {segment.pricingStrategy.toUpperCase()}
           </Text>
@@ -368,7 +365,7 @@ export const MonetizationFeatures: React.FC<MonetizationFeaturesProps> = ({
 
       <View style={styles.segmentMetrics}>
         <View style={styles.metricItem}>
-          <Text style={[styles.metricValue, { color: theme.colors.primary }]}>
+          <Text style={[styles.metricValue, { color: theme.colors.onSurface }]}>
             ${segment.acquisitionCost}
           </Text>
           <Text
@@ -381,7 +378,7 @@ export const MonetizationFeatures: React.FC<MonetizationFeaturesProps> = ({
           </Text>
         </View>
         <View style={styles.metricItem}>
-          <Text style={[styles.metricValue, { color: "#10B981" }]}>
+          <Text style={[styles.metricValue, { color: theme.colors.onSurface }]}>
             ${segment.lifetimeValue}
           </Text>
           <Text
@@ -394,7 +391,7 @@ export const MonetizationFeatures: React.FC<MonetizationFeaturesProps> = ({
           </Text>
         </View>
         <View style={styles.metricItem}>
-          <Text style={[styles.metricValue, { color: theme.colors.primary }]}>
+          <Text style={[styles.metricValue, { color: theme.colors.onSurface }]}>
             {(segment.conversionRate * 100).toFixed(1)}%
           </Text>
           <Text

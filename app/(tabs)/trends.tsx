@@ -294,57 +294,66 @@ export default function TrendsScreen() {
           Time Period
         </HolisticText>
         <View style={styles.periodChips}>
-          {TIME_PERIODS.map((period, index) => (
-            <Animated.View
-              key={period.id}
-              style={{
-                opacity:
-                  cardAnimationsRef.current[index] || new Animated.Value(0),
-                transform: [
-                  {
-                    translateY: (
-                      cardAnimationsRef.current[index] || new Animated.Value(0)
-                    ).interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [20, 0],
-                    }),
-                  },
-                ],
-              }}
-            >
-              <TouchableOpacity
-                onPress={() => handlePeriodSelect(period.id)}
-                activeOpacity={0.7}
+          {TIME_PERIODS.map((period, index) => {
+            // Defensive log for icon name
+            console.log("MaterialIcons name:", period.icon, typeof period.icon);
+            return (
+              <Animated.View
+                key={period.id}
+                style={{
+                  opacity:
+                    cardAnimationsRef.current[index] || new Animated.Value(0),
+                  transform: [
+                    {
+                      translateY: (
+                        cardAnimationsRef.current[index] ||
+                        new Animated.Value(0)
+                      ).interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [20, 0],
+                      }),
+                    },
+                  ],
+                }}
               >
-                <View
-                  style={[
-                    styles.periodChip,
-                    selectedPeriod === period.id && styles.periodChipSelected,
-                  ]}
+                <TouchableOpacity
+                  onPress={() => handlePeriodSelect(period.id)}
+                  activeOpacity={0.7}
                 >
-                  <MaterialIcons
-                    name={period.icon as any}
-                    size={16}
-                    color={
-                      selectedPeriod === period.id
-                        ? "white"
-                        : theme.colors.onSurfaceVariant
-                    }
-                    style={styles.periodChipIcon}
-                  />
-                  <Text
+                  <View
                     style={[
-                      styles.periodChipText,
-                      selectedPeriod === period.id &&
-                        styles.periodChipTextSelected,
+                      styles.periodChip,
+                      selectedPeriod === period.id && styles.periodChipSelected,
                     ]}
                   >
-                    {period.label}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </Animated.View>
-          ))}
+                    <MaterialIcons
+                      name={
+                        typeof period.icon === "string"
+                          ? (period.icon as any)
+                          : "help"
+                      }
+                      size={16}
+                      color={
+                        selectedPeriod === period.id
+                          ? "white"
+                          : theme.colors.onSurfaceVariant
+                      }
+                      style={styles.periodChipIcon}
+                    />
+                    <Text
+                      style={[
+                        styles.periodChipText,
+                        selectedPeriod === period.id &&
+                          styles.periodChipTextSelected,
+                      ]}
+                    >
+                      {period.label}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </Animated.View>
+            );
+          })}
         </View>
       </View>
     </Animated.View>

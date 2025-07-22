@@ -386,6 +386,17 @@ export const useReceipts = (userId: string) => {
     };
   };
 
+  const submitCorrections = async (
+    receiptId: string,
+    payload: { user_id: string; items: any[] }
+  ): Promise<{ success: boolean; error?: string }> => {
+    // TODO: Replace with real API call
+    // await fetch(`${API_CONFIG.baseUrl}/receipts/${receiptId}/corrections`, { ... })
+    // For now, just log and resolve
+    console.log("Submitting corrections:", { receiptId, ...payload });
+    return { success: true };
+  };
+
   return {
     ...state,
     createReceipt,
@@ -399,5 +410,6 @@ export const useReceipts = (userId: string) => {
     getSpendingByCategory,
     getSpendingAnalytics,
     getWeeklySpending,
+    submitCorrections,
   };
 };

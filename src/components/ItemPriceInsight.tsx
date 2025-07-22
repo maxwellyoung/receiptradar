@@ -198,7 +198,7 @@ export function ItemPriceInsight({
           <Text
             style={{
               marginLeft: 8,
-              color: insight.color,
+              color: theme.colors.onSurface,
               flex: 1,
               fontSize: 12,
               fontWeight: "bold",

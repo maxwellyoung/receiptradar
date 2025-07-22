@@ -22,6 +22,7 @@ import * as Haptics from "expo-haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { MaterialIcons } from "@expo/vector-icons";
 import { logger } from "@/utils/logger";
+import { useTheme } from "@/hooks/useTheme";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -57,6 +58,7 @@ export const WeeklyWormDigest: React.FC<{
 
   const { user } = useAuthContext();
   const { receipts, loading } = useReceipts(user?.id || "");
+  const theme = useTheme();
 
   // Enhanced animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -595,7 +597,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontWeight: "600",
-    color: "#1A1A1A",
+    color: theme.colors.onSurface,
     marginBottom: 4,
   },
   insightsContainer: {

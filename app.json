@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Receipt Worm",
-    "slug": "receipt-worm",
+    "name": "Receipt Radar",
+    "slug": "receipt-radar",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,10 +12,12 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.receiptradar.app",
+      "bundleIdentifier": "com.receiptradar.app.new",
       "jsEngine": "jsc",
       "infoPlist": {
         "NSCameraUsageDescription": "ReceiptRadar needs camera access to scan grocery receipts and track your spending.",
@@ -28,7 +30,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.receiptradar.app",
+      "package": "com.receiptradar.app.new",
       "jsEngine": "jsc",
       "permissions": [
         "android.permission.CAMERA",
@@ -89,13 +91,13 @@
         "origin": false
       },
       "eas": {
-        "projectId": "566c9e4d-3fa7-46af-961a-d66020a7d6bf"
+        "projectId": "eb92c592-4e06-4897-810c-f6355a80b956"
       }
     },
     "jsEngine": "jsc",
     "developmentClient": {
       "silenceDevMenu": true
     },
-    "owner": "maxwellyoung"
+    "owner": "maxwell_young"
   }
 }

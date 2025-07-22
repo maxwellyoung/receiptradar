@@ -12,6 +12,7 @@ import { Text } from "react-native-paper";
 // import { LinearGradient } from "expo-linear-gradient";
 import ViewShot from "react-native-view-shot";
 import { logger } from "@/utils/logger";
+import { useTheme } from "react-native-paper";
 
 // Fallback share function since react-native-share might not be properly linked
 const fallbackShare = async (uri: string, title: string, message: string) => {
@@ -147,6 +148,8 @@ export const GroceryAura: React.FC<GroceryAuraProps> = ({
     return `$${amount.toFixed(2)}`;
   };
 
+  const theme = useTheme();
+
   return (
     <View style={styles.container}>
       <TouchableOpacity onPress={handleShare} activeOpacity={0.9}>
@@ -244,8 +247,20 @@ export const GroceryAura: React.FC<GroceryAuraProps> = ({
                         },
                       ]}
                     />
-                    <Text style={styles.categoryText}>{category}</Text>
-                    <Text style={styles.categoryAmount}>
+                    <Text
+                      style={[
+                        styles.categoryText,
+                        { color: theme.colors.onSurface },
+                      ]}
+                    >
+                      {category}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.categoryAmount,
+                        { color: theme.colors.onSurfaceVariant },
+                      ]}
+                    >
                       {formatAmount(amount)}
                     </Text>
                   </View>

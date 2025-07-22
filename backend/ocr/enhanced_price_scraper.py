@@ -4,6 +4,9 @@ Based on successful techniques from grocer repository
 Web scraping infrastructure for building price history database
 """
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import asyncio
 import logging
 import json
@@ -14,8 +17,6 @@ from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from decimal import Decimal
-import psycopg2
-from psycopg2.extras import RealDictCursor
 import os
 import argparse
 import requests
@@ -23,6 +24,8 @@ from bs4 import BeautifulSoup
 import aiohttp
 from fake_useragent import UserAgent
 from proxy_manager import ProxyManager
+import asyncpg
+
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +129,7 @@ class EnhancedPriceScraperService:
             headers=headers
         )
     
-    async def scrape_countdown_department(self, session: aiohttp.ClientSession, task: ScrapingTask, department: str) -> List[ScrapedPrice]:
+    async def scrape_countdown_department(self, session: aiohttp.ClientSession, task: ScrapingTask, department: str, proxy: Optional[str] = None) -> List[ScrapedPrice]:
         """Scrape Countdown department using their API"""
         scraped_prices = []
         page = 1
@@ -142,7 +145,7 @@ class EnhancedPriceScraperService:
                 
                 url = f"{task.base_url}{task.api_endpoints['products']}"
                 
-                async with session.get(url, params=params, headers=task.headers) as response:
+                async with session.get(url, params=params, headers=task.headers, proxy=proxy) as response:
                     if response.status != 200:
                         logger.error(f"Countdown API error: {response.status}")
                         break
@@ -186,7 +189,7 @@ class EnhancedPriceScraperService:
         
         return scraped_prices
     
-    async def scrape_paknsave_department(self, session: aiohttp.ClientSession, task: ScrapingTask, department: str) -> List[ScrapedPrice]:
+    async def scrape_paknsave_department(self, session: aiohttp.ClientSession, task: ScrapingTask, department: str, proxy: Optional[str] = None) -> List[ScrapedPrice]:
         """Scrape Pak'nSave department using BeautifulSoup"""
         scraped_prices = []
         page = 1
@@ -196,7 +199,7 @@ class EnhancedPriceScraperService:
             try:
                 url = f"{task.base_url}/category/{department}?pg={page}"
                 
-                async with session.get(url, headers=task.headers) as response:
+                async with session.get(url, headers=task.headers, proxy=proxy) as response:
                     if response.status != 200:
                         logger.error(f"Pak'nSave error: {response.status}")
                         break
@@ -341,9 +344,9 @@ class EnhancedPriceScraperService:
                     logger.info(f"Scraping {task.store_name} - {department}")
                     
                     if task.store_name == "Countdown":
-                        prices = await self.scrape_countdown_department(session, task, department)
+                        prices = await self.scrape_countdown_department(session, task, department, proxy)
                     elif task.store_name == "Pak'nSave":
-                        prices = await self.scrape_paknsave_department(session, task, department)
+                        prices = await self.scrape_paknsave_department(session, task, department, proxy)
                     else:
                         logger.warning(f"Unknown store: {task.store_name}")
                         continue
@@ -361,33 +364,31 @@ class EnhancedPriceScraperService:
         return all_prices
     
     async def store_scraped_prices(self, prices: List[ScrapedPrice]) -> bool:
-        """Store scraped prices in database"""
+        """Store scraped prices in database using asyncpg."""
+        if not prices:
+            return True
         try:
-            conn = psycopg2.connect(self.db_url)
-            cursor = conn.cursor()
-            
-            for price in prices:
-                cursor.execute("""
-                    INSERT INTO price_history (store_id, item_name, price, date, source, confidence_score, volume_size, image_url)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                """, (
-                    price.store_id,
-                    price.item_name,
-                    price.price,
-                    price.date.date(),
+            logger.info(f"Connecting to DB with URL: {self.db_url}")
+            conn = await asyncpg.connect(self.db_url)
+            await conn.executemany(
+                """
+                INSERT INTO price_history (store_id, item_name, price, date, source, confidence_score, volume_size, image_url)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                """,
+                [(
+                    p.store_id,
+                    p.item_name,
+                    p.price,
+                    p.date.date(),
                     'enhanced_scraper',
-                    price.confidence,
-                    price.volume_size,
-                    price.image_url
-                ))
-            
-            conn.commit()
-            cursor.close()
-            conn.close()
-            
+                    p.confidence,
+                    p.volume_size,
+                    p.image_url
+                ) for p in prices]
+            )
+            await conn.close()
             logger.info(f"Stored {len(prices)} scraped prices")
             return True
-            
         except Exception as e:
             logger.error(f"Error storing scraped prices: {e}")
             return False
@@ -439,7 +440,8 @@ async def main():
     parser.add_argument("--concurrent", type=int, default=3, help="Maximum concurrent scraping tasks")
     args = parser.parse_args()
 
-    db_url = os.getenv('DATABASE_URL', 'postgresql://localhost/receiptradar')
+    db_url = "postgresql://postgres:bvu_zdw1VEC%40mkq_vgk@db.cihuylmusthumxpuexrl.supabase.co:5432/postgres"
+    print(f">>> main() is using db_url: {db_url}")
     scraper = EnhancedPriceScraperService(db_url, max_concurrent=args.concurrent)
     
     store_names = None

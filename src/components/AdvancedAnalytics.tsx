@@ -136,10 +136,7 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({
           ]}
         >
           <Text
-            style={[
-              styles.priorityText,
-              { color: getPriorityColor(insight.priority) },
-            ]}
+            style={[styles.priorityText, { color: theme.colors.onSurface }]}
           >
             {insight.priority}
           </Text>
@@ -200,9 +197,7 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({
           <Text
             style={[
               styles.recommendationText,
-              {
-                color: getRecommendationColor(prediction.recommendation),
-              },
+              { color: theme.colors.onSurface },
             ]}
           >
             {prediction.recommendation.toUpperCase()}
@@ -397,12 +392,7 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({
             { backgroundColor: getStatusColor(budget.status) + "20" },
           ]}
         >
-          <Text
-            style={[
-              styles.statusText,
-              { color: getStatusColor(budget.status) },
-            ]}
-          >
+          <Text style={[styles.statusText, { color: theme.colors.onSurface }]}>
             {budget.status}
           </Text>
         </View>
@@ -532,7 +522,7 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({
           <Text
             style={[
               styles.recommendationText,
-              { color: getRecommendationColor(store.recommendation) },
+              { color: theme.colors.onSurface },
             ]}
           >
             {store.recommendation.toUpperCase()}
@@ -555,7 +545,7 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({
           </Text>
         </View>
         <View style={styles.storeMetric}>
-          <Text style={[styles.storeValue, { color: "#10B981" }]}>
+          <Text style={[styles.storeValue, { color: theme.colors.onSurface }]}>
             ${store.savingsOpportunity.toFixed(2)}
           </Text>
           <Text
@@ -568,7 +558,7 @@ export const AdvancedAnalytics: React.FC<AdvancedAnalyticsProps> = ({
           </Text>
         </View>
         <View style={styles.storeMetric}>
-          <Text style={[styles.storeValue, { color: theme.colors.primary }]}>
+          <Text style={[styles.storeValue, { color: theme.colors.onSurface }]}>
             {store.productCount}
           </Text>
           <Text

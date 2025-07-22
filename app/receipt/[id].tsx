@@ -15,6 +15,7 @@ import {
   IconButton,
   Divider,
   useTheme,
+  TextInput,
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
@@ -53,11 +54,19 @@ export default function ReceiptDetailScreen() {
   const id = params?.id as string;
   const theme = useTheme<AppTheme>();
   const { user } = useAuthContext();
-  const { getReceiptById, deleteReceipt } = useReceipts(user?.id || "");
+  const { getReceiptById, deleteReceipt, submitCorrections } = useReceipts(
+    user?.id || ""
+  );
 
   const [receipt, setReceipt] = useState<ReceiptDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [corrections, setCorrections] = useState<{
+    [index: number]: Partial<OCRItem> & { confirmed?: boolean };
+  }>({});
+  const [submitting, setSubmitting] = useState(false);
+
+  const XP_PER_CONFIRM = 2;
 
   useEffect(() => {
     if (id) {
@@ -132,6 +141,90 @@ export default function ReceiptDetailScreen() {
       Bakery: "#8BC34A",
     };
     return colors[category || ""] || "#9E9E9E";
+  };
+
+  const handleItemChange = (
+    index: number,
+    field: keyof OCRItem,
+    value: any
+  ) => {
+    setCorrections((prev) => ({
+      ...prev,
+      [index]: { ...prev[index], [field]: value },
+    }));
+  };
+
+  const handleConfirm = (index: number) => {
+    setCorrections((prev) => ({
+      ...prev,
+      [index]: { ...prev[index], confirmed: true },
+    }));
+  };
+
+  const confirmedCount = Object.values(corrections).filter(
+    (c) => c.confirmed
+  ).length;
+  const totalItems = receipt?.ocr_data?.items.length || 0;
+
+  const handleSubmitCorrections = async () => {
+    if (!receipt || !user) return;
+    setSubmitting(true);
+    try {
+      // Only send items that are confirmed or edited
+      const correctedItems =
+        receipt.ocr_data?.items
+          .map((item, index) => {
+            const correction = corrections[index] || {};
+            const isEdited = Object.keys(correction).length > 0;
+            if (correction.confirmed || isEdited) {
+              return {
+                name: correction.name ?? item.name,
+                price: correction.price ?? item.price,
+                quantity: correction.quantity ?? item.quantity,
+                category: correction.category ?? item.category,
+                confirmed: !!correction.confirmed,
+              };
+            }
+            return null;
+          })
+          .filter(Boolean) || [];
+      if (correctedItems.length === 0) {
+        Alert.alert("No corrections to submit.");
+        setSubmitting(false);
+        return;
+      }
+      // Analytics: log correction event
+      console.log("Correction event", {
+        user_id: user.id,
+        receipt_id: receipt.id,
+        confirmed: confirmedCount,
+        total: totalItems,
+        xp_earned: confirmedCount * XP_PER_CONFIRM,
+      });
+      const res = await submitCorrections(receipt.id, {
+        user_id: user.id,
+        items: correctedItems,
+      });
+      if (res.success) {
+        if (confirmedCount === totalItems) {
+          Alert.alert(
+            "🎉 All items confirmed!",
+            `You earned ${confirmedCount * XP_PER_CONFIRM} XP!`
+          );
+        } else {
+          Alert.alert(
+            "Thank you! Corrections submitted.",
+            `You earned ${confirmedCount * XP_PER_CONFIRM} XP!`
+          );
+        }
+      } else {
+        Alert.alert("Error", res.error || "Failed to submit corrections.");
+      }
+    } catch (e) {
+      Alert.alert("Error", "Failed to submit corrections.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (!id) {
@@ -352,43 +445,101 @@ export default function ReceiptDetailScreen() {
                   Items ({receipt.ocr_data.items.length})
                 </Text>
               </View>
-
               <Divider style={{ marginVertical: 12 }} />
-
-              {receipt.ocr_data.items.map((item, index) => (
-                <View key={index} style={styles.itemRow}>
-                  <View style={styles.itemInfo}>
-                    <Text variant="bodyMedium" style={styles.itemName}>
-                      {item.name}
-                    </Text>
-                    {item.category && (
-                      <Chip
-                        mode="outlined"
-                        style={[
-                          styles.categoryChip,
-                          { borderColor: getCategoryColor(item.category) },
-                        ]}
-                        textStyle={{
-                          color: getCategoryColor(item.category),
-                          fontSize: 12,
-                        }}
+              {/* Progress bar and XP */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 8,
+                }}
+              >
+                <Text style={{ flex: 1 }}>
+                  {confirmedCount}/{totalItems} Confirmed
+                </Text>
+                <Chip icon="star" style={{ backgroundColor: "#FFFDE7" }}>
+                  +{confirmedCount * XP_PER_CONFIRM} XP
+                </Chip>
+              </View>
+              {receipt.ocr_data.items.map((item, index) => {
+                const correction = corrections[index] || {};
+                const isLowConfidence =
+                  item.confidence !== undefined && item.confidence < 0.5;
+                return (
+                  <View
+                    key={index}
+                    style={[
+                      styles.itemRow,
+                      isLowConfidence && { backgroundColor: "#FFF3E0" },
+                    ]}
+                  >
+                    <View style={styles.itemInfo}>
+                      <TextInput
+                        label="Name"
+                        value={correction.name ?? item.name}
+                        onChangeText={(text) =>
+                          handleItemChange(index, "name", text)
+                        }
+                        style={{ marginBottom: 4 }}
+                      />
+                      <TextInput
+                        label="Category"
+                        value={correction.category ?? item.category ?? ""}
+                        onChangeText={(text) =>
+                          handleItemChange(index, "category", text)
+                        }
+                        style={{ marginBottom: 4 }}
+                      />
+                    </View>
+                    <View style={styles.itemPricing}>
+                      <TextInput
+                        label="Price"
+                        value={String(correction.price ?? item.price)}
+                        keyboardType="decimal-pad"
+                        onChangeText={(text) =>
+                          handleItemChange(
+                            index,
+                            "price",
+                            parseFloat(text) || 0
+                          )
+                        }
+                        style={{ width: 80, marginBottom: 4 }}
+                      />
+                      <TextInput
+                        label="Qty"
+                        value={String(correction.quantity ?? item.quantity)}
+                        keyboardType="number-pad"
+                        onChangeText={(text) =>
+                          handleItemChange(
+                            index,
+                            "quantity",
+                            parseInt(text) || 1
+                          )
+                        }
+                        style={{ width: 60, marginBottom: 4 }}
+                      />
+                      <Button
+                        mode={correction.confirmed ? "contained" : "outlined"}
+                        onPress={() => handleConfirm(index)}
+                        style={{ marginTop: 4 }}
+                        icon={correction.confirmed ? "check" : undefined}
+                        compact
                       >
-                        {item.category}
-                      </Chip>
-                    )}
+                        {correction.confirmed ? "Confirmed" : "Confirm"}
+                      </Button>
+                    </View>
                   </View>
-                  <View style={styles.itemPricing}>
-                    <Text variant="bodyMedium" style={styles.itemPrice}>
-                      {formatCurrency(item.price)}
-                    </Text>
-                    {item.quantity > 1 && (
-                      <Text variant="bodySmall" style={styles.itemQuantity}>
-                        × {item.quantity}
-                      </Text>
-                    )}
-                  </View>
-                </View>
-              ))}
+                );
+              })}
+              <Button
+                mode="contained"
+                onPress={handleSubmitCorrections}
+                loading={submitting}
+                disabled={confirmedCount === 0 || submitting}
+                style={{ marginTop: 16 }}
+              >
+                Submit Corrections
+              </Button>
             </Card.Content>
           </Card>
         )}

@@ -247,8 +247,8 @@ export default function HouseholdScreen() {
                             { color: theme.colors.onSurfaceVariant },
                           ]}
                         >
-                          {household.members.length} member
-                          {household.members.length !== 1 ? "s" : ""}
+                          {household.members?.length ?? 0} member
+                          {(household.members?.length ?? 0) !== 1 ? "s" : ""}
                         </Text>
                       </View>
                       <Chip

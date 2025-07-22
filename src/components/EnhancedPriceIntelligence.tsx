@@ -301,7 +301,12 @@ export function EnhancedPriceIntelligence({
                   </Text>
                 </View>
               </View>
-              <Text style={styles.insightDescription}>
+              <Text
+                style={[
+                  styles.insightDescription,
+                  { color: theme.colors.onSurfaceVariant },
+                ]}
+              >
                 {insight.description}
               </Text>
               {insight.savings && (

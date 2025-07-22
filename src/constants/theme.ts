@@ -147,22 +147,23 @@ const lightColors = {
   background: "#FAFAFA", // Pure, minimal background
   surface: "#FFFFFF", // Clean surface
   surfaceVariant: "#F5F5F5", // Subtle surface variation
-  onSurface: "#1A1A1A", // High contrast text
-  onSurfaceVariant: "#666666", // Secondary text with reduced contrast
+  onSurface: "#111111", // Even higher contrast text (was #1A1A1A)
+  onSurfaceVariant: "#555555", // Slightly lighter for secondary text (was #666666)
+  onBackground: "#111111", // Match onSurface for all main text
 
-  // Primary colors - inspired by Ive's attention to materials
+  // Primary colors - keep for accents only
   primary: "#007AFF", // Apple-inspired blue (functional, trustworthy)
   onPrimary: "#FFFFFF",
   primaryContainer: "#E3F2FD", // Subtle primary background
   onPrimaryContainer: "#0D47A1",
 
-  // Secondary colors - inspired by Beirut's editorial approach
+  // Secondary colors - keep for accents only
   secondary: "#FF6B35", // Warm accent (the worm's color)
   onSecondary: "#FFFFFF",
   secondaryContainer: "#FFF3E0",
   onSecondaryContainer: "#E65100",
 
-  // Semantic colors - inspired by systematic design
+  // Semantic colors - keep for status only
   positive: "#34C759", // Success green
   error: "#FF3B30", // Error red
   warning: "#FF9500", // Warning orange
@@ -183,7 +184,7 @@ const lightColors = {
   },
 
   // Legacy support
-  text: "#1A1A1A",
+  text: "#111111", // Use black for all legacy text
   accent: "#007AFF",
   notification: "#FF9500",
 };
