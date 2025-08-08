@@ -87,8 +87,9 @@ function RootContent() {
 
     const inAuthGroup = segments[0] === "(auth)";
     const inOnboarding = segments[0] === "onboarding";
+    const inResetPassword = segments[0] === "reset-password";
 
-    if (!user && !inAuthGroup) {
+    if (!user && !inAuthGroup && !inResetPassword) {
       // If the user is not signed in and not in the auth group,
       // redirect them to the sign-in page.
       router.replace("/(auth)/sign-in");

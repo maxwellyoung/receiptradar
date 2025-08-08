@@ -13,6 +13,8 @@ import { ReceiptOCRData } from "@/types/ocr";
 import { handleAsyncError, logError } from "@/utils/error-handler";
 
 import { logger } from "@/utils/logger";
+import { Platform } from "react-native";
+import * as Linking from "expo-linking";
 
 // Create Supabase client
 logger.database("Creating Supabase client", "init");
@@ -26,7 +28,7 @@ export const supabase = createClient(
       storage: AsyncStorage,
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: false,
+      detectSessionInUrl: Platform.OS === "web",
     },
   }
 );
@@ -86,12 +88,27 @@ export const authService = {
 
   // Reset password
   async resetPassword(email: string) {
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: __DEV__
-        ? "receiptradar://reset-password"
-        : "https://expo.dev/accounts/maxwellyoung/projects/receipt-worm",
-    });
-    return { data, error };
+    // On web: avoid passing redirectTo (can break with localhost origins/CORS).
+    if (Platform.OS === "web") {
+      try {
+        const res = await supabase.auth.resetPasswordForEmail(email);
+        return res;
+      } catch (e) {
+        // Return uniform shape
+        return { data: null, error: e as unknown as PostgrestError } as any;
+      }
+    }
+
+    // Native: use deep link to our reset screen
+    try {
+      const redirectUrl = Linking.createURL("/reset-password");
+      const res = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl,
+      });
+      return res;
+    } catch (e) {
+      return { data: null, error: e as unknown as PostgrestError } as any;
+    }
   },
 
   async updateUser(updates: { name?: string; password?: string }) {

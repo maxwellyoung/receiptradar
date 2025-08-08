@@ -35,6 +35,15 @@ export default function SignInScreen() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
   const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
+  const [forgotPasswordStatus, setForgotPasswordStatus] = useState<
+    "idle" | "success" | "error"
+  >("idle");
+  const [forgotPasswordError, setForgotPasswordError] = useState<string | null>(
+    null
+  );
+  const [resetBannerMessage, setResetBannerMessage] = useState<string | null>(
+    null
+  );
 
   const { signIn, signUp, resetPassword } = useAuthContext();
 
@@ -82,23 +91,21 @@ export default function SignInScreen() {
 
   const handleForgotPassword = async () => {
     if (!forgotPasswordEmail.trim()) {
-      Alert.alert("Error", "Please enter your email address");
+      setForgotPasswordStatus("error");
+      setForgotPasswordError("Please enter your email address");
       return;
     }
 
     setForgotPasswordLoading(true);
     try {
       await resetPassword(forgotPasswordEmail);
-      Alert.alert(
-        "Password Reset Sent",
-        "Check your email for a password reset link. You can close this dialog and try signing in again once you've reset your password."
-      );
-      setShowForgotPassword(false);
-      setForgotPasswordEmail("");
+      setForgotPasswordStatus("success");
+      setForgotPasswordError(null);
     } catch (err: any) {
       const errorMessage =
         err?.message || "Failed to send password reset email";
-      Alert.alert("Error", errorMessage);
+      setForgotPasswordStatus("error");
+      setForgotPasswordError(errorMessage);
     } finally {
       setForgotPasswordLoading(false);
     }
@@ -125,6 +132,11 @@ export default function SignInScreen() {
               ? "Begin your journey with ReceiptRadar"
               : "Sign in to continue"}
           </Text>
+          {resetBannerMessage && (
+            <View style={styles.resetInfoContainer}>
+              <Text style={styles.resetInfoText}>{resetBannerMessage}</Text>
+            </View>
+          )}
         </MotiView>
 
         {/* Form Section */}
@@ -269,19 +281,23 @@ export default function SignInScreen() {
             </MotiView>
           </TouchableOpacity>
 
-          {/* Divider */}
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
-          </View>
+          {Platform.OS === "ios" && (
+            <>
+              {/* Divider */}
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>or</Text>
+                <View style={styles.dividerLine} />
+              </View>
 
-          {/* Apple Sign-In Button */}
-          <AppleSignInButton
-            onSuccess={handleAppleSuccess}
-            onError={handleAppleError}
-            style={styles.appleButton}
-          />
+              {/* Apple Sign-In Button */}
+              <AppleSignInButton
+                onSuccess={handleAppleSuccess}
+                onError={handleAppleError}
+                style={styles.appleButton}
+              />
+            </>
+          )}
 
           {/* Switch Mode Button */}
           <TouchableOpacity
@@ -312,6 +328,8 @@ export default function SignInScreen() {
           onRequestClose={() => {
             setShowForgotPassword(false);
             setForgotPasswordEmail("");
+            setForgotPasswordStatus("idle");
+            setForgotPasswordError(null);
           }}
         >
           <View style={styles.modalOverlay}>
@@ -321,6 +339,8 @@ export default function SignInScreen() {
               onPress={() => {
                 setShowForgotPassword(false);
                 setForgotPasswordEmail("");
+                setForgotPasswordStatus("idle");
+                setForgotPasswordError(null);
               }}
             />
             <MotiView
@@ -344,7 +364,27 @@ export default function SignInScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
+                editable={
+                  !forgotPasswordLoading && forgotPasswordStatus !== "success"
+                }
               />
+
+              {forgotPasswordStatus === "error" && forgotPasswordError && (
+                <View style={styles.modalMessageError}>
+                  <Text style={styles.modalMessageErrorText}>
+                    {forgotPasswordError}
+                  </Text>
+                </View>
+              )}
+
+              {forgotPasswordStatus === "success" && (
+                <View style={styles.modalMessageSuccess}>
+                  <Text style={styles.modalMessageSuccessText}>
+                    If an account exists for {forgotPasswordEmail}, a reset link
+                    has been sent. Check your inbox and spam folder.
+                  </Text>
+                </View>
+              )}
 
               <View style={styles.modalButtons}>
                 <TouchableOpacity
@@ -352,24 +392,43 @@ export default function SignInScreen() {
                   onPress={() => {
                     setShowForgotPassword(false);
                     setForgotPasswordEmail("");
+                    setForgotPasswordStatus("idle");
+                    setForgotPasswordError(null);
                   }}
                   disabled={forgotPasswordLoading}
                 >
                   <Text style={styles.modalButtonSecondaryText}>Cancel</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={[
-                    styles.modalButtonPrimary,
-                    forgotPasswordLoading && styles.buttonDisabled,
-                  ]}
-                  onPress={handleForgotPassword}
-                  disabled={forgotPasswordLoading}
-                >
-                  <Text style={styles.modalButtonPrimaryText}>
-                    {forgotPasswordLoading ? "Sending..." : "Send Reset Link"}
-                  </Text>
-                </TouchableOpacity>
+                {forgotPasswordStatus === "success" ? (
+                  <TouchableOpacity
+                    style={styles.modalButtonPrimary}
+                    onPress={() => {
+                      setShowForgotPassword(false);
+                      setResetBannerMessage(
+                        `Check your email for a reset link for ${forgotPasswordEmail}.`
+                      );
+                      setForgotPasswordEmail("");
+                      setForgotPasswordStatus("idle");
+                      setForgotPasswordError(null);
+                    }}
+                  >
+                    <Text style={styles.modalButtonPrimaryText}>Done</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={[
+                      styles.modalButtonPrimary,
+                      forgotPasswordLoading && styles.buttonDisabled,
+                    ]}
+                    onPress={handleForgotPassword}
+                    disabled={forgotPasswordLoading}
+                  >
+                    <Text style={styles.modalButtonPrimaryText}>
+                      {forgotPasswordLoading ? "Sending..." : "Send Reset Link"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </MotiView>
           </View>
@@ -388,6 +447,9 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
+    width: "100%",
+    maxWidth: 480,
+    alignSelf: "center",
   },
   header: {
     alignItems: "center",
@@ -403,11 +465,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: theme.colors.onSurfaceVariant,
   },
+  resetInfoContainer: {
+    marginTop: spacing.md,
+    backgroundColor: theme.colors.secondaryContainer,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+  },
+  resetInfoText: {
+    color: theme.colors.onSecondaryContainer,
+    textAlign: "center",
+  },
   form: {
     backgroundColor: theme.colors.surface,
     padding: spacing.lg,
     borderRadius: borderRadius.lg,
     ...shadows.medium,
+    gap: spacing.md,
   },
   inputContainer: {
     marginBottom: spacing.md,
@@ -422,6 +495,7 @@ const styles = StyleSheet.create({
     color: theme.colors.onSurface,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
+    minHeight: 48,
     borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: "transparent",
@@ -556,6 +630,26 @@ const styles = StyleSheet.create({
   modalButtons: {
     flexDirection: "row",
     gap: spacing.md,
+  },
+  modalMessageError: {
+    backgroundColor: theme.colors.errorContainer,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.md,
+  },
+  modalMessageErrorText: {
+    color: theme.colors.onErrorContainer,
+    textAlign: "center",
+  },
+  modalMessageSuccess: {
+    backgroundColor: theme.colors.secondaryContainer,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.md,
+  },
+  modalMessageSuccessText: {
+    color: theme.colors.onSecondaryContainer,
+    textAlign: "center",
   },
   modalButtonSecondary: {
     flex: 1,

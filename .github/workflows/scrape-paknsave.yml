@@ -24,7 +24,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install minimal deps
         working-directory: backend/ocr
@@ -43,4 +43,3 @@ jobs:
       # Note: Production inserts for PaknSave require robust Cloudflare handling
       # and are not enabled by default. This workflow is intended for manual testing
       # with proxies to validate access and product parsing.
-

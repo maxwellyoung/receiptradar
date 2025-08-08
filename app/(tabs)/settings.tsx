@@ -163,7 +163,11 @@ export default function SettingsScreen() {
         {/* Profile Header */}
         <View style={styles.header}>
           <View style={styles.profileInfo}>
-            <HolisticText variant="headline.medium" style={styles.userTitle}>
+            <HolisticText
+              variant="headline.medium"
+              color="primary"
+              style={styles.userTitle}
+            >
               {stats.title}
             </HolisticText>
             <HolisticText variant="body.medium" color="secondary">
@@ -174,7 +178,11 @@ export default function SettingsScreen() {
 
         {/* Stats Grid */}
         <View style={styles.statsContainer}>
-          <HolisticText variant="title.large" style={styles.sectionTitle}>
+          <HolisticText
+            variant="title.large"
+            color="primary"
+            style={styles.sectionTitle}
+          >
             Your Stats
           </HolisticText>
 
@@ -185,7 +193,11 @@ export default function SettingsScreen() {
                 size={24}
                 color={theme.colors.primary}
               />
-              <HolisticText variant="title.medium" style={styles.statValue}>
+              <HolisticText
+                variant="title.medium"
+                color="primary"
+                style={styles.statValue}
+              >
                 {stats.totalReceipts}
               </HolisticText>
               <HolisticText variant="body.small" color="secondary">
@@ -199,7 +211,11 @@ export default function SettingsScreen() {
                 size={24}
                 color={theme.colors.primary}
               />
-              <HolisticText variant="title.medium" style={styles.statValue}>
+              <HolisticText
+                variant="title.medium"
+                color="primary"
+                style={styles.statValue}
+              >
                 {formatCurrency(stats.totalSpent)}
               </HolisticText>
               <HolisticText variant="body.small" color="secondary">
@@ -213,7 +229,11 @@ export default function SettingsScreen() {
                 size={24}
                 color={theme.colors.primary}
               />
-              <HolisticText variant="title.medium" style={styles.statValue}>
+              <HolisticText
+                variant="title.medium"
+                color="primary"
+                style={styles.statValue}
+              >
                 {formatCurrency(stats.averagePerShop)}
               </HolisticText>
               <HolisticText variant="body.small" color="secondary">
@@ -227,7 +247,11 @@ export default function SettingsScreen() {
                 size={24}
                 color={theme.colors.primary}
               />
-              <HolisticText variant="title.medium" style={styles.statValue}>
+              <HolisticText
+                variant="title.medium"
+                color="primary"
+                style={styles.statValue}
+              >
                 {stats.weeklyStreak}
               </HolisticText>
               <HolisticText variant="body.small" color="secondary">
@@ -239,7 +263,11 @@ export default function SettingsScreen() {
 
         {/* Achievements */}
         <View style={styles.achievementsContainer}>
-          <HolisticText variant="title.large" style={styles.sectionTitle}>
+          <HolisticText
+            variant="title.large"
+            color="primary"
+            style={styles.sectionTitle}
+          >
             Achievements ({unlockedAchievements.length}/{achievements.length})
           </HolisticText>
 
@@ -266,6 +294,7 @@ export default function SettingsScreen() {
                 <View style={styles.achievementContent}>
                   <HolisticText
                     variant="title.small"
+                    color="primary"
                     style={[
                       styles.achievementTitle,
                       { opacity: achievement.unlocked ? 1 : 0.5 },
@@ -309,14 +338,20 @@ export default function SettingsScreen() {
 
         {/* Settings */}
         <View style={styles.settingsContainer}>
-          <HolisticText variant="title.large" style={styles.sectionTitle}>
+          <HolisticText
+            variant="title.large"
+            color="primary"
+            style={styles.sectionTitle}
+          >
             Preferences
           </HolisticText>
 
           <HolisticCard variant="minimal" padding="medium">
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
-                <HolisticText variant="title.medium">App Tone</HolisticText>
+                <HolisticText variant="title.medium" color="primary">
+                  App Tone
+                </HolisticText>
                 <HolisticText variant="body.small" color="secondary">
                   {toneMode === "gentle"
                     ? "Gentle and encouraging"
@@ -344,7 +379,7 @@ export default function SettingsScreen() {
 
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
-                <HolisticText variant="title.medium">
+                <HolisticText variant="title.medium" color="primary">
                   Notifications
                 </HolisticText>
                 <HolisticText variant="body.small" color="secondary">
@@ -362,7 +397,7 @@ export default function SettingsScreen() {
 
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
-                <HolisticText variant="title.medium">
+                <HolisticText variant="title.medium" color="primary">
                   Weekly Digest
                 </HolisticText>
                 <HolisticText variant="body.small" color="secondary">

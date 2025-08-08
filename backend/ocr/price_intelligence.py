@@ -13,7 +13,13 @@ from decimal import Decimal
 import asyncpg
 from asyncpg.pool import Pool
 from receipt_parser import ReceiptData, ReceiptItem
-from constants import BUSINESS_RULES
+
+# Try to import BUSINESS_RULES, with fallback
+try:
+    from constants import BUSINESS_RULES
+    MAX_CONNECTIONS = BUSINESS_RULES.DATABASE.MAX_CONNECTIONS
+except (ImportError, AttributeError):
+    MAX_CONNECTIONS = 10  # Default fallback
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +61,7 @@ class PriceIntelligenceService:
                 self._pool = await asyncpg.create_pool(
                     self.db_url,
                     min_size=5,
-                    max_size=BUSINESS_RULES.DATABASE.MAX_CONNECTIONS,
+                    max_size=MAX_CONNECTIONS,
                 )
                 logger.info("Successfully created asyncpg connection pool.")
             except Exception as e:

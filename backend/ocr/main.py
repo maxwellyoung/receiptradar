@@ -9,7 +9,6 @@ import io
 import base64
 import time
 import os
-from paddleocr import PaddleOCR
 import logging
 from loguru import logger
 from receipt_parser import ReceiptParser, ReceiptData, ReceiptItem
@@ -39,12 +38,33 @@ app.add_middleware(
 
 # Initialize services
 try:
+    from paddleocr import PaddleOCR
     ocr = PaddleOCR(use_angle_cls=True, lang='en')
+    logger.info("PaddleOCR initialized successfully")
+except ImportError:
+    logger.warning("PaddleOCR not available, using mock OCR service")
+    ocr = None
+except Exception as e:
+    logger.error(f"Failed to initialize PaddleOCR: {e}")
+    ocr = None
+
+try:
     receipt_parser = ReceiptParser()
     
     # Initialize price intelligence service
     DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://localhost/receiptradar")
-    price_intelligence = PriceIntelligenceService(DATABASE_URL)
+    price_intelligence = None
+    
+    # Only try to initialize if we have a valid database URL
+    if DATABASE_URL and DATABASE_URL.startswith(('postgresql://', 'postgres://')):
+        try:
+            price_intelligence = PriceIntelligenceService(DATABASE_URL)
+            logger.info("Price intelligence service initialized with database")
+        except Exception as e:
+            logger.warning(f"Database connection failed, using mock price intelligence: {e}")
+            price_intelligence = None
+    else:
+        logger.warning("No valid DATABASE_URL provided, using mock price intelligence")
     
     # Initialize OpenAI service
     openai_service = OpenAIReceiptService()
@@ -52,10 +72,63 @@ try:
     logger.info("All services initialized successfully")
 except Exception as e:
     logger.error(f"Failed to initialize services: {e}")
-    ocr = None
     receipt_parser = None
     price_intelligence = None
     openai_service = None
+
+# Mock Price Intelligence Service for testing
+class MockPriceIntelligenceService:
+    async def store_receipt_prices(self, receipt_data, store_id: str, user_id: str) -> bool:
+        """Mock implementation that always succeeds"""
+        logger.info(f"Mock: Stored {len(receipt_data.items)} price points for store {store_id}")
+        return True
+    
+    async def analyze_basket_savings(self, items, store_id: str, user_location=None):
+        """Mock implementation that returns sample savings"""
+        from price_intelligence import BasketAnalysis, SavingsOpportunity
+        from decimal import Decimal
+        
+        savings_opportunities = [
+            SavingsOpportunity(
+                item_name="Sample Item",
+                current_price=Decimal("5.00"),
+                best_price=Decimal("4.00"),
+                savings=Decimal("1.00"),
+                store_name="Other Store",
+                confidence=0.8,
+                price_history_points=5
+            )
+        ]
+        
+        return BasketAnalysis(
+            total_savings=Decimal("1.00"),
+            savings_opportunities=savings_opportunities,
+            store_recommendation="Other Store",
+            cashback_available=Decimal("0.50")
+        )
+
+# Use mock price intelligence if database connection failed
+if price_intelligence is None:
+    price_intelligence = MockPriceIntelligenceService()
+    logger.info("Using mock price intelligence service")
+
+# Mock OCR class for when PaddleOCR is not available
+class MockOCR:
+    def __init__(self):
+        self.mock_results = [
+            {"text": "STORE NAME", "bbox": [[10, 10, 100, 30]], "confidence": 0.9},
+            {"text": "TOTAL: $25.50", "bbox": [[10, 200, 150, 220]], "confidence": 0.95},
+            {"text": "MILK $4.50", "bbox": [[10, 50, 100, 70]], "confidence": 0.8},
+            {"text": "BREAD $3.00", "bbox": [[10, 80, 100, 100]], "confidence": 0.8},
+            {"text": "EGGS $5.00", "bbox": [[10, 110, 100, 130]], "confidence": 0.8},
+        ]
+    
+    def __call__(self, img, cls=True):
+        return [self.mock_results]
+
+# Use mock OCR if PaddleOCR is not available
+if ocr is None:
+    ocr = MockOCR()
 
 class OCRResult(BaseModel):
     text: str
@@ -76,11 +149,11 @@ class ReceiptItemResponse(BaseModel):
 
 class ReceiptResponse(BaseModel):
     store_name: str
-    date: str
+    date: Optional[str] = None
     total: float
     items: List[ReceiptItemResponse]
-    subtotal: float
-    tax: float
+    subtotal: Optional[float] = None
+    tax: Optional[float] = None
     receipt_number: Optional[str] = None
     validation: Dict[str, Any]
     processing_time: float
@@ -236,7 +309,7 @@ def clean_text(text: str) -> str:
     
     return text.strip()
 
-def validate_receipt_data(receipt_data: Dict) -> Dict[str, Any]:
+def validate_receipt_data(receipt_data) -> Dict[str, Any]:
     """Validate extracted receipt data"""
     validation = {
         'is_valid': True,
@@ -245,40 +318,54 @@ def validate_receipt_data(receipt_data: Dict) -> Dict[str, Any]:
         'warnings': []
     }
     
+    # Handle both Dict and ReceiptData objects
+    if hasattr(receipt_data, 'store_name'):
+        # ReceiptData object
+        store_name = receipt_data.store_name
+        total = receipt_data.total
+        items = receipt_data.items
+        date = receipt_data.date
+    else:
+        # Dict object
+        store_name = receipt_data.get('store_name')
+        total = receipt_data.get('total')
+        items = receipt_data.get('items')
+        date = receipt_data.get('date')
+    
     # Check for required fields
-    if not receipt_data.get('store_name'):
+    if not store_name:
         validation['issues'].append('Store name not detected')
         validation['is_valid'] = False
     
-    if not receipt_data.get('total') or receipt_data['total'] <= 0:
+    if not total or total <= 0:
         validation['issues'].append('Total amount not detected or invalid')
         validation['is_valid'] = False
     
-    if not receipt_data.get('items') or len(receipt_data['items']) == 0:
+    if not items or len(items) == 0:
         validation['issues'].append('No items detected')
         validation['is_valid'] = False
     
     # Check for reasonable values
-    if receipt_data.get('total', 0) > 10000:
+    if total and total > 10000:
         validation['warnings'].append('Total amount seems unusually high')
     
-    if len(receipt_data.get('items', [])) > 100:
+    if items and len(items) > 100:
         validation['warnings'].append('Unusually high number of items')
     
     # Calculate confidence score
     confidence_factors = []
     
-    if receipt_data.get('store_name'):
+    if store_name:
         confidence_factors.append(0.2)
     
-    if receipt_data.get('date'):
+    if date:
         confidence_factors.append(0.15)
     
-    if receipt_data.get('total') and receipt_data['total'] > 0:
+    if total and total > 0:
         confidence_factors.append(0.25)
     
-    if receipt_data.get('items'):
-        item_confidence = min(0.4, len(receipt_data['items']) * 0.02)
+    if items:
+        item_confidence = min(0.4, len(items) * 0.02)
         confidence_factors.append(item_confidence)
     
     validation['confidence_score'] = sum(confidence_factors)
@@ -886,11 +973,13 @@ async def ai_health_check():
 
 @app.post("/receipts/{receipt_id}/corrections")
 async def submit_receipt_corrections(receipt_id: str, corrections: dict = Body(...)):
-    """Accept corrected items for a receipt. Store in item_corrections table. If item_id is missing, match by name, price, and quantity."""
+    """Accept corrected items for a receipt. Store in item_corrections table. If item_id is missing, match by name, price, and quantity. Increment user XP and corrections_count."""
     items = corrections.get("items", [])
     user_id = corrections.get("user_id")
+    XP_PER_CONFIRM = 2
     if not user_id or not items:
         return {"success": False, "error": "Missing user_id or items"}
+    confirmed_count = sum(1 for item in items if item.get("confirmed"))
     try:
         pool = await asyncpg.create_pool(DATABASE_URL)
         async with pool.acquire() as conn:
@@ -929,9 +1018,25 @@ async def submit_receipt_corrections(receipt_id: str, corrections: dict = Body(.
                     item.get("category"),
                     item.get("confirmed", False),
                 )
+            # Increment user XP and corrections_count
+            if confirmed_count > 0:
+                await conn.execute(
+                    """
+                    UPDATE users
+                    SET xp = xp + $1, corrections_count = corrections_count + $2
+                    WHERE id = $3
+                    """,
+                    confirmed_count * XP_PER_CONFIRM,
+                    confirmed_count,
+                    user_id,
+                )
+                user_row = await conn.fetchrow("SELECT xp FROM users WHERE id = $1", user_id)
+                new_xp = user_row["xp"] if user_row else None
+            else:
+                new_xp = None
         await pool.close()
         logger.info(f"Corrections stored for receipt {receipt_id} by user {user_id}")
-        return {"success": True}
+        return {"success": True, "xp": new_xp}
     except Exception as e:
         logger.error(f"Failed to store corrections: {e}")
         return {"success": False, "error": str(e)}

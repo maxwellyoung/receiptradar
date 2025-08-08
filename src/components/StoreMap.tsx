@@ -18,10 +18,8 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { MotiView } from "moti";
 import * as Linking from "expo-linking";
 import { AppTheme, spacing, typography, borderRadius } from "@/constants/theme";
-import { getStoreImage, getProductImage } from "@/constants/storeImages";
+import { getStoreImage } from "@/constants/storeImages";
 import { StoreLogo } from "@/components/StoreLogo";
-import MapView, { Marker, Callout, PROVIDER_DEFAULT } from "react-native-maps";
-import { logger } from "@/utils/logger";
 import { BUSINESS_RULES } from "@/constants/business-rules";
 
 interface StoreLocation {
@@ -123,21 +121,6 @@ export function StoreMap({
   const [selectedStore, setSelectedStore] = useState<StoreLocation | null>(
     null
   );
-  const [mapAvailable, setMapAvailable] = useState(false);
-
-  useEffect(() => {
-    // Check if react-native-maps is available
-    try {
-      // This will throw an error if react-native-maps is not available
-      require("react-native-maps");
-      setMapAvailable(true);
-    } catch (error) {
-      logger.info("react-native-maps not available, using list view", {
-        component: "StoreMap",
-      });
-      setMapAvailable(false);
-    }
-  }, []);
 
   useEffect(() => {
     // In production, this would fetch stores from an API
