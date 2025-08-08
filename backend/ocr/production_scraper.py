@@ -121,34 +121,6 @@ class ProductionScraper:
             cursor.execute("ALTER TABLE price_history ADD COLUMN IF NOT EXISTS volume_size TEXT")
             cursor.execute("ALTER TABLE price_history ADD COLUMN IF NOT EXISTS image_url TEXT")
             
-            # Create stores table if it doesn't exist
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS stores (
-                    id SERIAL PRIMARY KEY,
-                    store_id VARCHAR(50) UNIQUE NOT NULL,
-                    name VARCHAR(100) NOT NULL,
-                    location VARCHAR(200),
-                    base_url TEXT,
-                    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-                )
-            """)
-            
-            # Insert NZ supermarket stores
-            cursor.execute("""
-                INSERT INTO stores (store_id, name, location, base_url) VALUES
-                    ('countdown_001', 'Countdown', 'New Zealand', 'https://shop.countdown.co.nz'),
-                    ('paknsave_001', 'Pak''nSave', 'New Zealand', 'https://www.paknsaveonline.co.nz'),
-                    ('new_world_001', 'New World', 'New Zealand', 'https://shop.newworld.co.nz'),
-                    ('fresh_choice_001', 'Fresh Choice', 'New Zealand', 'https://nelsoncity.store.freshchoice.co.nz'),
-                    ('super_value_001', 'Super Value', 'New Zealand', 'https://stanmore.store.supervalue.co.nz')
-                ON CONFLICT (store_id) DO UPDATE SET
-                    name = EXCLUDED.name,
-                    location = EXCLUDED.location,
-                    base_url = EXCLUDED.base_url,
-                    updated_at = NOW()
-            """)
-            
             logger.info("Database migration completed successfully")
             
         except Exception as e:
@@ -241,6 +213,83 @@ class ProductionScraper:
             conn = psycopg2.connect(self.db_url)
             cursor = conn.cursor()
             
+            # Helper to map external codes to canonical store UUIDs
+            def code_to_name(code: str) -> str:
+                lc = (code or "").lower()
+                if lc.startswith("countdown"):
+                    return "Countdown"
+                if lc.startswith("paknsave"):
+                    return "Pak'nSave"
+                if lc.startswith("new_world"):
+                    return "New World"
+                if lc.startswith("fresh_choice"):
+                    return "Fresh Choice"
+                if lc.startswith("super_value"):
+                    return "Super Value"
+                return code
+            
+            # Gather unique codes from incoming prices
+            unique_codes = list({getattr(p, 'store_id', None) for p in prices if getattr(p, 'store_id', None)})
+            code_to_uuid = {}
+            if unique_codes:
+                # Detect presence of stores.code column
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT 1 FROM information_schema.columns 
+                        WHERE table_name = 'stores' AND column_name = 'code'
+                    )
+                """)
+                has_code_col = bool(cursor.fetchone()[0])
+
+                if has_code_col:
+                    # Map existing codes
+                    cursor.execute(
+                        "SELECT code, id FROM stores WHERE code = ANY(%s)",
+                        (unique_codes,)
+                    )
+                    for code, store_uuid in cursor.fetchall():
+                        if code:
+                            code_to_uuid[code] = store_uuid
+
+                # Match by name for remaining codes
+                for code in unique_codes:
+                    if code in code_to_uuid:
+                        continue
+                    name = code_to_name(code)
+                    cursor.execute(
+                        "SELECT id FROM stores WHERE lower(name) = lower(%s) LIMIT 1",
+                        (name,)
+                    )
+                    row = cursor.fetchone()
+                    if row:
+                        store_uuid = row[0]
+                        if has_code_col:
+                            try:
+                                cursor.execute(
+                                    "UPDATE stores SET code = %s WHERE id = %s",
+                                    (code, store_uuid),
+                                )
+                            except Exception:
+                                pass
+                        code_to_uuid[code] = store_uuid
+
+                # Create missing stores for remaining codes
+                for code in unique_codes:
+                    if code in code_to_uuid:
+                        continue
+                    name = code_to_name(code)
+                    if has_code_col:
+                        cursor.execute(
+                            "INSERT INTO stores(name, location, code) VALUES(%s, %s, %s) RETURNING id",
+                            (name, "New Zealand", code),
+                        )
+                    else:
+                        cursor.execute(
+                            "INSERT INTO stores(name, location) VALUES(%s, %s) RETURNING id",
+                            (name, "New Zealand"),
+                        )
+                    code_to_uuid[code] = cursor.fetchone()[0]
+            
             stored_count = 0
             for price in prices:
                 cursor.execute("""
@@ -253,7 +302,7 @@ class ProductionScraper:
                         volume_size = EXCLUDED.volume_size,
                         image_url = EXCLUDED.image_url
                 """, (
-                    price.store_id,
+                    code_to_uuid.get(getattr(price, 'store_id', None), getattr(price, 'store_id', None)),
                     price.item_name,
                     price.price,
                     price.date.date(),

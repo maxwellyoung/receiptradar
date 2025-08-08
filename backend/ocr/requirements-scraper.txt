@@ -1,0 +1,8 @@
+# Minimal deps for enhanced_price_scraper.py (no heavy OCR libs)
+aiohttp==3.9.*
+asyncpg==0.29.*
+requests==2.*
+beautifulsoup4==4.*
+fake-useragent==1.*
+python-dotenv==1.*
+

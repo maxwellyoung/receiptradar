@@ -370,13 +370,91 @@ class EnhancedPriceScraperService:
         try:
             logger.info(f"Connecting to DB with URL: {self.db_url}")
             conn = await asyncpg.connect(self.db_url)
+            # Map external store codes (e.g., 'countdown_001') to canonical UUIDs in stores.id
+            unique_codes = list({p.store_id for p in prices})
+
+            def code_to_name(code: str) -> str:
+                lc = (code or "").lower()
+                if lc.startswith("countdown"):
+                    return "Countdown"
+                if lc.startswith("paknsave"):
+                    return "Pak'nSave"
+                if lc.startswith("new_world"):
+                    return "New World"
+                if lc.startswith("fresh_choice"):
+                    return "Fresh Choice"
+                if lc.startswith("super_value"):
+                    return "Super Value"
+                return code
+
+            code_to_uuid: dict[str, str] = {}
+            if unique_codes:
+                # Detect whether stores.code exists
+                has_code_col = await conn.fetchval(
+                    "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='stores' AND column_name='code')"
+                )
+
+                if has_code_col:
+                    # 1) Map by code
+                    rows = await conn.fetch(
+                        "SELECT code, id FROM stores WHERE code = ANY($1::text[])",
+                        unique_codes,
+                    )
+                    for r in rows:
+                        if r["code"]:
+                            code_to_uuid[r["code"]] = r["id"]
+
+                # 2) For remaining codes, try match by name
+                for code in unique_codes:
+                    if code in code_to_uuid:
+                        continue
+                    name = code_to_name(code)
+                    row = await conn.fetchrow(
+                        "SELECT id FROM stores WHERE lower(name) = lower($1) LIMIT 1",
+                        name,
+                    )
+                    if row:
+                        # Backfill code if column exists
+                        if has_code_col:
+                            await conn.execute(
+                                "UPDATE stores SET code = $1 WHERE id = $2",
+                                code,
+                                row["id"],
+                            )
+                        code_to_uuid[code] = row["id"]
+
+                # 3) Create missing stores and return their UUIDs
+                for code in unique_codes:
+                    if code in code_to_uuid:
+                        continue
+                    name = code_to_name(code)
+                    if has_code_col:
+                        row = await conn.fetchrow(
+                            "INSERT INTO stores(name, location, code) VALUES($1, $2, $3) RETURNING id",
+                            name,
+                            "New Zealand",
+                            code,
+                        )
+                    else:
+                        row = await conn.fetchrow(
+                            "INSERT INTO stores(name, location) VALUES($1, $2) RETURNING id",
+                            name,
+                            "New Zealand",
+                        )
+                    code_to_uuid[code] = row["id"]
             await conn.executemany(
                 """
                 INSERT INTO price_history (store_id, item_name, price, date, source, confidence_score, volume_size, image_url)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                ON CONFLICT (store_id, item_name, date, source)
+                DO UPDATE SET
+                    price = EXCLUDED.price,
+                    confidence_score = EXCLUDED.confidence_score,
+                    volume_size = EXCLUDED.volume_size,
+                    image_url = EXCLUDED.image_url
                 """,
                 [(
-                    p.store_id,
+                    code_to_uuid.get(p.store_id, p.store_id),
                     p.item_name,
                     p.price,
                     p.date.date(),
@@ -440,7 +518,7 @@ async def main():
     parser.add_argument("--concurrent", type=int, default=3, help="Maximum concurrent scraping tasks")
     args = parser.parse_args()
 
-    db_url = "postgresql://postgres:bvu_zdw1VEC%40mkq_vgk@db.cihuylmusthumxpuexrl.supabase.co:5432/postgres"
+    db_url = "postgresql://postgres:5cq8IOEpA3Ly3nb3@db.cihuylmusthumxpuexrl.supabase.co:5432/postgres"
     print(f">>> main() is using db_url: {db_url}")
     scraper = EnhancedPriceScraperService(db_url, max_concurrent=args.concurrent)
     
