@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 import aiohttp
+import os
 from bs4 import BeautifulSoup
 import logging
 
@@ -38,6 +39,16 @@ class CloudflareScraper:
             'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         ]
     
+    def _get_proxies(self) -> List[str]:
+        http_proxies = os.getenv("HTTP_PROXIES", "").strip()
+        scraper_proxies = os.getenv("SCRAPER_PROXIES", "").strip()
+        parts: List[str] = []
+        if http_proxies:
+            parts.extend([p.strip() for p in http_proxies.split(",") if p.strip()])
+        if scraper_proxies:
+            parts.extend([p.strip() for p in scraper_proxies.split(",") if p.strip()])
+        return parts
+
     async def create_session(self):
         """Create session with Cloudflare-friendly settings"""
         timeout = aiohttp.ClientTimeout(total=30)
@@ -73,12 +84,15 @@ class CloudflareScraper:
         """Get URL with retry logic for Cloudflare challenges"""
         if not self.session:
             await self.create_session()
+        proxies = self._get_proxies()
         
         for attempt in range(max_retries):
             try:
                 logger.info(f"Attempting to fetch {url} (attempt {attempt + 1})")
-                
-                async with self.session.get(url) as response:
+                proxy = None
+                if proxies:
+                    proxy = random.choice(proxies)
+                async with self.session.get(url, proxy=proxy) as response:
                     if response.status == 200:
                         content = await response.text()
                         
