@@ -24,7 +24,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-            python-version: "3.11"
+          python-version: "3.11"
 
       - name: Install minimal deps
         working-directory: backend/ocr
@@ -32,10 +32,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-scraper.txt
 
-      - name: Run New World scraper (test only)
+      - name: Run New World scraper (writes to DB if DATABASE_URL secret set)
         working-directory: backend/ocr
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
-          python new_world_scraper.py
+          python new_world_scraper.py --max-pages 2
 
       # TODO: Wire New World to DB upsert like Countdown when verified stable
-

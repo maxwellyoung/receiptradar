@@ -14,6 +14,9 @@ from datetime import datetime
 from decimal import Decimal
 import aiohttp
 from bs4 import BeautifulSoup
+import asyncpg
+import os
+import argparse
 import logging
 
 logger = logging.getLogger(__name__)
@@ -262,6 +265,107 @@ class NewWorldScraper:
         logger.info(f"Total New World prices scraped: {len(all_prices)}")
         return all_prices
 
+    async def store_scraped_prices(self, db_url: str, prices: List[ScrapedPrice]) -> int:
+        """Upsert scraped prices into price_history using code→UUID mapping for stores."""
+        if not prices:
+            return 0
+
+        conn = await asyncpg.connect(db_url)
+        try:
+            # Resolve external codes like 'new_world_001' → stores.id (UUID)
+            unique_codes = list({p.store_id for p in prices})
+
+            def code_to_name(code: str) -> str:
+                lc = (code or "").lower()
+                if lc.startswith("countdown"):
+                    return "Countdown"
+                if lc.startswith("paknsave"):
+                    return "Pak'nSave"
+                if lc.startswith("new_world"):
+                    return "New World"
+                if lc.startswith("fresh_choice"):
+                    return "Fresh Choice"
+                if lc.startswith("super_value"):
+                    return "Super Value"
+                return code
+
+            code_to_uuid: Dict[str, str] = {}
+            if unique_codes:
+                has_code_col = await conn.fetchval(
+                    "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='stores' AND column_name='code')"
+                )
+
+                if has_code_col:
+                    rows = await conn.fetch(
+                        "SELECT code, id FROM stores WHERE code = ANY($1::text[])", unique_codes
+                    )
+                    for r in rows:
+                        if r["code"]:
+                            code_to_uuid[r["code"]] = r["id"]
+
+                for code in unique_codes:
+                    if code in code_to_uuid:
+                        continue
+                    name = code_to_name(code)
+                    row = await conn.fetchrow(
+                        "SELECT id FROM stores WHERE lower(name) = lower($1) LIMIT 1", name
+                    )
+                    if row:
+                        if has_code_col:
+                            await conn.execute(
+                                "UPDATE stores SET code = $1 WHERE id = $2", code, row["id"]
+                            )
+                        code_to_uuid[code] = row["id"]
+
+                for code in unique_codes:
+                    if code in code_to_uuid:
+                        continue
+                    name = code_to_name(code)
+                    if has_code_col:
+                        row = await conn.fetchrow(
+                            "INSERT INTO stores(name, location, code) VALUES($1, $2, $3) RETURNING id",
+                            name,
+                            "New Zealand",
+                            code,
+                        )
+                    else:
+                        row = await conn.fetchrow(
+                            "INSERT INTO stores(name, location) VALUES($1, $2) RETURNING id",
+                            name,
+                            "New Zealand",
+                        )
+                    code_to_uuid[code] = row["id"]
+
+            # Upsert price history
+            await conn.executemany(
+                """
+                INSERT INTO price_history (store_id, item_name, price, date, source, confidence_score, volume_size, image_url)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                ON CONFLICT (store_id, item_name, date, source)
+                DO UPDATE SET
+                    price = EXCLUDED.price,
+                    confidence_score = EXCLUDED.confidence_score,
+                    volume_size = EXCLUDED.volume_size,
+                    image_url = EXCLUDED.image_url
+                """,
+                [
+                    (
+                        code_to_uuid.get(p.store_id, p.store_id),
+                        p.item_name,
+                        p.price,
+                        p.date.date(),
+                        "enhanced_scraper",
+                        p.confidence,
+                        p.volume_size,
+                        p.image_url,
+                    )
+                    for p in prices
+                ],
+            )
+            return len(prices)
+        finally:
+            await conn.close()
+
 async def test_new_world_scraper():
     """Test the New World scraper"""
     print("Testing New World Scraper")
@@ -286,5 +390,23 @@ async def test_new_world_scraper():
         print(f"Error testing New World scraper: {e}")
         return 0
 
+async def main():
+    parser = argparse.ArgumentParser(description="Run the New World scraper and store to DB.")
+    parser.add_argument("--concurrent", type=int, default=3)
+    parser.add_argument("--max-pages", type=int, default=3)
+    args = parser.parse_args()
+
+    db_url = os.getenv("DATABASE_URL")
+    if not db_url:
+        print("DATABASE_URL not set; running in test mode only (no DB writes)")
+        count = await test_new_world_scraper()
+        print(f"Scraped {count} items in test mode")
+        return
+
+    scraper = NewWorldScraper()
+    prices = await scraper.scrape_all_departments(max_pages_per_dept=args.max_pages)
+    stored = await scraper.store_scraped_prices(db_url, prices)
+    print(f"Stored {stored} New World prices")
+
 if __name__ == "__main__":
-    asyncio.run(test_new_world_scraper()) 
+    asyncio.run(main())
