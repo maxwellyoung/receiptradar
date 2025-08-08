@@ -1,0 +1,41 @@
+name: Scrape New World (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      department:
+        description: "Department to scrape (e.g., pantry)"
+        required: false
+        default: pantry
+      max_pages:
+        description: "Max pages per department"
+        required: false
+        default: "2"
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+            python-version: "3.11"
+
+      - name: Install minimal deps
+        working-directory: backend/ocr
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-scraper.txt
+
+      - name: Run New World scraper (test only)
+        working-directory: backend/ocr
+        run: |
+          python new_world_scraper.py
+
+      # TODO: Wire New World to DB upsert like Countdown when verified stable
+

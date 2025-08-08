@@ -2,7 +2,7 @@ name: Scrape Countdown Prices
 
 on:
   schedule:
-    - cron: '0 18 * * *'  # Daily at 06:00 NZST (approx 18:00 UTC previous day)
+    - cron: '0 18 * * *'  # Daily at ~06:00 NZST (UTC schedule)
   workflow_dispatch:
 
 jobs:
